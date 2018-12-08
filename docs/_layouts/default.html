@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{ site.name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ site.description }}">
+    
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <!-- <link href="http://www.recherche.enac.fr/~drouin/css/highlight.css" rel="stylesheet"/> -->
+    <!-- <link href="http://www.recherche.enac.fr/~drouin/css/misc.css" rel="stylesheet"/> -->
+    
+    <!-- <script src="http://www.recherche.enac.fr/~drouin/css/misc.js"></script> -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+       src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+    <!-- <script src="http://www.recherche.enac.fr/~drouin/css/my_mathjax.js"></script> -->
+
+  </head>
+
+  <body>
+
+    $$
+   \newcommand{\vect}[1]{\underline{#1}}                      % vector
+   \newcommand{\mat}[1]{\mathbf{#1}}                          % matrices
+   \newcommand{\est}[1]{\hat{#1}}                             % estimate
+   \newcommand{\err}[1]{\tilde{#1}}                           % error
+   \newcommand{\pd}[2]{\frac{\partial{#1}}{\partial{#2}}}     % partial derivatives
+   \newcommand{\transp}[1]{#1^{T}}                            % transpose
+   \newcommand{\inv}[1]{#1^{-1}}                              % invert
+   \newcommand{\norm}[1]{|{#1}|}                              % norm
+   \newcommand{\esp}[1]{\mathbb{E}\left[{#1}\right]}          % expectation
+   \newcommand{\identity}[0]{\mathbb{I}}                      % identity                                 
+    $$
+    <div class="container">
+
+      {{ content }}
+
+    </div>
+
+  </body>
+</html>
