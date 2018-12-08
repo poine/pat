@@ -3,6 +3,8 @@ title: Multirotor FDM
 layout: default
 ---
 
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
 $$
 \newcommand{\vect}[1]{\underline{#1}}                      % vector
 \newcommand{\mat}[1]{\mathbf{#1}}                          % matrices
