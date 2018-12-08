@@ -5,7 +5,6 @@ import numpy as np
 import scipy.integrate
 import matplotlib.pyplot as plt
 
-import pat3.transformations as ptr
 import pat3.algebra as pal
 import pat3.plot_utils as ppu
 import pdb
@@ -71,7 +70,9 @@ class FDM:
         return self.X
         
     def update_byproducts(self):
-        self.T_w2b = ptr.quaternion_matrix(pal.q_ixyz_to_xyzw(self.X[sv_slice_quat]))
+        
+        #self.T_w2b = ptr.quaternion_matrix(pal.q_ixyz_to_xyzw(self.X[sv_slice_quat]))
+        self.T_w2b[:3,:3] = pal.rmat_of_quat(self.X[sv_slice_quat])
         self.T_w2b[:3,3] = self.X[sv_slice_pos]
 
 

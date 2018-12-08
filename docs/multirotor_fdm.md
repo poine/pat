@@ -35,7 +35,7 @@ $$
    * $$ \vect{P} = \transp{\begin{pmatrix} x & y & z \end{pmatrix}} $$ is the position of the center of mass in an euclidian space.
    * $$ \vect{V} = \transp{\begin{pmatrix} \dot{x} & \dot{y} & \dot{z} \end{pmatrix}} $$ is the velocity os the CG in world frame.
    * $$ \vect{Q} = \transp{\begin{pmatrix} qi & qx & qy & qz \end{pmatrix}} $$ is the rotation between world and body frame as a unit quaternion.
-   * $$ \vect{\Omega} = \transp{\begin{pmatrix} p & q & r \end{pmatrix}} $$ is the rotationale velocity of body frame with respect to world expressed in body frame.
+   * $$ \vect{\Omega} = \transp{\begin{pmatrix} p & q & r \end{pmatrix}} $$ is the rotational velocity of body frame with respect to world expressed in body frame.
 
 
  * Input Vector
@@ -46,8 +46,8 @@ $$
 
    where:
    
-    * $$ \vect{F}_b $$ is the sum of external forces applied to the solid, expressed in body frame
-    * $$ \vect{M}_b $$ is the total moment created by external forces,  expressed in body frame
+    * $$ \vect{F}_b $$ is the sum of external forces applied to the solid, expressed in body frame.
+    * $$ \vect{M}_b $$ is the total moment created by external forces,  expressed in body frame.
 
 ### Kinematics
 

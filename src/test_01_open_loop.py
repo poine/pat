@@ -3,7 +3,6 @@ import math, numpy as np, matplotlib.pyplot as plt
 import pdb
 
 import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
-#import pat3.transformations as ptr
 import pat3.algebra as pal
 
 ''' Testing quadrotor in open loop '''
