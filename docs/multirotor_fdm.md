@@ -3,6 +3,20 @@ title: Multirotor FDM
 layout: default
 ---
 
+$$
+\newcommand{\vect}[1]{\underline{#1}}                      % vector
+\newcommand{\mat}[1]{\mathbf{#1}}                          % matrices
+\newcommand{\est}[1]{\hat{#1}}                             % estimate
+\newcommand{\err}[1]{\tilde{#1}}                           % error
+\newcommand{\pd}[2]{\frac{\partial{#1}}{\partial{#2}}}     % partial derivatives
+\newcommand{\transp}[1]{#1^{T}}                            % transpose
+\newcommand{\inv}[1]{#1^{-1}}                              % invert
+\newcommand{\norm}[1]{|{#1}|}                              % norm
+\newcommand{\esp}[1]{\mathbb{E}\left[{#1}\right]}          % expectation
+\newcommand{\identity}[0]{\mathbb{I}}                      % identity
+$$
+
+
 ## Solid Dynamics
 
  * State Vector
@@ -63,7 +77,7 @@ $$
 
 ### Code
 
-```py
+```python
 def solid_cont_dyn(X, F_b, M_b, P):
     Xd = np.zeros(sv_size)
     p_w, v_w, q_w2b, om_b = X[sv_slice_pos], X[sv_slice_vel], X[sv_slice_quat], X[sv_slice_rvel]
