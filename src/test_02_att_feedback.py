@@ -45,7 +45,7 @@ def main(tf=10., dt=0.01):
     np.set_printoptions(linewidth=500)
     P = fdm.Param()
     _fdm = fdm.FDM()
-    _ctl = ctl.FooController(_fdm)
+    _ctl = ctl.ZAttController(_fdm)
     time = np.arange(0, tf, dt) 
 
     #Yc = step_phi(time)

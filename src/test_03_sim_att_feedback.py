@@ -24,7 +24,9 @@ def main(tf=10., dt=0.01):
         Yc[i-1] = _in.get(time[i-1])
         sim.Yc = Yc[i-1]
         U[i-1], X[i] = sim.run(time[i])
-    fdm.plot(time, X, U)
+    U[-1], unused = sim.run(time[-1])
+    sim.fdm.plot(time, X, U)
+    sim.ctl.plot(time, Yc, U)
     plt.show()
     
 if __name__ == "__main__":

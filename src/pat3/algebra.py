@@ -21,9 +21,7 @@
 import math, numpy as np, numpy.linalg
 
 
-def quat_null(): return [0, 0, 0, 1]
-
-def quat_null_ixyz(): return [1, 0, 0, 0]
+def quat_null(): return [1, 0, 0, 0]
 
 # euler angles
 e_phi   = 0

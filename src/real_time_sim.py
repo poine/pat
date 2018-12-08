@@ -14,7 +14,7 @@ class Sim:
     def __init__(self):
         self.dt_internal = 0.01
         self.fdm = fdm.FDM()
-        self.ctl = ctl.FooController(self.fdm)
+        self.ctl = ctl.ZAttController(self.fdm)
         self.Yc = np.zeros(5); self.Yc[1] = 1
 
     def reset(self, t):

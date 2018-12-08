@@ -70,10 +70,12 @@ class FDM:
         return self.X
         
     def update_byproducts(self):
-        
-        #self.T_w2b = ptr.quaternion_matrix(pal.q_ixyz_to_xyzw(self.X[sv_slice_quat]))
         self.T_w2b[:3,:3] = pal.rmat_of_quat(self.X[sv_slice_quat])
         self.T_w2b[:3,3] = self.X[sv_slice_pos]
+
+        
+    def plot(self, time, X, U=None, figure=None, window_title="Trajectory"):
+        return plot(time, X, U, figure, window_title)
 
 
 class Param():
