@@ -7,28 +7,46 @@ def _position_and_orientation_from_T(p, q, T):
     p.x, p.y, p.z = T[:3, 3]
     q.x, q.y, q.z, q.w = tf.transformations.quaternion_from_matrix(T)
 
-class PoseArrayPublisher:
+
+    
+class MarkerArrayPublisher:
+    def __init__(self, topic, meshes):
+        self.meshes = meshes
+        self.pub = rospy.Publisher(topic, visualization_msgs.msg.MarkerArray, queue_size=1)
+        self.msg = visualization_msgs.msg.MarkerArray()
+        for i, mesh in enumerate(meshes):
+            marker = visualization_msgs.msg.Marker()
+            marker.header.frame_id = "w_ned"
+            marker.type = marker.MESH_RESOURCE
+            marker.action = marker.ADD
+            marker.id = i
+            marker.text = "{}".format(i)
+            marker.scale.x, marker.scale.y, marker.scale.z = 1., 1., 1.
+            marker.color.r, marker.color.g, marker.color.b, marker.color.a  = 0.2, 1., 0.2, 0.5
+            marker.mesh_resource = mesh
+            marker.mesh_use_embedded_materials = True
+            self.msg.markers.append(marker)
+            
+        
+    def publish(self, T_ned2bs):
+        for marker, T_ned2b in zip(self.msg.markers, T_ned2bs):
+            _position_and_orientation_from_T(marker.pose.position, marker.pose.orientation, T_ned2b)
+        self.pub.publish(self.msg)
+
+class PoseArrayPublisher(MarkerArrayPublisher):
     def __init__(self):
-        self.poses_pub = rospy.Publisher('/pat/sim_markers', visualization_msgs.msg.MarkerArray, queue_size=1)
+        MarkerArrayPublisher.__init__(self, '/pat/reference_marker',  ["package://smocap/meshes/quad2.dae"])
 
+class TrackPublisher(MarkerArrayPublisher):
+    def __init__(self):
+        self.poses = [np.eye(4), np.eye(4)]
+        self.poses[0][0, 3] = -1.
+        self.poses[1][0, 3] =  1.
+        meshes = ["package://smocap/meshes/fpv_pole.dae", "package://smocap/meshes/fpv_pole.dae"]
+        MarkerArrayPublisher.__init__(self, '/pat/track_poles', meshes)
 
-    def publish(self, T_ned2b):
-        msg = visualization_msgs.msg.MarkerArray()
-        marker = visualization_msgs.msg.Marker()
-        marker.header.frame_id = "w_ned"
-        marker.type = marker.MESH_RESOURCE
-        marker.action = marker.ADD
-        marker.id = 0
-        marker.text = "multirotor"
-        marker.scale.x, marker.scale.y, marker.scale.z = 1., 1., 1.
-        marker.color.r, marker.color.g, marker.color.b, marker.color.a  = 0.2, 1., 0.2, 0.5
-        _position_and_orientation_from_T(marker.pose.position, marker.pose.orientation, T_ned2b)
-        marker.mesh_resource = "package://smocap/meshes/quad2.dae"
-        #marker.mesh_use_embedded_materials = True
-        msg.markers.append(marker)
-        self.poses_pub.publish(msg)
-
-
+    def publish(self):
+        MarkerArrayPublisher.publish(self, self.poses)
 
 class TrajectoryPublisher:
 

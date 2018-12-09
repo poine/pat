@@ -61,11 +61,11 @@ class Circle:
         rca, rsa = np.abs(self.r)*np.cos(alpha), np.abs(self.r)*np.sin(alpha) 
         Yc = np.zeros((5,4))
         ## xy
-        Yc[0,:3] = self.c + [rca, rsa, 0]
-        Yc[1,:3] = [-self.omega   *rsa,  self.omega   *rca, 0]
-        Yc[2,:3] = [-self.omega**2*rca, -self.omega**2*rsa, 0]
-        Yc[3,:3] = [ self.omega**3*rsa, -self.omega**3*rca, 0]
-        Yc[4,:3] = [ self.omega**4*rca,  self.omega**4*rsa, 0]
+        Yc[0,:_z] = self.c[:_z] + [rca, rsa]
+        Yc[1,:_z] = [-self.omega   *rsa,  self.omega   *rca]
+        Yc[2,:_z] = [-self.omega**2*rca, -self.omega**2*rsa]
+        Yc[3,:_z] = [ self.omega**3*rsa, -self.omega**3*rca]
+        Yc[4,:_z] = [ self.omega**4*rca,  self.omega**4*rsa]
         ## z
         Yc[:,_z] = self.zt.get(dt)
         ## psi
@@ -98,9 +98,6 @@ class Ellipse:
 
     
     
-
-
-    
 class CompositeTraj:
     def __init__(self, steps):
         self.steps = steps
@@ -111,13 +108,16 @@ class CompositeTraj:
             s.reset(st)
         self.t0 = 0.   
 
-    def reset(self, t0): self.t0 = t0
+    def reset(self, t0):
+        #print('reset at {}'.format(t0))
+        self.t0 = t0
         
     def get(self, t):
         dt = t - self.t0
         Yc = np.zeros((5,4))
         dt_lapse = math.fmod(dt, self.duration)
         cur_step = np.argmax(self.steps_end > dt_lapse)
+        #print('get t {} dt {} cur_step {}'.format(t, dt, cur_step))
         Yc = self.steps[cur_step].get(dt_lapse)
         return Yc
     
@@ -153,9 +153,15 @@ class DoubleOval(CompositeTraj):
         ] 
         CompositeTraj.__init__(self, steps)
         
-    
+        
+class FigureOfHeight(CompositeTraj):
+    def __init__(self, r=1., v=2., z=-0.5):
+        c1, c2 = np.array([r, 0, z]), np.array([-r, 0, z])
+        steps = [Circle(c1,  r,  v, -np.pi, 2*np.pi),
+                 Circle(c2, -r,  v, 0,      2*np.pi) ]
+        CompositeTraj.__init__(self, steps)
 
-
+        
 
 def plot(time, Yc, figure=None, window_title="Flat Output Trajectory"):
     figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))

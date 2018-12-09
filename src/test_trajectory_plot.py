@@ -9,22 +9,21 @@ import pat3.vehicles.rotorcraft.multirotor_control as ctl
 
 
 #traj = pmt.Line([0, 0, 0], [10, 10, -1], 0.1)
-
 if 0:
     r, v = 1., 4.; om = v/r
     traj = pmt.Circle(c=[0, 0, -1], r=1., v=4., alpha0=0., dalpha=2*np.pi, zt=pmt.SinOne(om=om))
-
-traj = pmt.Circle(c=[0, 0, 1], r=1., v=4., alpha0=0., dalpha=2*np.pi, psit=pmt.CstOne(0))
-
-
-#traj = pmt.Circle(c=[0, 0, 0], r=-1., v=4., alpha0=0., dalpha=np.pi)
+#traj = pmt.Circle(c=[0, 0, 1], r=1., v=4., alpha0=0., dalpha=2*np.pi, psit=pmt.CstOne(0))
+#traj = pmt.Circle(c=[0, 0, 0], r=-1., v=4., alpha0=0., dalpha=2*np.pi)
 #traj = pmt.Oval(l=2, r=1, v=4)
 #traj = pmt.DoubleOval(l=2, r=1, v=4)
-t0, t1, dt = 0., 1.*traj.duration, 0.01
+traj =  pmt.FigureOfHeight()
+
+
+t0, t1, dt = 0., 2.*traj.duration, 0.01
 time = np.arange(t0, t1, dt)
 Yc = np.array([traj.get(t) for t in time])
 
-if 0:
+if 1:
     fdm = fdm.FDM()
     df = ctl.DiffFlatness()
     Xc, Uc = [], []
