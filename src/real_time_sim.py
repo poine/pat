@@ -5,6 +5,7 @@ import rospy, tf2_ros, tf, geometry_msgs.msg, sensor_msgs.msg
 import pdb
 
 import pat3.algebra as pal
+import pat3.ros_utils as pru
 import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
 import pat3.vehicles.rotorcraft.multirotor_control as ctl
 
@@ -21,15 +22,19 @@ class Sim:
         self.t = t
         self.Xe, self.Ue = self.fdm.trim()
         self.X0 = np.array(self.Xe)
+        #self.X0[fdm.sv_y] += 0.1
         #self.X0[fdm.sv_zd] += 0.05
         #self.X0[fdm.sv_r] += 0.05
-        #phi0, theta0, psi0 = 0, -np.deg2rad(0.1), 0.
-        #self.X0[fdm.sv_qx:fdm.sv_qw+1] = pal.quat_of_euler([phi0, theta0, psi0])
+        #phi0, theta0, psi0 = np.deg2rad(10.), 0, 0
+        #self.X0[fdm.sv_slice_quat] = pal.quat_of_euler([phi0, theta0, psi0])
         return self.fdm.reset(self.X0, self.t)
         
     def run(self, t):
         U = self.ctl.get(self.fdm.X, self.Yc)
-        self.fdm.run(t, U)
+        while t - self.t > 1e-6:
+            U = self.ctl.get(self.fdm.X, self.Yc)
+            self.t += self.dt_internal
+            self.fdm.run(self.t, U)
         return U, self.fdm.X
         
 
@@ -40,12 +45,14 @@ class Agent:
         self.tfBcaster = tf2_ros.TransformBroadcaster()
         self.tfBuffer  = tf2_ros.Buffer()
         self.tfLstener = tf2_ros.TransformListener(self.tfBuffer)
+        self.pose_pub = pru.PoseArrayPublisher()
         rospy.Subscriber('/joy', sensor_msgs.msg.Joy, self.on_joy_msg, queue_size=1)
-        #self.input = ctl.StepZInput()
-        self.input = ctl.StepEulerInput(pal.e_phi, _a=np.deg2rad(1.), p=4, dt=1)
-        #self.input = ctl.StepEulerInput(pal.e_theta)
+        self.input = ctl.StepZInput(0.1)
+        #self.input = ctl.StepEulerInput(pal.e_phi, _a=np.deg2rad(1.), p=4, dt=1)
+        #self.input = ctl.StepEulerInput(pal.e_theta, _a=np.deg2rad(1.), p=4, dt=1)
         #self.input = ctl.StepEulerInput(pal.e_psi, _a=np.deg2rad(30.), p=2, dt=1)
         #self.input = ctl.CstInput(0, [np.deg2rad(0.1), 0, 0])
+        #self.input = ctl.RandomInput()
         
     def send_w_enu_to_ned_transform(self, t):
         R_enu2ned = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
@@ -82,9 +89,10 @@ class Agent:
         self.sim.run(now.to_sec())
         self.send_w_enu_to_ned_transform(now)
         self.send_w_ned_to_b_transform(now)
+        self.pose_pub.publish(self.sim.fdm.T_w2b)
     
     def run(self):
-        rate = rospy.Rate(100.)
+        rate = rospy.Rate(20.)
         self.sim.reset(rospy.Time.now().to_sec())
         try:
             while not rospy.is_shutdown():

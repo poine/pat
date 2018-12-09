@@ -49,9 +49,9 @@ def main(tf=10., dt=0.01):
     time = np.arange(0, tf, dt) 
 
     #Yc = step_phi(time)
-    #Yc = step_euler(time, pal.e_phi, 1.)
+    Yc = step_euler(time, pal.e_phi, 1.)
     #Yc = step_euler(time, pal.e_theta, 1.)
-    Yc = step_euler2(time, pal.e_psi, np.deg2rad(1.))
+    #Yc = step_euler2(time, pal.e_psi, np.deg2rad(1.))
     #Yc = step_z(time)
     Xe, Ue = fdm.trim(P)    
 
