@@ -40,8 +40,6 @@ class StepEulerInput2:
 
     def get(self, t):
         pass
-
-        
     
 class CstInput:
     def __init__(self, z, eu):
@@ -68,6 +66,8 @@ class RandomInput:
         return self.Yc
 
 class ZAttController:
+    # z , qi, qx, qy, qw
+    spv_size = 5
 
     def __init__(self, fdm):
         self.Xe, self.Ue = fdm.trim()
@@ -79,7 +79,7 @@ class ZAttController:
                            [0.25,  1,  1,  1]])
         self.invH = np.linalg.inv(self.H)
         
-    def get(self, X, Yc):
+    def get(self, t, X, Yc):
         zc, qc = Yc[0], Yc[1:]
         Uz = self.z_ctl.run(X, zc)
         Upqr = self.att_ctl.run(X, qc)
@@ -122,11 +122,13 @@ class Zctl:
         Fbz = self.Fez - np.dot(self.K, X-self.Xe) + np.dot(self.H, [zc])
         return Fbz
 
-
+#
+# Attitude controller
+#
 class AttCtl:
     def __init__(self, P):
         self.P = P           # dynamic model parameters
-        self.ref = AttRef()
+        #self.ref = AttRef()
         self.omega = np.array([20., 20., 15.])
         self.xi = np.array([0.7, 0.7, 0.7])
             
@@ -150,16 +152,113 @@ class AttCtl:
 
 
         
-class AttRef:
-    def __init__(self):
-        self.q = pal.quat_null()
+# class AttRef:
+#     def __init__(self):
+#         self.q = pal.quat_null()
 
 
-    def run(self, pqr_sp, dt):
-        self.q = pal.quat_integrate(self.q, pqr_sp, dt)
-        self.om = pqr_sp
+#     def run(self, pqr_sp, dt):
+#         self.q = pal.quat_integrate(self.q, pqr_sp, dt)
+#         self.om = pqr_sp
+
+i_ut, i_up, i_uq, i_ur = range(4)
+r_x, r_y, r_z, r_xd, r_yd, r_zd, r_phi, r_theta, r_psi, r_p, r_q, r_r = range(12)
+r_slice_pos = slice(r_x, r_z+1)
+r_slice_euler = slice(r_phi, r_psi+1)
+#
+# Guidance
+#
+
+class PosStep:
+
+    def __init__(self, p1=[0.25, -0., -0.5], p2=[-0.25, -0., -0.5], p=10):
+        self.p1, self.p2, self.p = p1, p2, p
+    
+    def get(self, t):
+        pos_ref =  self.p1 if math.fmod(t, self.p) > self.p/2 else self.p2 
+        vel_ref   = [0, 0, 0]
+        euler_ref = [np.deg2rad(0), np.deg2rad(0), np.deg2rad(0)]
+        rvel_ref  = [0, 0, 0]
+        Xref = pos_ref + vel_ref + euler_ref + rvel_ref
+        Uref = np.array([9.81, 0, 0, 0]); 
+        return Xref, Uref
 
 
+class TrajRef:
+    def __init__(self, traj, fdm):
+        self.traj, self.fdm = traj, fdm
+        self.df = DiffFlatness()
+        
+    def get(self, t):
+        Yc = self.traj.get(t)
+        Xc, Uc = self.df.state_and_cmd_of_flat_output(Yc, self.fdm.P)
+        return Xc, Uc
+    
+class PosController:
+
+    spv_size = 5
+
+    def __init__(self, fdm, setpoint):
+        self.fdm, self.setpoint = fdm, setpoint
+        self.Xe, self.Ue = fdm.trim()
+        self.z_ctl = Zctl(self.Ue, self.Xe)
+        self.att_ctl = AttCtl(fdm.P)
+        self.H = np.array([[0.25, -1,  1, -1],
+                           [0.25, -1, -1,  1],
+                           [0.25,  1, -1, -1],
+                           [0.25,  1,  1,  1]])
+        self.invH = np.linalg.inv(self.H)
+        #self.input = PosStep()
+
+    def outerloop(self, X, Xref, Uref):
+        omega = np.array([np.deg2rad(120), np.deg2rad(120), np.deg2rad(120)])
+        xi = np.array([0.77, 0.77, 0.77])
+        euler = pal.euler_of_quat(X[fdm.sv_slice_quat])
+
+        cph = np.cos(euler[pal.e_phi])
+        sph = np.sin(euler[pal.e_phi])
+        cth = np.cos(euler[pal.e_theta])
+        sth = np.sin(euler[pal.e_theta])
+        cps = np.cos(euler[pal.e_psi])
+        sps = np.sin(euler[pal.e_psi])
+
+        ut  = Uref[i_ut]
+        inv_G = np.array([[  cph*sth*cps+sph*sps    ,   cph*sth*sps-sph*cps    ,  cph*cth   ],
+                          [-(sph*sth*cps-cph*sps)/ut, -(sph*sth*sps+cph*cps)/ut, -sph*cth/ut],
+                          [  cth*cps/ut/cph         ,   cth*sps/ut/cph         , -sth/ut/cph]])
+        
+        delta_p =  X[fdm.sv_slice_pos] - Xref[fdm.sv_slice_pos] # Warning Xref wrongly indexed
+        delta_v =  X[fdm.sv_slice_vel] - Xref[fdm.sv_slice_vel]
+        dpsi = euler[pal.e_psi] - Xref[r_psi]
+        P = self.fdm.P
+        F = np.array([P.Cd*delta_v[0] + ut*(cph*sth*sps+sph*cps)*dpsi,
+                      P.Cd*delta_v[1] + ut*(cph*sth*cps+sph*sps)*dpsi,
+                      P.Cd*delta_v[2] ])
+        dyn = -2*omega*xi*delta_v - omega**2 * delta_p
+
+        out = np.dot(inv_G, -dyn*P.m - F)
+        return out  # delta_ut delta_phi delta_theta
+
+        
+    def get(self, t, X, Yc):
+        Xref, Uref = self.setpoint.get(t)
+        pos_ref, euler_ref = Xref[r_slice_pos], Xref[r_slice_euler]
+        self.T_w2b_ref = pal.T_of_t_eu(pos_ref, euler_ref)
+        delta_ut, delta_phi, delta_theta = self.outerloop(X, Xref, Uref)
+        #print(delta_ut, delta_phi, delta_theta)
+        delta_euler = np.array([delta_phi, delta_theta, 0]);
+        euler = Xref[r_slice_euler] + delta_euler
+        qref = pal.quat_of_euler(euler)
+        
+        #zc, qc = Yc[0], Yc[1:]
+        zc = Xref[r_z]
+        Uz = self.z_ctl.run(X, zc)
+        Upqr = self.att_ctl.run(X, qref)
+        U = np.dot(self.H, np.hstack((Uz, Upqr)))
+        #pdb.set_trace()
+        return U  
+
+        
 
 #
 # Differential Flatness
@@ -170,7 +269,7 @@ class DiffFlatness:
     def state_and_cmd_of_flat_output(self, Y, P):
         #pdb.set_trace()
         wind = np.zeros(3)
-        cd_ov_m = 0.2/P.m #param[prm_Cd]/param[prm_mass]
+        cd_ov_m = P.Cd/P.m #param[prm_Cd]/param[prm_mass]
         a0 = np.array([
             Y[_x, 2] + cd_ov_m*(Y[_x, 1] - wind[_x]),
             Y[_y, 2] + cd_ov_m*(Y[_y, 1] - wind[_y]),

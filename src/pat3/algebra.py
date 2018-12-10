@@ -51,6 +51,12 @@ v_size = 3
 def q_ixyz_to_xyzw(qixyz): return np.array([qixyz[1], qixyz[2], qixyz[3], qixyz[0]])
 def q_xyzw_to_ixyz(qxyzw): return np.array([qxyzw[3], qxyzw[0], qxyzw[1], qxyzw[2]])
 
+def T_of_t_eu(pos, euler):
+    T = np.eye(4)
+    T[:3, :3] = rmat_of_euler(euler)
+    T[:3,3] = pos
+    return T
+
 def rmat_of_quat(q):
     sqrt2 = math.sqrt(2)
     _a, _b, _c, _d = sqrt2*q

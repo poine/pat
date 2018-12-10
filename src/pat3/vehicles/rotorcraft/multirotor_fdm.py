@@ -90,6 +90,8 @@ class Param():
         self.rotor_dir = ( -1., 1., -1., 1. )
         # torque over thrust coefficient
         self.k = 0.1
+        # drag - needs love
+        self.Cd = 0.
         # precompute
         self.invJ = np.linalg.inv(self.J)
         

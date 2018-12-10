@@ -13,6 +13,7 @@ class Agent:
     def __init__(self, traj, time_factor=1.):
         self.time_factor = time_factor
         self.traj = traj
+        self.tf_pub = pru.TransformPublisher()
         self.pose_pub = pru.PoseArrayPublisher()
         self.poles_pub = pru.TrackPublisher()
         self.traj_pub = pru.TrajectoryPublisher(self.traj)
@@ -30,6 +31,7 @@ class Agent:
         T_w2b[:3,:3] = pal.rmat_of_quat(Xc[fdm.sv_slice_quat]).T # that is freaking weird....
         T_w2b[:3,3] = Yc[:3,0]
         self.pose_pub.publish([T_w2b])
+        self.tf_pub.publish(now, T_w2b)
         self.poles_pub.publish()
         self.traj_pub.publish()                
     
