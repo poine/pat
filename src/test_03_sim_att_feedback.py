@@ -2,14 +2,15 @@
 import math, numpy as np, matplotlib.pyplot as plt
 import pdb
 
-import pat3.algebra as pal
+import pat3.algebra as pal, pat3.utils as pmu
 import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
 import pat3.vehicles.rotorcraft.multirotor_control as ctl
-import real_time_sim as rts
 
 def main(tf=10., dt=0.005):
     np.set_printoptions(linewidth=500)
-    sim = rts.Sim()
+    _fdm = fdm.FDM()
+    _ctl = ctl.ZAttController(_fdm)
+    sim = pmu.Sim(_fdm, _ctl)
     time = np.arange(0, tf, dt)
     X, U = np.zeros((len(time), fdm.sv_size)), np.zeros((len(time), fdm.iv_size))
     Yc = np.zeros((len(time), ctl.iv_size))

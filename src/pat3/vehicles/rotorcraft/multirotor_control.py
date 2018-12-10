@@ -34,13 +34,6 @@ class StepEulerInput:
         zc, qc = [0], pal.quat_of_euler(eu)
         return np.append(zc, qc)
 
-class StepEulerInput2:
-    def __init__(self, _i, _a=np.deg2rad(1.), p=10, dt=5):
-        self._i, self._a, self._p, self.dt = _i, _a, p, dt
-
-    def get(self, t):
-        pass
-    
 class CstInput:
     def __init__(self, z, eu):
         self.z = z
@@ -66,8 +59,7 @@ class RandomInput:
         return self.Yc
 
 class ZAttController:
-    # z , qi, qx, qy, qw
-    spv_size = 5
+    spv_size = 5  # z , qi, qx, qy, qw
 
     def __init__(self, fdm):
         self.Xe, self.Ue = fdm.trim()
@@ -203,8 +195,9 @@ class TrajRef:
 
 class PosController:
 
-    spv_size = 5
-
+    ref_size = 12
+    spv_size = 5   # obsolete
+    
     def __init__(self, fdm, setpoint):
         self.fdm, self.setpoint = fdm, setpoint
         self.Xe, self.Ue = fdm.trim()
@@ -249,10 +242,11 @@ class PosController:
         
     def get(self, t, X, Yc):
         Xref, Uref, Xrefq = self.setpoint.get(t)
+        self.Xref = Xref  # store that here for now
         pos_ref, euler_ref = Xref[r_slice_pos], Xref[r_slice_euler]
 
-        self.T_w2b_ref = pal.T_of_t_eu(pos_ref, euler_ref)
-        
+        # bug...
+        #self.T_w2b_ref = pal.T_of_t_eu(pos_ref, euler_ref)
         self.T_w2b_ref = np.eye(4)
         self.T_w2b_ref[:3,:3] = pal.rmat_of_quat(Xrefq[fdm.sv_slice_quat]).T # that is freaking weird....
         self.T_w2b_ref[:3,3] = Xrefq[fdm.sv_slice_pos]
@@ -271,7 +265,36 @@ class PosController:
         #pdb.set_trace()
         return U  
 
-        
+
+    def plot(self, time, U, Xref, figure=None):
+        if figure is None: figure = plt.gcf()
+        ax = plt.subplot(5,3,1)
+        plt.plot(time, Xref[:, r_x], label='ref')
+        ax = plt.subplot(5,3,2)
+        plt.plot(time, Xref[:, r_y], label='ref')
+        ax = plt.subplot(5,3,3)
+        plt.plot(time, Xref[:, r_z], label='ref')
+        ax = plt.subplot(5,3,4)
+        plt.plot(time, Xref[:, r_xd], label='ref')
+        ax = plt.subplot(5,3,5)
+        plt.plot(time, Xref[:, r_yd], label='ref')
+        ax = plt.subplot(5,3,6)
+        plt.plot(time, Xref[:, r_zd], label='ref')
+        ax = plt.subplot(5,3,7)
+        plt.plot(time, np.rad2deg(Xref[:, r_phi]), label='ref')
+        ax = plt.subplot(5,3,8)
+        plt.plot(time, np.rad2deg(Xref[:, r_theta]), label='ref')
+        ax = plt.subplot(5,3,9)
+        plt.plot(time, np.rad2deg(Xref[:, r_psi]), label='ref')
+        ax = plt.subplot(5,3,10)
+        plt.plot(time, np.rad2deg(Xref[:, r_p]), label='ref')
+        ax = plt.subplot(5,3,11)
+        plt.plot(time, np.rad2deg(Xref[:, r_q]), label='ref')
+        ax = plt.subplot(5,3,12)
+        plt.plot(time, np.rad2deg(Xref[:, r_r]), label='ref')
+        return figure
+
+    
 
 #
 # Differential Flatness

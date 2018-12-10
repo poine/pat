@@ -20,8 +20,8 @@ class Agent:
           self.traj_pub = None
       else:
           #_traj = pmt.Circle([0, 0, -0.5], r=1.5, v=2.)
-          _traj =  pmt.FigureOfHeight(v=1.)
-          #_traj = pmt.Oval(l=1, r=1, v=1.)
+          _traj =  pmt.FigureOfHeight(v=1.5)
+          #_traj = pmt.Oval(l=1, r=1, v=2.)
           self.traj_pub = pru.TrajectoryPublisher(_traj)
           _ctl_in = ctl.TrajRef(_traj, _fdm)
 
@@ -35,11 +35,12 @@ class Agent:
         self.sim.run(now.to_sec())
         self.tf_pub.publish(now, self.sim.fdm.T_w2b)
         self.pose_pub.publish([self.sim.fdm.T_w2b, self.sim.ctl.T_w2b_ref])
-        #if self.traj_pub is not None: self.traj_pub.publish() 
+        if self.traj_pub is not None: self.traj_pub.publish() 
         
     def run(self):
         rate = rospy.Rate(20.)
-        self.sim.reset(rospy.Time.now().to_sec())
+        t0 = rospy.Time.now().to_sec()
+        self.sim.reset(t0, self.sim.ctl.setpoint.get(t0)[2])
         try:
             while not rospy.is_shutdown():
                 self.periodic()

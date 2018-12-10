@@ -46,10 +46,10 @@ iv_size = 4
 
 class FDM:
     ''' An object encapsulating the dynamic model of the multirotor '''
-    def __init__(self, dt=0.01):
+    def __init__(self, dt=0.005):
         self.dt = dt
         self.P = Param()
-        self.X = np.zeros((sv_size))
+        self.t, self.X = 0., np.zeros((sv_size))
         # byproducts
         self.T_w2b = np.eye(4)  # world (ned) to body (frd) homogeneous transform
         
@@ -61,11 +61,14 @@ class FDM:
         self.update_byproducts()
         return self.X
     
-    def run(self, t, U):
-        while t - self.t > 1e-6:
-            dt = min(self.dt, t-self.t)
+    def run(self, tf, U):
+        remaining_to_tf = tf - self.t
+        while remaining_to_tf > 0:
+            dt = min(self.dt, remaining_to_tf)
+            #print(' integrate fdm from {} to {}'.format(self.t, self.t+dt))
             self.X = disc_dyn(self.X, self.t, U, dt, self.P)
             self.t += dt
+            remaining_to_tf = tf - self.t
         self.update_byproducts()
         return self.X
         
