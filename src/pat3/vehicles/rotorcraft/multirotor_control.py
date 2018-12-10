@@ -178,10 +178,12 @@ class PosStep:
         pos_ref =  self.p1 if math.fmod(t, self.p) > self.p/2 else self.p2 
         vel_ref   = [0, 0, 0]
         euler_ref = [np.deg2rad(0), np.deg2rad(0), np.deg2rad(0)]
+        q_ref = [1, 0, 0, 0]
         rvel_ref  = [0, 0, 0]
         Xref = pos_ref + vel_ref + euler_ref + rvel_ref
+        Xrefq = pos_ref + vel_ref + q_ref + rvel_ref
         Uref = np.array([9.81, 0, 0, 0]); 
-        return Xref, Uref
+        return Xref, Uref, Xrefq
 
 
 class TrajRef:
@@ -191,9 +193,14 @@ class TrajRef:
         
     def get(self, t):
         Yc = self.traj.get(t)
-        Xc, Uc = self.df.state_and_cmd_of_flat_output(Yc, self.fdm.P)
-        return Xc, Uc
-    
+        Xrefq, Uref = self.df.state_and_cmd_of_flat_output(Yc, self.fdm.P)
+        Xref = np.concatenate((Xrefq[fdm.sv_slice_pos], Xrefq[fdm.sv_slice_vel],
+                               pal.euler_of_quat(Xrefq[fdm.sv_slice_quat]), Xrefq[fdm.sv_slice_rvel]))
+        #pdb.set_trace()
+        return Xref, Uref, Xrefq
+
+
+
 class PosController:
 
     spv_size = 5
@@ -208,7 +215,6 @@ class PosController:
                            [0.25,  1, -1, -1],
                            [0.25,  1,  1,  1]])
         self.invH = np.linalg.inv(self.H)
-        #self.input = PosStep()
 
     def outerloop(self, X, Xref, Uref):
         omega = np.array([np.deg2rad(120), np.deg2rad(120), np.deg2rad(120)])
@@ -229,7 +235,8 @@ class PosController:
         
         delta_p =  X[fdm.sv_slice_pos] - Xref[fdm.sv_slice_pos] # Warning Xref wrongly indexed
         delta_v =  X[fdm.sv_slice_vel] - Xref[fdm.sv_slice_vel]
-        dpsi = euler[pal.e_psi] - Xref[r_psi]
+        dpsi = pal.norm_mpi_pi(euler[pal.e_psi] - Xref[r_psi])
+
         P = self.fdm.P
         F = np.array([P.Cd*delta_v[0] + ut*(cph*sth*sps+sph*cps)*dpsi,
                       P.Cd*delta_v[1] + ut*(cph*sth*cps+sph*sps)*dpsi,
@@ -241,9 +248,15 @@ class PosController:
 
         
     def get(self, t, X, Yc):
-        Xref, Uref = self.setpoint.get(t)
+        Xref, Uref, Xrefq = self.setpoint.get(t)
         pos_ref, euler_ref = Xref[r_slice_pos], Xref[r_slice_euler]
+
         self.T_w2b_ref = pal.T_of_t_eu(pos_ref, euler_ref)
+        
+        self.T_w2b_ref = np.eye(4)
+        self.T_w2b_ref[:3,:3] = pal.rmat_of_quat(Xrefq[fdm.sv_slice_quat]).T # that is freaking weird....
+        self.T_w2b_ref[:3,3] = Xrefq[fdm.sv_slice_pos]
+        
         delta_ut, delta_phi, delta_theta = self.outerloop(X, Xref, Uref)
         #print(delta_ut, delta_phi, delta_theta)
         delta_euler = np.array([delta_phi, delta_theta, 0]);

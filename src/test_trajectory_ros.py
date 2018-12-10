@@ -57,7 +57,7 @@ def main():
         traj = pmt.Circle(c=[0, 0, 1], r=1., v=4., alpha0=0., dalpha=2*np.pi, zt=pmt.SinOne(a=1.5, om=om))
     #traj = pmt.Circle(c=[0, 0, -1], r=1., v=4., alpha0=0., dalpha=2*np.pi)
     #traj = pmt.Circle(c=[0, 0, -1], r=1., v=4., alpha0=0., dalpha=2*np.pi, psit=pmt.CstOne(0))
-    traj =  pmt.FigureOfHeight(v=4.)
+    traj =  pmt.FigureOfHeight(v=1.)
     Agent(traj, time_factor=0.5).run()
     
 if __name__ == "__main__":

@@ -48,6 +48,14 @@ v_y    = 1
 v_z    = 2
 v_size = 3
 
+
+def norm_mpi_pi(a):
+    while a < -np.pi:
+        a += 2*np.pi
+    while a > np.pi:
+        a -= 2*np.pi
+    return a
+
 def q_ixyz_to_xyzw(qixyz): return np.array([qixyz[1], qixyz[2], qixyz[3], qixyz[0]])
 def q_xyzw_to_ixyz(qxyzw): return np.array([qxyzw[3], qxyzw[0], qxyzw[1], qxyzw[2]])
 
