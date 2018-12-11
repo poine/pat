@@ -154,7 +154,7 @@ class DoubleOval(CompositeTraj):
         CompositeTraj.__init__(self, steps)
         
         
-class FigureOfHeight(CompositeTraj):
+class FigureOfEight(CompositeTraj):
     def __init__(self, r=1., v=2., z=-0.5):
         c1, c2 = np.array([r, 0, z]), np.array([-r, 0, z])
         steps = [Circle(c1,  r,  v, -np.pi, 2*np.pi),
@@ -207,3 +207,9 @@ def plot3d(time, Yc, figure=None, window_title="Flat Output Trajectory"):
     ax.set_ylim(points[:,0, _y].min(), points[:,0, _y].max())
     ax.set_aspect('equal'); plt.title('2D')
     
+
+
+
+
+class TrajFactory:
+    traj1 = Circle([0, 0, 0], 1, v=4.)

@@ -30,5 +30,5 @@ def main(traj, dt=0.005):
 if __name__ == "__main__":
     np.set_printoptions(linewidth=500)
     #_traj =  pmt.Circle(v=1.)
-    _traj =  pmt.FigureOfHeight(v=1.)
+    _traj =  pmt.FigureOfEight(v=1.)
     main(_traj)
