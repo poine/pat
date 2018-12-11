@@ -64,12 +64,12 @@ class MarkerArrayPublisher:
 
 class PoseArrayPublisher(MarkerArrayPublisher):
     def __init__(self):
-        MarkerArrayPublisher.__init__(self, '/pat/vehicle_marker',  ["package://smocap/meshes/quad2.dae"])
+        MarkerArrayPublisher.__init__(self, '/pat/vehicle_marker',  ["package://ros_pat/media/quad.dae"])
 
 
 class QuadAndRefPublisher(MarkerArrayPublisher):
     def __init__(self):
-       meshes = ["package://smocap/meshes/quad2.dae", "package://smocap/meshes/quad2.dae"]
+       meshes = ["package://ros_pat/media/quad.dae", "package://ros_pat/media/quad.dae"]
        colors = [[0.2, 1., 0.2, 0.75], [0.7, 0.7, 0.7, 0.5]]
        MarkerArrayPublisher.__init__(self, '/pat/vehicle_marker',  meshes, colors)
 
@@ -79,7 +79,7 @@ class TrackPublisher(MarkerArrayPublisher):
         self.poses = [np.eye(4), np.eye(4)]
         self.poses[0][0, 3] = -1.
         self.poses[1][0, 3] =  1.
-        meshes = ["package://smocap/meshes/fpv_pole.dae", "package://smocap/meshes/fpv_pole.dae"]
+        meshes = ["package://smocap/meshes/fpv_pole.dae", "package://ros_pat/media/fpv_pole.dae"]
         colors = [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]]
         MarkerArrayPublisher.__init__(self, '/pat/track_poles', meshes, colors)
 

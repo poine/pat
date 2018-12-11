@@ -20,7 +20,7 @@ class Agent:
           self.traj_pub = None
       else:
           #_traj = pmt.Circle([0, 0, -0.5], r=1.5, v=2.)
-          _traj =  pmt.FigureOfHeight(v=1.5)
+          _traj =  pmt.FigureOfHeight(v=1.)
           #_traj = pmt.Oval(l=1, r=1, v=2.)
           self.traj_pub = pru.TrajectoryPublisher(_traj)
           _ctl_in = ctl.TrajRef(_traj, _fdm)
