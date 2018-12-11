@@ -92,7 +92,9 @@ class Line:
         Yc[1,:3] =           self.un*self.v
         Yc[0,3] = self.psi
         return Yc.T
-        
+
+
+
 class Ellipse:
     pass
 
@@ -207,9 +209,3 @@ def plot3d(time, Yc, figure=None, window_title="Flat Output Trajectory"):
     ax.set_ylim(points[:,0, _y].min(), points[:,0, _y].max())
     ax.set_aspect('equal'); plt.title('2D')
     
-
-
-
-
-class TrajFactory:
-    traj1 = Circle([0, 0, 0], 1, v=4.)

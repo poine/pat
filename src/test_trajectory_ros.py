@@ -2,7 +2,8 @@
 import numpy as np
 import rospy
 
-import pat3.vehicles.rotorcraft.multirotor_trajectory as pmt
+import pat3.vehicles.rotorcraft.multirotor_trajectory_factory as pmtf
+#import pat3.vehicles.rotorcraft.multirotor_trajectory as pmt
 import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
 import pat3.vehicles.rotorcraft.multirotor_control as ctl
 import pat3.ros_utils as pru
@@ -48,16 +49,8 @@ class Agent:
 
 def main():
     rospy.init_node('test_trajectory')
-    #traj = pmt.Circle([0, 0, 0], 1, v=4.)
-    #traj = pmt.Line([0, 0, 0], [10, 0, 0], 0.1)
-    #traj = pmt.Oval(l=1, r=1, v=5)
-    #traj = pmt.DoubleOval(l=2, r=1, v=5)
-    if 0:
-        r, v = 1., 4.; om = v/r
-        traj = pmt.Circle(c=[0, 0, 1], r=1., v=4., alpha0=0., dalpha=2*np.pi, zt=pmt.SinOne(a=1.5, om=om))
-    #traj = pmt.Circle(c=[0, 0, -1], r=1., v=4., alpha0=0., dalpha=2*np.pi)
-    #traj = pmt.Circle(c=[0, 0, -1], r=1., v=4., alpha0=0., dalpha=2*np.pi, psit=pmt.CstOne(0))
-    traj =  pmt.FigureOfEight(v=1.)
+    traj_name = 'circle4'
+    traj, desc = pmtf.get(traj_name)
     Agent(traj, time_factor=0.5).run()
     
 if __name__ == "__main__":
