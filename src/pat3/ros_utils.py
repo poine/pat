@@ -79,7 +79,7 @@ class TrackPublisher(MarkerArrayPublisher):
         self.poses = [np.eye(4), np.eye(4)]
         self.poses[0][0, 3] = -1.
         self.poses[1][0, 3] =  1.
-        meshes = ["package://smocap/meshes/fpv_pole.dae", "package://ros_pat/media/fpv_pole.dae"]
+        meshes = ["package://ros_pat/media/fpv_flag.dae", "package://ros_pat/media/fpv_flag.dae"]
         colors = [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]]
         MarkerArrayPublisher.__init__(self, '/pat/track_poles', meshes, colors)
 
