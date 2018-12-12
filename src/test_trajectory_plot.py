@@ -23,30 +23,33 @@ def main():
         for n in pmtf.list():
             print(' {}'.format(n))
         return
-    traj, desc = pmtf.get(args.traj)
-    print('loading trajectory {} ({})'.format(args.traj, desc))
 
-    t0, t1, dt = 0., args.repeat*traj.duration, 0.01
-    time = np.arange(t0, t1, dt)
-    Yc = np.array([traj.get(t) for t in time])
+    try:
+        print('loading trajectory: {}'.format(args.traj))
+        traj, desc = pmtf.get(args.traj)
+        print('  description: {}'.format(desc))
+        
+        t0, t1, dt = 0., args.repeat*traj.duration, 0.01
+        time = np.arange(t0, t1, dt)
+        Yc = np.array([traj.get(t) for t in time])
 
-    if 1:
-        _fdm = fdm.FDM()
-        df = ctl.DiffFlatness()
-        Xc, Uc = [], []
-        for Yci in Yc:
-            Xci, Uci = df.state_and_cmd_of_flat_output(Yci, _fdm.P)
-            Xc.append(Xci); Uc.append(Uci)
-        Xc = np.array(Xc)
-        Uc = np.array(Uc)
-        _fdm.plot(time, Xc, Uc)
-        #pdb.set_trace()
+        if 1:
+            _fdm = fdm.FDM()
+            df = ctl.DiffFlatness()
+            Xc, Uc = [], []
+            for Yci in Yc:
+                Xci, Uci = df.state_and_cmd_of_flat_output(Yci, _fdm.P)
+                Xc.append(Xci); Uc.append(Uci)
+            Xc = np.array(Xc)
+            Uc = np.array(Uc)
+            _fdm.plot(time, Xc, Uc)
+            #pdb.set_trace()
 
-    pmt.plot(time, Yc)
-    pmt.plot3d(time, Yc)
-    plt.show()
-
-
+        pmt.plot(time, Yc)
+        pmt.plot3d(time, Yc)
+        plt.show()
+    except KeyError: 
+        print('unknown trajectory {}'.format(args.traj))
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

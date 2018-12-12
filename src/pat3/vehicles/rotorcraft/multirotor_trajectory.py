@@ -10,7 +10,7 @@ import pdb
 '''
 import pat3.plot_utils as ppu
 
-_x, _y, _z, _psi = range(4)
+_x, _y, _z, _psi, _ylen = range(5)
 
 class CstOne:
     def __init__(self, c=-1.):
@@ -38,8 +38,67 @@ class SinOne:
                           -self.om**3*aca,
                            self.om**4*asa   ])
 
+#
+# 
+#
+def arr(k,n):
+    '''arangements a(k,n) = n!/k!'''
+    a,i = 1,n
+    while i>n-k:
+        a *= i
+        i -= 1
+    return a
 
-    
+class PolynomialOne:
+    def __init__(self, Y0, Y1, duration):
+        _der = len(Y0)    # number of time derivatives
+        _order = 2*_der   # we need twice as much coefficients
+        self._der = _der
+        # compute polynomial coefficients for time derivative zeros
+        self.coefs = np.zeros((_der, _order))
+        M1 = np.zeros((_der, _der))
+        for i in range(_der):
+            M1[i,i] = arr(i,i)
+        self.coefs[0, 0:_der] = np.dot(np.linalg.inv(M1), Y0)
+        M3 = np.zeros((_der, _der))
+        for i in range(_der):
+            for j in range(i, _der):
+                M3[i,j] = arr(i,j) * duration**(j-i)
+        M4 = np.zeros((_der, _der))
+        for i in range(_der):
+            for j in range(_der):
+                M4[i,j] = arr(i, j+_der) * duration**(j-i+_der)
+        M3a0k = np.dot(M3, self.coefs[0, 0:_der])
+        self.coefs[0, _der:_order] = np.dot(np.linalg.inv(M4), Y1 - M3a0k)
+        # fill in coefficients for the subsequent time derivatives  
+        for d in range(1,_der):
+            for pow in range(0,2*_der-d):
+                self.coefs[d, pow] = arr(d, pow+d)*self.coefs[0, pow+d]
+
+        #pdb.set_trace()
+
+    def get(self, t):
+        Y = np.zeros(self._der)
+        for d in range(0, self._der):
+            v = self.coefs[d,9]
+            for j in [8, 7, 6, 5, 4, 3, 2, 1, 0]:
+                v *= t
+                v += self.coefs[d,j]
+                Y[d] = v
+        return Y
+        
+
+class Foo:
+    def __init__(self):
+        x0, x1, = [0, 0, 0, 0, 0], [1, 0, 0, 0, 0]
+        self.duration = 10.
+        self._p = PolynomialOne(x0, x1, self.duration)
+
+    def get(self, t):
+        Yc = np.zeros((_ylen, 5))
+        Yc[0,:] = self._p.get(t)
+        return Yc
+        
 class Circle:
 
     def __init__(self, c=[0, 0, 0], r=1., v=2., alpha0=0, dalpha=2*np.pi, zt=None, psit=None):

@@ -50,12 +50,12 @@ class RandomInput:
     def get(self, t):
         if self.next_pulse_t is None: self.next_pulse_t = t
         if t >= self.next_pulse_t:
+            self.next_pulse_t += self.pulse_len
             zc = [np.random.uniform(low=-1, high=1.)]
             phic, thetac = np.random.uniform(low=-np.deg2rad(0.5), high=np.deg2rad(0.5), size=2)
             psic = np.random.uniform(low=-np.pi, high=np.pi)
             qc = pal.quat_of_euler([phic, thetac, psic])
             self.Yc = np.append(zc, qc)
-            self.next_pulse_t += self.pulse_len
         return self.Yc
 
 class ZAttController:
@@ -142,16 +142,6 @@ class AttCtl:
         Upqr = J * ( racc  + tmp )
         return Upqr
 
-
-        
-# class AttRef:
-#     def __init__(self):
-#         self.q = pal.quat_null()
-
-
-#     def run(self, pqr_sp, dt):
-#         self.q = pal.quat_integrate(self.q, pqr_sp, dt)
-#         self.om = pqr_sp
 
 i_ut, i_up, i_uq, i_ur = range(4)
 r_x, r_y, r_z, r_xd, r_yd, r_zd, r_phi, r_theta, r_psi, r_p, r_q, r_r = range(12)

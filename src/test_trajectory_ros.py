@@ -9,6 +9,11 @@ import pat3.vehicles.rotorcraft.multirotor_control as ctl
 import pat3.ros_utils as pru
 import pat3.algebra as pal
 
+
+'''
+This is a ROS agent that sends messages for displaying a trajectory in rviz
+'''
+
 class Agent:
 
     def __init__(self, traj, time_factor=1.):
@@ -49,10 +54,18 @@ class Agent:
 
 def main():
     rospy.init_node('test_trajectory')
-    traj_name = 'circle4'
-    traj, desc = pmtf.get(traj_name)
-    Agent(traj, time_factor=0.5).run()
-    
+    traj_name = rospy.get_param('~traj_name', 'circle4')
+    if rospy.get_param('~list_available', False):
+        rospy.loginfo('  available trajectories\n{}'.format(pmtf.list()))
+    try:
+        rospy.loginfo('  Loading trajectory: {}'.format(traj_name))
+        traj, desc = pmtf.get(traj_name)
+        rospy.loginfo('  Description: {}'.format(desc))
+        Agent(traj, time_factor=0.5).run()
+    except KeyError:
+        rospy.loginfo('  Unkwown trajectory: {}'.format(traj_name))
+        rospy.loginfo( '  available trajectories\n{}'.format(pmtf.list()))
+        
 if __name__ == "__main__":
     np.set_printoptions(linewidth=500)
     main()
