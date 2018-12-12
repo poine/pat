@@ -91,7 +91,7 @@ class PolynomialOne:
 class Foo:
     def __init__(self):
         x0, x1, = [0, 0, 0, 0, 0], [1, 0, 0, 0, 0]
-        self.duration = 10.
+        self.duration = 1.
         self._p = PolynomialOne(x0, x1, self.duration)
 
     def get(self, t):

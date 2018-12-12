@@ -13,12 +13,12 @@ def parse_command_line():
     parser = argparse.ArgumentParser(description='Plot a trajectory.')
     parser.add_argument('--traj', help='the name of the trajectory', default=None)
     parser.add_argument('--repeat', help='how many times to repeat the trajectory', default=1.)
-    parser.add_argument('--list_traj', help='list all known trajectories', action='store_true', default=False)
+    parser.add_argument('--list', help='list all known trajectories', action='store_true', default=False)
     return parser.parse_args()
 
 def main():
     args = parse_command_line()
-    if args.list_traj:
+    if args.list:
         print('available trajectories:')
         for n in pmtf.list():
             print(' {}'.format(n))

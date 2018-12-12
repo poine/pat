@@ -8,44 +8,36 @@ class Traj1(pmt.Line):
     def __init__(self): pmt.Line.__init__(self, [0, 0, 0], [1, 1, -0.5], v=0.1)
 
 class Traj2(pmt.Circle):
-    name = 'circle1'
-    desc = 'circle r=1 v=1'
+    name, desc = 'circle1', 'circle r=1 v=1'
     def __init__(self): pmt.Circle.__init__(self, [0, 0, -0.5], r=1., v=1.)
 
 class Traj3(pmt.Circle):
-    name = 'circle2'
-    desc = 'circle r=1 v=4'
+    name,desc = 'circle2', 'circle r=1 v=4'
     def __init__(self): pmt.Circle.__init__(self, [0, 0, -0.5], r=1., v=4.)
 
 class Traj4(pmt.Circle):
-    name = 'circle3'
-    desc = 'circle r=2 v=4'
+    name, desc = 'circle3', 'circle r=2 v=4'
     def __init__(self): pmt.Circle.__init__(self, [0, 0, -0.5], r=2., v=1.)
 
 class Traj5(pmt.Circle):
-    name = 'circle3'
-    desc = 'circle r=2 v=4'
+    name, desc = 'circle3', 'circle r=2 v=4'
     def __init__(self):
         r, v = 1., 4.; om = v/r
         pmt.Circle.__init__(self, c=[0, 0, -0.5], r=1., v=4., alpha0=0., dalpha=2*np.pi, psit=pmt.SinOne(om=om))
 
 class Traj6(pmt.Oval):
-    name = 'oval1'
-    desc = 'oval'
+    name, desc = 'oval1', 'oval'
     def __init__(self): pmt.Oval.__init__(self, l=2, r=1, v=4)
 
 class Traj7(pmt.DoubleOval):
-    name = 'doval1'
-    desc = 'double oval'
+    name, desc = 'doval1', 'double oval'
     def __init__(self): return pmt.DoubleOval.__init__(self, l=2, r=1, v=4)
     
 class Traj8(pmt.FigureOfEight):
-    name = 'foe1'
-    desc = 'figure of eight'
+    name, desc = 'foe1', 'figure of eight'
 
 class Traj9(pmt.Foo):
-    name = 'foo'
-    desc = 'foo'
+    name, desc = 'foo', 'foo'
 
     
 
