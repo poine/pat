@@ -44,9 +44,9 @@ source ~/catkin_ws/src/devel/setup.bash
 ### Run a real time simulation
  * run the simulation
 ```
- ~/pat/src/real_time_sim_guidance.py
+rosrun ros_pat sim_guidance.py _traj_name:=oval_with_intro
 ```
-  * draw the vehicle
+  * view the simulation in rviz
 ```
 rviz -d ~/pat/ros_pat/rviz/multirotor.rviz
 ```
@@ -59,3 +59,14 @@ rviz -d ~/pat/ros_pat/rviz/multirotor.rviz
 
 ### View a trajectory
 
+```
+rosrun ros_pat display_trajectory.py _traj_name:=oval_with_intro
+```
+
+```
+rosrun ros_pat display_track.py
+```
+
+```
+./src/plot_trajectory.py --traj smooth_back_and_forth
+```

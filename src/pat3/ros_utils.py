@@ -1,6 +1,6 @@
 import numpy as np
-import rospy, tf2_ros, tf, geometry_msgs.msg, sensor_msgs.msg, visualization_msgs.msg
-
+import rospy, tf2_ros, tf, geometry_msgs.msg, sensor_msgs.msg, visualization_msgs.msg, yaml
+import pat3.algebra as pal
 import pdb
 
 def _position_and_orientation_from_T(p, q, T):
@@ -75,12 +75,16 @@ class QuadAndRefPublisher(MarkerArrayPublisher):
 
 
 class TrackPublisher(MarkerArrayPublisher):
-    def __init__(self):
-        self.poses = [np.eye(4), np.eye(4)]
-        self.poses[0][0, 3] = -1.
-        self.poses[1][0, 3] =  1.
-        meshes = ["package://ros_pat/media/fpv_flag.dae", "package://ros_pat/media/fpv_flag.dae"]
-        colors = [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]]
+    def __init__(self, path):
+        with open(path, 'r') as stream:
+            d = yaml.load(stream)
+        self.poses, colors, meshes = [], [], []
+        for name, obj in d.iteritems():
+            pos = np.array(obj['position'])
+            ori = np.array(obj['orientation'])
+            self.poses.append(pal.T_of_t_eu(pos, ori))
+            meshes.append(obj['mesh'])
+            colors.append(obj['color'])
         MarkerArrayPublisher.__init__(self, '/pat/track_poles', meshes, colors)
 
     def publish(self):
@@ -112,7 +116,7 @@ class TrajectoryPublisher:
             p = geometry_msgs.msg.Point()
             p.x, p.y, p.z = traj.get(t)[:3, 0]
             marker.points.append(p)
-        marker.points.append(marker.points[0])
+        #marker.points.append(marker.points[0])
 
         
     def publish(self):

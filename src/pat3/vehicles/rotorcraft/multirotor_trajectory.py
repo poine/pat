@@ -8,10 +8,15 @@ import pdb
   Trajectories
   Y = [x, y, z, psi] plus their 4 time derivatives
 '''
-import pat3.plot_utils as ppu
+import pat3.plot_utils as ppu, pat3.algebra as pal
 
 _x, _y, _z, _psi, _ylen = range(5)
+# we consider 4 time derivatives, this should be a parameter...
+_nder = 5
 
+#
+# Scalar trajectories
+# 
 class CstOne:
     def __init__(self, c=-1.):
         self.c = c
@@ -38,9 +43,6 @@ class SinOne:
                           -self.om**3*aca,
                            self.om**4*asa   ])
 
-#
-# 
-#
 def arr(k,n):
     '''arangements a(k,n) = n!/k!'''
     a,i = 1,n
@@ -54,6 +56,7 @@ class PolynomialOne:
         _der = len(Y0)    # number of time derivatives
         _order = 2*_der   # we need twice as much coefficients
         self._der = _der
+        self._order = _order
         # compute polynomial coefficients for time derivative zeros
         self.coefs = np.zeros((_der, _order))
         M1 = np.zeros((_der, _der))
@@ -74,31 +77,38 @@ class PolynomialOne:
         for d in range(1,_der):
             for pow in range(0,2*_der-d):
                 self.coefs[d, pow] = arr(d, pow+d)*self.coefs[0, pow+d]
-
-        #pdb.set_trace()
-
+                
     def get(self, t):
+        # Horner method for computing polynomial value
         Y = np.zeros(self._der)
         for d in range(0, self._der):
-            v = self.coefs[d,9]
-            for j in [8, 7, 6, 5, 4, 3, 2, 1, 0]:
+            v = self.coefs[d,-1] 
+            for j in range(self._order-2, -1, -1):
                 v *= t
                 v += self.coefs[d,j]
                 Y[d] = v
         return Y
         
 
-class Foo:
-    def __init__(self):
-        x0, x1, = [0, 0, 0, 0, 0], [1, 0, 0, 0, 0]
-        self.duration = 1.
-        self._p = PolynomialOne(x0, x1, self.duration)
 
-    def get(self, t):
-        Yc = np.zeros((_ylen, 5))
-        Yc[0,:] = self._p.get(t)
-        return Yc
+#
+# Solid Trajectories
+# 
+
+    
+class Cst:
+    def __init__(self, Y00, duration=1.):
+        self.duration = duration
+        self.Yc = np.zeros((_ylen, _nder))
+        self.Yc[:,0] = Y00
         
+    def reset(self, t0): pass
+        
+    def get(self, t):
+        return self.Yc
+        
+
+
 class Circle:
 
     def __init__(self, c=[0, 0, 0], r=1., v=2., alpha0=0, dalpha=2*np.pi, zt=None, psit=None):
@@ -128,7 +138,8 @@ class Circle:
         ## z
         Yc[:,_z] = self.zt.get(dt)
         ## psi
-        Yc[:,_psi] = self.psit.get(dt)
+        Yc[:,_psi] =  self.psit.get(dt)
+        Yc[0,_psi]  = pal.norm_mpi_pi(Yc[0,_psi])
         return Yc.T
 
 
@@ -157,6 +168,33 @@ class Line:
 class Ellipse:
     pass
 
+
+class SmoothLine:
+    def __init__(self, Y00=[0, 0, 0, 0], Y10=[1, 0, 0, 0], duration=1.):
+        self.duration = duration
+        Y0 = np.zeros((_ylen, _nder))# [_x, _y, _z, _psi, _ylen]
+        if len(np.asarray(Y00).shape) == 1: # we only got zero order derivatives
+            Y0[:,0] = Y00
+        else:
+            Y0 = Y00
+        Y1 = np.zeros((_ylen, _nder))
+        if len(np.asarray(Y10).shape) == 1: # we only got zero order derivatives
+            Y1[:,0] = Y10
+        else:
+            Y1 = Y10
+        if Y1[_psi,0]-Y0[_psi,0] > np.pi: Y1[_psi,0]-=2*np.pi
+        if Y1[_psi,0]-Y0[_psi,0] < -np.pi: Y1[_psi,0]+=2*np.pi
+        
+        self._polys = [PolynomialOne(Y0[i], Y1[i], self.duration) for i in range(_ylen)]
+        self.t0 = 0
+        
+    def reset(self, t0):
+        self.t0 = t0
+        
+    def get(self, t):
+        Yc = np.array([p.get(t-self.t0) for p in self._polys])
+        return Yc
+        
     
     
 class CompositeTraj:
@@ -221,7 +259,29 @@ class FigureOfEight(CompositeTraj):
         steps = [Circle(c1,  r,  v, -np.pi, 2*np.pi),
                  Circle(c2, -r,  v, 0,      2*np.pi) ]
         CompositeTraj.__init__(self, steps)
+          
+class SmoothBackAndForth(CompositeTraj):
+    def __init__(self, x0=[0, 0, 0.5, 0], x1=[1, 0, -0.5, 0], dt_move=2., dt_stay=1.):
+        x0, x1 =[0, 0, 0, 0], [1, 1, -1, np.deg2rad(180)]
+        steps = [SmoothLine(x0, x1, duration=dt_move),
+                 Cst(x1, dt_stay),
+                 SmoothLine(x1, x0, duration=dt_move),
+                 Cst(x0, dt_stay)]
+        CompositeTraj.__init__(self, steps)     
 
+class CircleWithIntro(CompositeTraj):
+    
+    def __init__(self, c=[0, 0, -0.5], r=1., v=3., dt_intro=1.8, dt_stay=0.):
+        eps = np.deg2rad(2)
+        circle = Circle(c,  r,  v, np.pi/2-eps, 2*np.pi+2*eps)
+        Y0 = [0, 0, 0, 0]
+        Y1 = circle.get(0.)
+        Y2 = circle.get(circle.duration)
+        steps = [SmoothLine(Y0, Y1, duration=dt_intro),
+                 circle,
+                 SmoothLine(Y2, Y0, duration=dt_intro),
+                 Cst(Y0, dt_stay)] 
+        CompositeTraj.__init__(self, steps)
         
 
 def plot(time, Yc, figure=None, window_title="Flat Output Trajectory"):

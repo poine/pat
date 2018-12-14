@@ -7,6 +7,7 @@ import pat3.algebra as pal, pat3.utils as pmu
 import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
 import pat3.vehicles.rotorcraft.multirotor_control as ctl
 import pat3.vehicles.rotorcraft.multirotor_trajectory as pmt
+import pat3.vehicles.rotorcraft.multirotor_trajectory_factory as pmtf
 
 def main(traj, dt=0.005):
     _fdm = fdm.FDM()
@@ -30,5 +31,6 @@ def main(traj, dt=0.005):
 if __name__ == "__main__":
     np.set_printoptions(linewidth=500)
     #_traj =  pmt.Circle(v=1.)
-    _traj =  pmt.FigureOfEight(v=1.)
+    #_traj =  pmt.FigureOfEight(v=1.)
+    _traj, _desc = pmtf.get('circle_with_intro_slow')
     main(_traj)

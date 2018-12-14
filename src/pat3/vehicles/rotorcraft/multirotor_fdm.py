@@ -94,7 +94,7 @@ class Param():
         # torque over thrust coefficient
         self.k = 0.1
         # drag - needs love
-        self.Cd = 0.
+        self.Cd = 0.2
         # precompute
         self.invJ = np.linalg.inv(self.J)
         
@@ -103,9 +103,9 @@ class Param():
 
 
 def trim(P):
-  Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
-  Ue = np.ones(iv_size)*P.m*P.g / iv_size
-  return Xe, Ue
+    Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
+    Ue = np.ones(iv_size)*P.m*P.g / iv_size
+    return Xe, Ue
 
 
 
@@ -125,32 +125,37 @@ def solid_cont_dyn(X, F_b, M_b, P):
     
 
 def get_forces_and_moments_body(X, U, P):
-  # Sum of external forces (rotors thrust) in body frame
-  Fb = [0, 0, -np.sum(U)]
-  # Moments of external forces
-  Mb = np.sum([np.cross(_p, [0, 0, -_f]) for _p, _f in zip(P.rotor_pos, U)], axis=0)
-  # Torques
-  Mb[2] += np.sum(P.k*(P.rotor_dir*U))
-  return Fb, Mb
+    # rotors Thrust in body frame
+    Fb = [0, 0, -np.sum(U)]
+    # Drag
+    Dw = -P.Cd*X[sv_slice_vel]
+    R_w2b =  pal.rmat_of_quat(X[sv_slice_quat])
+    Db = np.dot(R_w2b, Dw)
+    
+    # Moments of external forces
+    Mb = np.sum([np.cross(_p, [0, 0, -_f]) for _p, _f in zip(P.rotor_pos, U)], axis=0)
+    # Torques
+    Mb[2] += np.sum(P.k*(P.rotor_dir*U))
+    return Fb+Db, Mb
     
     
 def cont_dyn(X, t, U, P):
-  '''
-  Continuous-time State Space Representation: Xdot = f_param(t, X, U)
-  '''
-  Fb, Mb = get_forces_and_moments_body(X, U, P)
-  Xd = solid_cont_dyn(X, Fb, Mb, P)
-  return Xd
+    '''
+    Continuous-time State Space Representation: Xdot = f_param(t, X, U)
+    '''
+    Fb, Mb = get_forces_and_moments_body(X, U, P)
+    Xd = solid_cont_dyn(X, Fb, Mb, P)
+    return Xd
 
 
 def disc_dyn(Xk, tk, Uk, dt, P):
-  '''
-  Discrete-time State Space Representation: Xk+1 = f_param(Xk, Uk)
-  '''
-  _unused, Xkp1 = scipy.integrate.odeint(cont_dyn, Xk, [tk, tk+dt], args=(Uk, P))
-  #Xkp1 = Xk + cont_dyn(Xk, tk, Uk, P)*dt # first order
-  # normalize quaternion ?
-  return Xkp1
+    '''
+    Discrete-time State Space Representation: Xk+1 = f_param(Xk, Uk)
+    '''
+    _unused, Xkp1 = scipy.integrate.odeint(cont_dyn, Xk, [tk, tk+dt], args=(Uk, P))
+    #Xkp1 = Xk + cont_dyn(Xk, tk, Uk, P)*dt # first order
+    # normalize quaternion ?
+    return Xkp1
 
 
 

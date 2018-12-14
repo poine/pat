@@ -114,6 +114,10 @@ class Zctl:
         Fbz = self.Fez - np.dot(self.K, X-self.Xe) + np.dot(self.H, [zc])
         return Fbz
 
+    def run2(self, X, Xref, Uref):
+        pass
+    
+
 #
 # Attitude controller
 #
@@ -191,7 +195,6 @@ class PosController:
     def __init__(self, fdm, setpoint):
         self.fdm, self.setpoint = fdm, setpoint
         self.Xe, self.Ue = fdm.trim()
-        self.z_ctl = Zctl(self.Ue, self.Xe)
         self.att_ctl = AttCtl(fdm.P)
         self.H = np.array([[0.25, -1,  1, -1],
                            [0.25, -1, -1,  1],
@@ -248,8 +251,7 @@ class PosController:
         qref = pal.quat_of_euler(euler)
         
         #zc, qc = Yc[0], Yc[1:]
-        zc = Xref[r_z]
-        Uz = self.z_ctl.run(X, zc)
+        Uz = Uref[0] + delta_ut
         Upqr = self.att_ctl.run(X, qref)
         U = np.dot(self.H, np.hstack((Uz, Upqr)))
         #pdb.set_trace()

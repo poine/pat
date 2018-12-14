@@ -1,0 +1,37 @@
+gate_1:
+  position: [-1, -1, 0]
+  orientation: [0, 0, 0]
+  mesh: package://ros_pat/media/fpv_gate.dae
+  color: [0.75, 0.75, 0.5, 0.5]
+
+gate_2:
+  position: [1, -1, 0]
+  orientation: [0, 0, 0]
+  mesh: package://ros_pat/media/fpv_gate.dae
+  color: [0.75, 0.75, 0.5, 0.5]
+
+gate_3:
+  position: [1, 1, 0]
+  orientation: [0, 0, 0]
+  mesh: package://ros_pat/media/fpv_gate.dae
+  color: [0.75, 0.75, 0.5, 0.5]
+
+gate_4:
+  position: [-1, 1, 0]
+  orientation: [0, 0, 0]
+  mesh: package://ros_pat/media/fpv_gate.dae
+  color: [0.75, 0.75, 0.5, 0.5]
+
+
+
+#flag_1:
+#   position: [1, 0, 0]
+#   orientation: [0, 0, 0]
+#   mesh: package://ros_pat/media/fpv_flag.dae
+#   color: [0.75, 0.5, 0.5, 0.5]
+
+# flag_2:
+#   position: [-1, 0, 0]
+#   orientation: [0, 0, 0]
+#   mesh: package://ros_pat/media/fpv_flag.dae
+#   color: [0.75, 0.5, 0.5, 0.5]
