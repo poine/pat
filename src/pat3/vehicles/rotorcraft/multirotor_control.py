@@ -143,7 +143,11 @@ class AttCtl:
                         (Jyy-Jxx)/Jzz*X[fdm.sv_p]*X[fdm.sv_q]]);
         # inertia
         J = np.array([Jxx/self.P.l, Jyy/self.P.l, Jzz/self.P.k])
-        Upqr = J * ( racc  + tmp )
+        #Upqr = J * ( racc  + tmp )
+        #pdb.set_trace()
+        Upqr = J*racc
+        #Upqr = np.dot(self.P.J, racc)
+        #Upqr = np.diag(self.P.J)* racc
         return Upqr
 
 
@@ -151,6 +155,7 @@ i_ut, i_up, i_uq, i_ur = range(4)
 r_x, r_y, r_z, r_xd, r_yd, r_zd, r_phi, r_theta, r_psi, r_p, r_q, r_r = range(12)
 r_slice_pos = slice(r_x, r_z+1)
 r_slice_euler = slice(r_phi, r_psi+1)
+r_slice_rvel = slice(r_p, r_r+1)
 #
 # Guidance
 #
@@ -179,11 +184,11 @@ class TrajRef:
         
     def get(self, t):
         Yc = self.traj.get(t)
-        Xrefq, Uref = self.df.state_and_cmd_of_flat_output(Yc, self.fdm.P)
-        Xref = np.concatenate((Xrefq[fdm.sv_slice_pos], Xrefq[fdm.sv_slice_vel],
-                               pal.euler_of_quat(Xrefq[fdm.sv_slice_quat]), Xrefq[fdm.sv_slice_rvel]))
+        Xref_q, Uref, Xrefd_q = self.df.state_and_cmd_of_flat_output(Yc, self.fdm.P)
+        Xref_eu = np.concatenate((Xref_q[fdm.sv_slice_pos], Xref_q[fdm.sv_slice_vel],
+                                  pal.euler_of_quat(Xref_q[fdm.sv_slice_quat]), Xref_q[fdm.sv_slice_rvel]))
         #pdb.set_trace()
-        return Xref, Uref, Xrefq
+        return Xref_eu, Uref, Xref_q, Xrefd_q
 
 
 
@@ -201,6 +206,8 @@ class PosController:
                            [0.25,  1, -1, -1],
                            [0.25,  1,  1,  1]])
         self.invH = np.linalg.inv(self.H)
+        print('ctl: fdm input type {}'.format(fdm.input_type))
+        self.output_type = fdm.input_type
 
     def outerloop(self, X, Xref, Uref):
         omega = np.array([np.deg2rad(120), np.deg2rad(120), np.deg2rad(120)])
@@ -234,7 +241,7 @@ class PosController:
 
         
     def get(self, t, X, Yc):
-        Xref, Uref, Xrefq = self.setpoint.get(t)
+        Xref, Uref, Xrefq, Xrefdq = self.setpoint.get(t)
         self.Xref = Xref  # store that here for now
         pos_ref, euler_ref = Xref[r_slice_pos], Xref[r_slice_euler]
 
@@ -249,12 +256,18 @@ class PosController:
         delta_euler = np.array([delta_phi, delta_theta, 0]);
         euler = Xref[r_slice_euler] + delta_euler
         qref = pal.quat_of_euler(euler)
+        #qref = pal.quat_of_euler(euler_ref)
+        rvel_ref = Xref[r_slice_rvel]
         
-        #zc, qc = Yc[0], Yc[1:]
         Uz = Uref[0] + delta_ut
-        Upqr = self.att_ctl.run(X, qref)
-        U = np.dot(self.H, np.hstack((Uz, Upqr)))
-        #pdb.set_trace()
+        Upqr = Uref[1:] + self.att_ctl.run(X, qref, rvel_ref)
+        self.Uzpqr = np.hstack((Uz, Upqr))
+        if self.output_type == 'multirotor':
+            U = np.dot(self.H, self.Uzpqr)
+        elif self.output_type == 'zpqr':
+            U = self.Uzpqr
+        elif self.output_type == 'solid': # Fb, Mb
+            U = np.array([0, 0, -Uz, Upqr[0], Upqr[1], Upqr[2]])
         return U  
 
 
@@ -370,9 +383,20 @@ class DiffFlatness:
                       p, q, r ])
         Ut = na*P.m
         Jxx, Jyy, Jzz = np.diag(P.J)
-        Up = Jxx/P.l * p1 + (Jzz-Jyy)/P.l*q*r
-        Uq = Jyy/P.l * q1 + (Jxx-Jzz)/P.l*p*r
-        Ur = Jzz/P.k * r1 + (Jyy-Jxx)/P.k*p*q
-        U = np.array([Ut, Up, Uq, Ur])
+        #Up = Jxx/P.l * p1 + (Jzz-Jyy)/P.l*q*r
+        #Uq = Jyy/P.l * q1 + (Jxx-Jzz)/P.l*p*r
+        #Ur = Jzz/P.k * r1 + (Jyy-Jxx)/P.k*p*q
+
+        Up = Jxx*p1 + (Jzz-Jyy)*q*r
+        Uq = Jyy*q1 + (Jxx-Jzz)*p*r
+        Ur = Jzz*r1 + (Jyy-Jxx)*p*q
         
-        return X, U
+        U = np.array([Ut, Up, Uq, Ur])
+
+        qdot = pal.quat_derivative(_q, [p, q, r])
+        Xd = np.array([Y[_x, 1], Y[_y, 1], Y[_z, 1],
+                       Y[_x, 2], Y[_y, 2], Y[_z, 2],
+                       qdot[pal.q_i], qdot[pal.q_x], qdot[pal.q_y], qdot[pal.q_z], 
+                       p1, q1, r1])
+        
+        return X, U, Xd

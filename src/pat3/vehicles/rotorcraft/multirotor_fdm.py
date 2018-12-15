@@ -43,43 +43,6 @@ iv_bl   = 2
 iv_fl   = 3
 iv_size = 4
 
-
-class FDM:
-    ''' An object encapsulating the dynamic model of the multirotor '''
-    def __init__(self, dt=0.005):
-        self.dt = dt
-        self.P = Param()
-        self.t, self.X = 0., np.zeros((sv_size))
-        # byproducts
-        self.T_w2b = np.eye(4)  # world (ned) to body (frd) homogeneous transform
-        
-    def trim(self):
-        return trim(self.P)
-    
-    def reset(self, X0, t0):
-        self.X, self.t = X0, t0
-        self.update_byproducts()
-        return self.X
-    
-    def run(self, tf, U):
-        remaining_to_tf = tf - self.t
-        while remaining_to_tf > 0:
-            dt = min(self.dt, remaining_to_tf)
-            #print(' integrate fdm from {} to {}'.format(self.t, self.t+dt))
-            self.X = disc_dyn(self.X, self.t, U, dt, self.P)
-            self.t += dt
-            remaining_to_tf = tf - self.t
-        self.update_byproducts()
-        return self.X
-        
-    def update_byproducts(self):
-        self.T_w2b[:3,:3] = pal.rmat_of_quat(self.X[sv_slice_quat]).T # that is freaking weird....
-        self.T_w2b[:3,3] = self.X[sv_slice_pos]
-        
-    def plot(self, time, X, U=None, figure=None, window_title="Trajectory"):
-        return plot(time, X, U, figure, window_title)
-
-
 class Param():
     ''' Represents the configuration of the multirotor (mass, inertia, rotors location etc...) '''
     def __init__(self):
@@ -88,7 +51,8 @@ class Param():
         self.g = 9.81
         # position of rotors in body frame
         self.rotor_pos = ([0.1, 0.1, 0], [-0.1, 0.1, 0], [-0.1, -0.1, 0], [0.1, -0.1, 0])
-        self.l = 0.14
+        #self.rotor_pos = ([0.14, 0, 0], [0., 0.14, 0], [-0.14, 0, 0], [0, -0.14, 0])
+        self.l = 0.14 # this must disapear: hardcoded from old cross quad configuration
         # direction of rotors ( 1 cw, -1 ccw )
         self.rotor_dir = ( -1., 1., -1., 1. )
         # torque over thrust coefficient
@@ -101,61 +65,196 @@ class Param():
 
 
 
+class FDM:
+    ''' An object encapsulating the dynamic model of the multirotor '''
+    def __init__(self, dt=0.005):
+        self.dt = dt
+        self.solve_ode_first_order = False
+        self.P = Param()
+        self.t, self.X = 0., np.zeros((sv_size))
+        # byproducts
+        self.T_w2b = np.eye(4)  # world (ned) to body (frd) homogeneous transform
 
-def trim(P):
+    
+    #def trim(self): # must be implemented by child classes
+    #    return trim(self.P)
+    
+    def reset(self, X0, t0):
+        self.X, self.t = X0, t0
+        self.update_byproducts()
+        return self.X
+    
+    def run(self, tf, U):
+        remaining_to_tf = tf - self.t
+        while remaining_to_tf > 0:
+            dt = min(self.dt, remaining_to_tf)
+            #print(' integrate fdm from {} to {}'.format(self.t, self.t+dt))
+            self.X = self.disc_dyn(self.X, self.t, U, dt)
+            self.t += dt
+            remaining_to_tf = tf - self.t
+        self.update_byproducts()
+
+        return self.X
+
+    def disc_dyn(self, Xk, tk, Uk, dt):
+        '''
+        Discrete-time State Space Representation: Xk+1 = f_param(Xk, Uk)
+        '''
+        if self.solve_ode_first_order:
+            Xkp1 = Xk + self.cont_dyn(Xk, tk, Uk)*dt # first order
+            # normalize quaternion ?
+            nq = np.linalg.norm(Xkp1[sv_slice_quat])
+            Xkp1[sv_slice_quat] /= nq
+        else:
+            _unused, Xkp1 = scipy.integrate.odeint(self.cont_dyn, Xk, [tk, tk+dt], args=(Uk, ))
+            
+        return Xkp1
+
+    
+    def update_byproducts(self):
+        self.T_w2b[:3,:3] = pal.rmat_of_quat(self.X[sv_slice_quat]).T # that is freaking weird....
+        self.T_w2b[:3,3] = self.X[sv_slice_pos]
+        
+    def plot(self, time, X, U=None, figure=None, window_title="Trajectory"):
+        return plot(time, X, U, figure, window_title)
+
+
+class SolidFDM(FDM):
+    def __init__(self):
+        print('Solid FDM')
+        self.input_type = 'solid'
+        self.iv_size = 6 # Fb, Mb
+        FDM.__init__(self)
+        
+    def cont_dyn(self, X, t, U):
+        Fb, Mb = U[:3], U[3:]
+        Xd = np.zeros(sv_size)
+        p_w, v_w, q_w2b, om_b = X[sv_slice_pos], X[sv_slice_vel], X[sv_slice_quat], X[sv_slice_rvel]
+        # Translational kinematics
+        Xd[sv_slice_pos] = v_w
+        # Newton for forces
+        R_w2b =  pal.rmat_of_quat(q_w2b)
+        Xd[sv_slice_vel] = 1./self.P.m*(np.dot(R_w2b.T, Fb) + [0, 0, self.P.m*self.P.g])
+        # Rotational kinematics
+        Xd[sv_slice_quat] = pal.quat_derivative(q_w2b, om_b)
+        # Newton for moments
+        Xd[sv_slice_rvel] = np.dot(self.P.invJ, Mb - np.cross(om_b, np.dot(self.P.J, om_b)))
+        return Xd
+
+    def trim(self):
+        Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
+        Fb, Mb = [0, 0, -self.P.m*self.P.g], [0, 0, 0]
+        Ue = np.concatenate((Fb, Mb))
+        return Xe, Ue
+        
+class UFOFDM(SolidFDM):
+    def __init__(self):
+        print('UFO FDM')
+        self.input_type = 'zpqr'
+        self.iv_size = 4 # Uzpqr
+        FDM.__init__(self)
+
+    def cont_dyn(self, X, t, U):
+        Fb, Mb = [0, 0, -U[0]], U[1:] # thrust, Moments
+        Dw = -self.P.Cd*X[sv_slice_vel]
+        Fb += np.dot(pal.rmat_of_quat(X[sv_slice_quat]), Dw) # drag
+        return SolidFDM.cont_dyn(self, X, t, np.concatenate((Fb, Mb)))
+        
+    def trim(self):
+        Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
+        Ue = np.array([-self.P.m*self.P.g, 0, 0, 0])
+        return Xe, Ue
+
+
+
+
+class MR_FDM(SolidFDM):
+    def __init__(self):
+        print('MultiRotor FDM')
+        self.input_type = 'multirotor'
+        self.iv_size = 4
+        FDM.__init__(self)
+
+    def trim(self):
+        return mr_trim(self.P)
+
+    # def cont_dyn(self, X, t, U):
+    #     return mr_cont_dyn(X, t, U, self.P)
+ 
+    
+    def cont_dyn(self, X, t, U):
+        # rotors Thrust in body frame
+        Fb = [0, 0, -np.sum(U)]
+        # Drag
+        Dw = -self.P.Cd*X[sv_slice_vel]
+        R_w2b =  pal.rmat_of_quat(X[sv_slice_quat])
+        Db = np.dot(R_w2b, Dw)
+        # Moments of external forces
+        Mb = np.sum([np.cross(_p, [0, 0, -_f]) for _p, _f in zip(self.P.rotor_pos, U)], axis=0)
+        # Torques
+        Mb[2] += np.sum(self.P.k*(self.P.rotor_dir*U))
+        return SolidFDM.cont_dyn(self, X, t, np.concatenate((Fb, Mb)))
+        
+
+def mr_trim(P):
     Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
     Ue = np.ones(iv_size)*P.m*P.g / iv_size
     return Xe, Ue
 
 
 
-def solid_cont_dyn(X, F_b, M_b, P):
-    Xd = np.zeros(sv_size)
-    p_w, v_w, q_w2b, om_b = X[sv_slice_pos], X[sv_slice_vel], X[sv_slice_quat], X[sv_slice_rvel]
-    # Translational kinematics
-    Xd[sv_slice_pos] = v_w
-    # Newton for forces
-    R_w2b =  pal.rmat_of_quat(q_w2b)
-    Xd[sv_slice_vel] = 1./P.m*(np.dot(R_w2b.T, F_b) + [0, 0, P.m*P.g])
-    # Rotational kinematics
-    Xd[sv_slice_quat] = pal.quat_derivative(q_w2b, om_b)
-    # Newton for moments
-    Xd[sv_slice_rvel] = np.dot(P.invJ, M_b - np.cross(om_b, np.dot(P.J, om_b)))
-    return Xd
+# copied in object
+# def solid_cont_dyn(X, F_b, M_b, P):
+#     #pdb.set_trace()
+#     Xd = np.zeros(sv_size)
+#     p_w, v_w, q_w2b, om_b = X[sv_slice_pos], X[sv_slice_vel], X[sv_slice_quat], X[sv_slice_rvel]
+#     # Translational kinematics
+#     Xd[sv_slice_pos] = v_w
+#     # Newton for forces
+#     R_w2b =  pal.rmat_of_quat(q_w2b)
+#     #pdb.set_trace()
+#     Xd[sv_slice_vel] = 1./P.m*(np.dot(R_w2b.T, F_b) + [0, 0, P.m*P.g])
+#     # Rotational kinematics
+#     Xd[sv_slice_quat] = pal.quat_derivative(q_w2b, om_b)
+#     # Newton for moments
+#     Xd[sv_slice_rvel] = np.dot(P.invJ, M_b - np.cross(om_b, np.dot(P.J, om_b)))
+#     return Xd
     
+# copied in object
+# def get_forces_and_moments_body(X, U, P):
+#     # rotors Thrust in body frame
+#     Fb = [0, 0, -np.sum(U)]
+#     # Drag
+#     Dw = -P.Cd*X[sv_slice_vel]
+#     R_w2b =  pal.rmat_of_quat(X[sv_slice_quat])
+#     Db = np.dot(R_w2b, Dw)
+    
+#     # Moments of external forces
+#     Mb = np.sum([np.cross(_p, [0, 0, -_f]) for _p, _f in zip(P.rotor_pos, U)], axis=0)
+#     # Torques
+#     Mb[2] += np.sum(P.k*(P.rotor_dir*U))
+#     return Fb+Db, Mb
+    
+    
+# def mr_cont_dyn(X, t, U, P):
+#     '''
+#     Continuous-time State Space Representation: Xdot = f_param(t, X, U)
+#     '''
+#     Fb, Mb = get_forces_and_moments_body(X, U, P)
+#     Xd = solid_cont_dyn(X, Fb, Mb, P)
+#     return Xd
 
-def get_forces_and_moments_body(X, U, P):
-    # rotors Thrust in body frame
-    Fb = [0, 0, -np.sum(U)]
-    # Drag
-    Dw = -P.Cd*X[sv_slice_vel]
-    R_w2b =  pal.rmat_of_quat(X[sv_slice_quat])
-    Db = np.dot(R_w2b, Dw)
-    
-    # Moments of external forces
-    Mb = np.sum([np.cross(_p, [0, 0, -_f]) for _p, _f in zip(P.rotor_pos, U)], axis=0)
-    # Torques
-    Mb[2] += np.sum(P.k*(P.rotor_dir*U))
-    return Fb+Db, Mb
-    
-    
-def cont_dyn(X, t, U, P):
-    '''
-    Continuous-time State Space Representation: Xdot = f_param(t, X, U)
-    '''
-    Fb, Mb = get_forces_and_moments_body(X, U, P)
-    Xd = solid_cont_dyn(X, Fb, Mb, P)
-    return Xd
 
-
-def disc_dyn(Xk, tk, Uk, dt, P):
-    '''
-    Discrete-time State Space Representation: Xk+1 = f_param(Xk, Uk)
-    '''
-    _unused, Xkp1 = scipy.integrate.odeint(cont_dyn, Xk, [tk, tk+dt], args=(Uk, P))
-    #Xkp1 = Xk + cont_dyn(Xk, tk, Uk, P)*dt # first order
-    # normalize quaternion ?
-    return Xkp1
+# def mr_disc_dyn(Xk, tk, Uk, dt, P):
+#     '''
+#     Discrete-time State Space Representation: Xk+1 = f_param(Xk, Uk)
+#     '''
+#     #_unused, Xkp1 = scipy.integrate.odeint(cont_dyn, Xk, [tk, tk+dt], args=(Uk, P))
+#     Xkp1 = Xk + cont_dyn(Xk, tk, Uk, P)*dt # first order
+#     # normalize quaternion ?
+#     nq = np.linalg.norm(Xkp1[sv_slice_quat])
+#     Xkp1[sv_slice_quat] /= nq
+#     return Xkp1
 
 
 

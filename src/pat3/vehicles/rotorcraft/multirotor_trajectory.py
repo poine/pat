@@ -254,7 +254,7 @@ class DoubleOval(CompositeTraj):
         
         
 class FigureOfEight(CompositeTraj):
-    def __init__(self, r=1., v=2., z=-0.5):
+    def __init__(self, r=1., v=2., z=-0.25):
         c1, c2 = np.array([r, 0, z]), np.array([-r, 0, z])
         steps = [Circle(c1,  r,  v, -np.pi, 2*np.pi),
                  Circle(c2, -r,  v, 0,      2*np.pi) ]

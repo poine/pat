@@ -32,11 +32,12 @@ def prepare_fig(fig=None, window_title=None, figsize=(20.48, 10.24), margins=Non
         fig = plt.figure(figsize=figsize)
     else:
         plt.figure(fig.number)
-    if margins:
+    if margins is not None:
         left, bottom, right, top, wspace, hspace = margins
         fig.subplots_adjust(left=left, right=right, bottom=bottom, top=top,
                             hspace=hspace, wspace=wspace)
-    if window_title:
+    #pdb.set_trace()
+    if window_title is not None:
          fig.canvas.set_window_title(window_title)
     return fig
 

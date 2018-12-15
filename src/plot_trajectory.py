@@ -38,7 +38,7 @@ def main():
             df = ctl.DiffFlatness()
             Xc, Uc = [], []
             for Yci in Yc:
-                Xci, Uci = df.state_and_cmd_of_flat_output(Yci, _fdm.P)
+                Xci, Uci, Xcdi = df.state_and_cmd_of_flat_output(Yci, _fdm.P)
                 Xc.append(Xci); Uc.append(Uci)
             Xc = np.array(Xc)
             Uc = np.array(Uc)

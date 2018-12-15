@@ -44,7 +44,7 @@ source ~/catkin_ws/src/devel/setup.bash
 ### Run a real time simulation
  * run the simulation
 ```
-rosrun ros_pat sim_guidance.py _traj_name:=oval_with_intro
+rosrun ros_pat sim_guidance.py _traj_name:=oval_with_intro _time_factor:=0.5
 ```
   * view the simulation in rviz
 ```
@@ -54,7 +54,7 @@ rviz -d ~/pat/ros_pat/rviz/multirotor.rviz
 ### Run a batch simulation
 * 
 ```
-./src/test_04_sim_guidance.py
+./src/sim_guidance.py
 ```
 
 ### View a trajectory
