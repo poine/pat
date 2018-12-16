@@ -77,15 +77,15 @@ class Traj16(pmt.CompositeTraj):
         pmt.CompositeTraj.__init__(self, steps)        
 
 class Traj17(pmt.CompositeTraj):
-    name, desc = 'smooth_back_and_forth5', 'SmoothBackAndForth4'
+    name, desc = 'smooth_back_and_forth5', 'SmoothBackAndForth5'
     def __init__(self):
-        Y0, Y1, Y2 = [0.5, 0, -0.25, np.pi],  [-0.5, 0, -0.25, np.pi],  [0., 0, -0.5, 0]
+        Y0, Y1, Y2 = [0.5, 0.5, -0.25, np.pi],  [-0.5, 0.5, -0.25, 0],  [0., 0, -0.5, np.pi/2]
         steps = [pmt.SmoothLine(Y0, Y1, duration=1.),
-                 pmt.Cst(Y1, duration=1.),
+                 pmt.Cst(Y1, duration=0.2),
                  pmt.SmoothLine(Y1, Y2, duration=1.),
-                 pmt.Cst(Y2, duration=1.),
+                 pmt.Cst(Y2, duration=0.2),
                  pmt.SmoothLine(Y2, Y0, duration=1.),
-                 pmt.Cst(Y0, duration=1.)]
+                 pmt.Cst(Y0, duration=0.2)]
         pmt.CompositeTraj.__init__(self, steps)           
     
 class Traj11(pmt.CircleWithIntro):

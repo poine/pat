@@ -18,10 +18,13 @@ def parse_command_line():
 def main(dt=0.005):
     args = parse_command_line()
     if args.list:
-        print(pmtf.list())
+        print('available trajectories:')
+        for n in pmtf.list():
+            print(' {}'.format(n))
     try:
         print('loading trajectory: {}'.format(args.traj))
         _traj, _desc = pmtf.get(args.traj)
+        print('  desc: {}'.format(_desc))
     except KeyError: 
         print('unknown trajectory {}'.format(args.traj))
         return

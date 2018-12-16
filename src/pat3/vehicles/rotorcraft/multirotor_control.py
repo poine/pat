@@ -141,13 +141,13 @@ class AttCtl:
         tmp = np.array([(Jzz-Jyy)/Jxx*X[fdm.sv_q]*X[fdm.sv_r],
                         (Jxx-Jzz)/Jyy*X[fdm.sv_p]*X[fdm.sv_r],
                         (Jyy-Jxx)/Jzz*X[fdm.sv_p]*X[fdm.sv_q]]);
-        # inertia
-        J = np.array([Jxx/self.P.l, Jyy/self.P.l, Jzz/self.P.k])
+        # inertia # Why oh Why....
+        #J = np.array([Jxx/self.P.l, Jyy/self.P.l, Jzz/self.P.k])
         #Upqr = J * ( racc  + tmp )
         #pdb.set_trace()
-        Upqr = J*racc
+        #Upqr = J*racc
         #Upqr = np.dot(self.P.J, racc)
-        #Upqr = np.diag(self.P.J)* racc
+        Upqr = np.diag(self.P.J)* racc
         return Upqr
 
 
@@ -192,6 +192,23 @@ class TrajRef:
 
 
 
+class ActuatorAllocator:
+    def __init__(self, P):
+        nb_rot = len(P.rotor_pos)
+        self.rotor_thrust_to_zpqr = np.zeros((4, nb_rot))
+        self.rotor_thrust_to_zpqr[0,:] = np.ones(nb_rot)
+        self.rotor_thrust_to_zpqr[1,:] = -np.array(P.rotor_pos)[:,1]
+        self.rotor_thrust_to_zpqr[2,:] =  np.array(P.rotor_pos)[:,0]
+        self.rotor_thrust_to_zpqr[3,:] = P.k*np.array(P.rotor_dir)
+        self.zpqr_to_rotor_thrust = np.linalg.inv(self.rotor_thrust_to_zpqr)
+
+
+    def get(self, Uzpqr):
+        Urt = np.dot(self.zpqr_to_rotor_thrust, Uzpqr)
+        return Urt
+
+    
+
 class PosController:
 
     ref_size = 12
@@ -199,13 +216,9 @@ class PosController:
     
     def __init__(self, fdm, setpoint):
         self.fdm, self.setpoint = fdm, setpoint
-        self.Xe, self.Ue = fdm.trim()
-        self.att_ctl = AttCtl(fdm.P)
-        self.H = np.array([[0.25, -1,  1, -1],
-                           [0.25, -1, -1,  1],
-                           [0.25,  1, -1, -1],
-                           [0.25,  1,  1,  1]])
-        self.invH = np.linalg.inv(self.H)
+        #self.Xe, self.Ue = fdm.trim()
+        self.att_ctl = AttCtl(fdm.P)  # needs inertias
+        self.act_alloc = ActuatorAllocator(fdm.P) # needs rotor geometry
         print('ctl: fdm input type {}'.format(fdm.input_type))
         self.output_type = fdm.input_type
 
@@ -256,14 +269,14 @@ class PosController:
         delta_euler = np.array([delta_phi, delta_theta, 0]);
         euler = Xref[r_slice_euler] + delta_euler
         qref = pal.quat_of_euler(euler)
-        #qref = pal.quat_of_euler(euler_ref)
+        #qref = pal.quat_of_euler(euler_ref) # disable outer loop
         rvel_ref = Xref[r_slice_rvel]
         
         Uz = Uref[0] + delta_ut
         Upqr = Uref[1:] + self.att_ctl.run(X, qref, rvel_ref)
         self.Uzpqr = np.hstack((Uz, Upqr))
         if self.output_type == 'multirotor':
-            U = np.dot(self.H, self.Uzpqr)
+            U = self.act_alloc.get(self.Uzpqr)
         elif self.output_type == 'zpqr':
             U = self.Uzpqr
         elif self.output_type == 'solid': # Fb, Mb

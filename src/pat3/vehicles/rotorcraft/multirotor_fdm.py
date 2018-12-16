@@ -52,7 +52,7 @@ class Param():
         # position of rotors in body frame
         self.rotor_pos = ([0.1, 0.1, 0], [-0.1, 0.1, 0], [-0.1, -0.1, 0], [0.1, -0.1, 0])
         #self.rotor_pos = ([0.14, 0, 0], [0., 0.14, 0], [-0.14, 0, 0], [0, -0.14, 0])
-        self.l = 0.14 # this must disapear: hardcoded from old cross quad configuration
+        #self.l = 0.14 # this must disapear: hardcoded from old cross quad configuration
         # direction of rotors ( 1 cw, -1 ccw )
         self.rotor_dir = ( -1., 1., -1., 1. )
         # torque over thrust coefficient
@@ -172,11 +172,14 @@ class MR_FDM(SolidFDM):
     def __init__(self):
         print('MultiRotor FDM')
         self.input_type = 'multirotor'
-        self.iv_size = 4
         FDM.__init__(self)
+        self.iv_size = len(self.P.rotor_pos)
 
     def trim(self):
-        return mr_trim(self.P)
+        Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
+        Ue = np.ones(self.iv_size)*self.P.m*self.P.g / self.iv_size
+        return Xe, Ue
+        #return mr_trim(self.P)
 
     # def cont_dyn(self, X, t, U):
     #     return mr_cont_dyn(X, t, U, self.P)
@@ -193,17 +196,17 @@ class MR_FDM(SolidFDM):
         Mb = np.sum([np.cross(_p, [0, 0, -_f]) for _p, _f in zip(self.P.rotor_pos, U)], axis=0)
         # Torques
         Mb[2] += np.sum(self.P.k*(self.P.rotor_dir*U))
-        return SolidFDM.cont_dyn(self, X, t, np.concatenate((Fb, Mb)))
+        return SolidFDM.cont_dyn(self, X, t, np.concatenate((Fb+Db, Mb)))
         
-
-def mr_trim(P):
-    Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
-    Ue = np.ones(iv_size)*P.m*P.g / iv_size
-    return Xe, Ue
-
 
 
 # copied in object
+#def mr_trim(P):
+#    Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
+#    Ue = np.ones(iv_size)*P.m*P.g / iv_size
+#    return Xe, Ue
+#
+#
 # def solid_cont_dyn(X, F_b, M_b, P):
 #     #pdb.set_trace()
 #     Xd = np.zeros(sv_size)

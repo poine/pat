@@ -16,8 +16,8 @@ import pat3.vehicles.rotorcraft.multirotor_trajectory_factory as pmtf
 class Agent:
     def __init__(self, _traj=None, time_factor=1.):
         self.time_factor = time_factor
-        #_fdm = fdm.MR_FDM()
-        _fdm = fdm.UFOFDM()
+        _fdm = fdm.MR_FDM()
+        #_fdm = fdm.UFOFDM()
         #_fdm = fdm.SolidFDM()
         self.traj_pub = pru.TrajectoryPublisher(_traj)
         _ctl_in = ctl.TrajRef(_traj, _fdm)
