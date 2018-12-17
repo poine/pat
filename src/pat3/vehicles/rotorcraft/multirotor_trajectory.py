@@ -27,6 +27,7 @@ class AffineOne:
     def __init__(self, c1=-1., c2=0):
         self.c1, self.c2 = c1, c2
     def get(self, t):
+        #print('in AffineOne {}'.format(t))
         return np.array([self.c1*t+self.c2, self.c1, 0, 0, 0])
     
 class SinOne:
@@ -54,7 +55,7 @@ def arr(k,n):
 class PolynomialOne:
     def __init__(self, Y0, Y1, duration):
         _der = len(Y0)    # number of time derivatives
-        _order = 2*_der   # we need twice as much coefficients
+        _order = 2*_der   # we need twice as many coefficients
         self._der = _der
         self._order = _order
         # compute polynomial coefficients for time derivative zeros
@@ -122,11 +123,14 @@ class Circle:
         #self.psit = psit if psit is not None else AffineOne(self.omega, self.alpha0)
         self.t0 = 0.
         
-    def reset(self, t0): self.t0 = t0
+    def reset(self, t0):
+        self.t0 = t0
+        #print('in circle reset {}'.format(t0))
      
     def get(self, t):
         dt = t-self.t0
         alpha = self.omega*(dt) + self.alpha0
+        #print('in circle get t:{} dt: {} alpha {}'.format(t, dt, alpha))
         rca, rsa = np.abs(self.r)*np.cos(alpha), np.abs(self.r)*np.sin(alpha) 
         Yc = np.zeros((5,4))
         ## xy

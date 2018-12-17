@@ -28,8 +28,8 @@ def main(dt=0.005):
     except KeyError: 
         print('unknown trajectory {}'.format(args.traj))
         return
-    #_fdm = fdm.MR_FDM()
-    _fdm = fdm.UFOFDM()
+    _fdm = fdm.MR_FDM()
+    #_fdm = fdm.UFOFDM()
     #_fdm = fdm.SolidFDM()
     _ctl_input = ctl.TrajRef(_traj, _fdm)
     _ctl = ctl.PosController(_fdm, _ctl_input)

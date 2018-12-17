@@ -28,7 +28,7 @@ class Agent:
       
     def periodic(self):
         now = rospy.Time.now()
-        t_sim = self.t0 + (now.to_sec() - self.t0)*self.time_factor
+        t_sim = (now.to_sec() - self.t0)*self.time_factor
         self.sim.run(t_sim)
         self.tf_pub.publish(now, self.sim.fdm.T_w2b)
         self.pose_pub.publish([self.sim.fdm.T_w2b, self.sim.ctl.T_w2b_ref])
@@ -37,7 +37,7 @@ class Agent:
     def run(self):
         rate = rospy.Rate(20.)
         self.t0 = rospy.Time.now().to_sec()
-        self.sim.reset(self.t0, self.sim.ctl.setpoint.get(self.t0)[2])
+        self.sim.reset(0, self.sim.ctl.setpoint.get(0)[2])
         try:
             while not rospy.is_shutdown():
                 self.periodic()
