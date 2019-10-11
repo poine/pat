@@ -8,7 +8,7 @@ import pat3.vehicles.rotorcraft.multirotor_control as ctl
 
 def main(tf=10., dt=0.005):
     np.set_printoptions(linewidth=500)
-    _fdm = fdm.FDM()
+    _fdm = fdm.MR_FDM()
     _ctl = ctl.ZAttController(_fdm)
     sim = pmu.Sim(_fdm, _ctl)
     time = np.arange(0, tf, dt)

@@ -43,26 +43,27 @@ def plot_sp(time, Yc):
 
 def main(tf=10., dt=0.01):
     np.set_printoptions(linewidth=500)
-    P = fdm.Param()
-    _fdm = fdm.FDM()
+    _fdm = fdm.MR_FDM()
     _ctl = ctl.ZAttController(_fdm)
     time = np.arange(0, tf, dt) 
 
     #Yc = step_phi(time)
-    Yc = step_euler(time, pal.e_phi, 1.)
-    #Yc = step_euler(time, pal.e_theta, 1.)
+    #Yc = step_euler(time, pal.e_phi, 1.)
+    Yc = step_euler(time, pal.e_theta, 1.)
     #Yc = step_euler2(time, pal.e_psi, np.deg2rad(1.))
     #Yc = step_z(time)
-    Xe, Ue = fdm.trim(P)    
 
+    Xe, Ue = _fdm.trim()    
     X0 = np.array(Xe)
     #X0[fdm.sv_zd] += 0.1
     #X0[fdm.sv_slice_quat] = pal.quat_of_euler([np.deg2rad(1.), 0., 0.])
     X, U = np.zeros((len(time), fdm.sv_size)), Ue*np.ones((len(time), fdm.iv_size))
     X[0] = _fdm.reset(X0, time[0])
     for i in range(1, len(time)):
-        U[i-1] = _ctl.get(X[i-1], Yc[i-1])
-        X[i] = _fdm.run(time[i], U[i-1])
+        U[i-1] = _ctl.get(time[i-1], X[i-1], Yc[i-1])
+        #X[i] = _fdm.run(time[i], U[i-1])
+        X[i] = _fdm.disc_dyn(X[i-1], time[i-1], U[i-1], time[i]-time[i-1])
+        
     fdm.plot(time, X, U)
     plot_sp(time, Yc)
     plt.show()
