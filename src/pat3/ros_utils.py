@@ -63,8 +63,8 @@ class MarkerArrayPublisher:
         self.pub.publish(self.msg)
 
 class PoseArrayPublisher(MarkerArrayPublisher):
-    def __init__(self):
-        MarkerArrayPublisher.__init__(self, '/pat/vehicle_marker',  ["package://ros_pat/media/quad.dae"])
+    def __init__(self, dae='quad.dae'):
+        MarkerArrayPublisher.__init__(self, '/pat/vehicle_marker',  ["package://ros_pat/media/{}".format(dae)])
 
 
 class QuadAndRefPublisher(MarkerArrayPublisher):
@@ -94,7 +94,7 @@ class TrackPublisher(MarkerArrayPublisher):
 
 class TrajectoryPublisher:
 
-    def __init__(self, traj):
+    def __init__(self, traj, ms=0.01):
         self.traj_pub = rospy.Publisher('/pat/trajectory', visualization_msgs.msg.MarkerArray, queue_size=1)
         self.traj_msg = visualization_msgs.msg.MarkerArray()
         t0, t1, dt = 0., traj.duration, 0.05
@@ -104,8 +104,7 @@ class TrajectoryPublisher:
         marker.type = marker.LINE_STRIP
         marker.action = marker.ADD
         marker.id = 0
-        marker.text = 'trajectory'
-        marker.scale.x, marker.scale.y, marker.scale.z = 0.01, 0.01, 0.01
+        marker.scale.x = ms
         marker.color.r, marker.color.g, marker.color.b, marker.color.a  = 1, 0, 0, 0.5
         marker.pose.orientation.w = 1.0
         marker.pose.position.x = 0
@@ -122,3 +121,21 @@ class TrajectoryPublisher:
     def publish(self):
         self.traj_pub.publish(self.traj_msg)
     
+
+
+class MarkerPublisher:
+    def __init__(self, topic, ref_frame, scale=(0.05, 0.05, 0.5), argb=(1., 0., 1., 0.)):
+        self.carrot_pub = rospy.Publisher(topic, visualization_msgs.msg.Marker, queue_size=1)
+        
+        self.carrot_msg = visualization_msgs.msg.Marker()
+        self.carrot_msg.header.frame_id=ref_frame
+        self.carrot_msg.type = visualization_msgs.msg.Marker.CYLINDER
+        p = self.carrot_msg.pose.position; p.x, p.y, p.z = 0, 0, 0.025
+        o = self.carrot_msg.pose.orientation; o.x, o.y, o.z, o.w = 0, 0, 0, 1
+        s = self.carrot_msg.scale; s.x, s.y, s.z = scale
+        c = self.carrot_msg.color; c.a, c.r, c.g, c.b = argb
+
+    def publish(self, carrot_pos):
+        self.carrot_msg.header.stamp = rospy.Time.now()
+        p = self.carrot_msg.pose.position; p.x, p.y, p.z = carrot_pos[0], carrot_pos[1],carrot_pos[2]
+        self.carrot_pub.publish(self.carrot_msg)

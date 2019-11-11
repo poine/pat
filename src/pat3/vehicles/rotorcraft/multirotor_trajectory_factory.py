@@ -193,7 +193,22 @@ class SmoothOval2(pmt.CompositeTraj):
         
 register(SmoothOval2)     
 
-        
+
+##
+#
+#
+class Traj19(pmt.Circle):
+    name, desc = 'c42', 'circle r=30 v=15, looking forward'
+    def __init__(self):
+        r, v = 30., 12.; om = v/r; alpha0 = 0
+        #psit = pmt.AffineOne(om, alpha0+np.sign(r)*np.pi/2)
+        #psit=pmt.SinOne(om=om)
+        psit = None
+        pmt.Circle.__init__(self, [0, 0, -0.25], r, v, zt=None, psit=psit)
+register(Traj19)
+
+
+
 #trajectories = {T.name: (T.desc, T) for T in [Traj1, Traj2, Traj3, Traj4, Traj5, Traj6, Traj7, Traj8, Traj9, Traj10, Traj11, Traj12, Traj13, Traj14, Traj15, Traj16, Traj17, Traj18]}
 
 def print_available():

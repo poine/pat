@@ -3,7 +3,7 @@ import os, numpy as np
 import rospy, rospkg
 
 
-import ros_utils as pru
+import pat3.ros_utils as pru
 
 class Agent:
     def __init__(self, track_path):

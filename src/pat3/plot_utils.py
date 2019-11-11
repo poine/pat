@@ -43,8 +43,8 @@ def prepare_fig(fig=None, window_title=None, figsize=(20.48, 10.24), margins=Non
 
 
 def plot_in_grid(time, plots, ncol, figure=None, window_title="None", legend=None, filename=None,
-                 margins=None, lw=2.):
-    nrow = math.ceil(len(plots)/float(ncol))
+                 margins=None, lw=2., extra_rows=0):
+    nrow = math.ceil(len(plots)/float(ncol)) + extra_rows
     figsize = (10.24*ncol, 2.56*nrow)
     figure = prepare_fig(figure, window_title, figsize=figsize, margins=margins)
     for i, (title, ylab, min_yspan, data) in enumerate(plots):
@@ -55,3 +55,35 @@ def plot_in_grid(time, plots, ncol, figure=None, window_title="None", legend=Non
         ax.legend(legend, loc='best')
     #save_if(filename)
     return figure
+
+
+
+'''
+3D
+'''
+import mpl_toolkits.mplot3d
+def set_3D_axes_equal(ax=None):
+    '''
+    Make axes of 3D plot have equal scale so that spheres appear as spheres,
+    cubes as cubes, etc..  This is one possible solution to Matplotlib's
+    ax.set_aspect('equal') and ax.axis('equal') not working for 3D.
+
+    Input
+      ax: a matplotlib axis, e.g., as output from plt.gca().
+    '''
+    if ax is None: ax = plt.gca()
+
+    x_limits, y_limits, z_limits = ax.get_xlim3d(), ax.get_ylim3d(), ax.get_zlim3d()
+
+    x_range, x_middle = abs(x_limits[1] - x_limits[0]), np.mean(x_limits)
+    y_range, y_middle = abs(y_limits[1] - y_limits[0]), np.mean(y_limits)
+    z_range, z_middle = abs(z_limits[1] - z_limits[0]), np.mean(z_limits)
+
+    # The plot bounding box is a sphere in the sense of the infinity
+    # norm, hence I call half the max range the plot radius.
+    plot_radius = 0.5*max([x_range, y_range, z_range])
+
+    ax.set_xlim3d([x_middle - plot_radius, x_middle + plot_radius])
+    ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
+    ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
+
