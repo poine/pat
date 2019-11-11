@@ -1,5 +1,5 @@
 ---
-title: PAT
+title: Fixed Wing FDM
 layout: default
 ---
 
@@ -9,11 +9,4 @@ $$
 X = \Omega
 $$
 
-# Index
-
-  * [Fixed Wing FDM](fixed_wing_fdm.html)
-  * [Multirotor FDM](multirotor_fdm.html)
-  * [ROS](ros_intro.html)
-
-
-
+## TODO

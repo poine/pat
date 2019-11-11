@@ -20,6 +20,9 @@
 import pdb
 """
  This is a 6dof model for a fixed wing vehicle
+
+ legacy code hacked from pat1. Here to serve as reference
+
 """
 
 import math
@@ -28,11 +31,6 @@ import scipy.integrate, scipy.optimize
 import matplotlib.pyplot as plt
 import importlib
 
-#import pat.dynamic_model as dm
-#import pat.frames as fr
-#import pat.utils as pu
-#import pat.algebra as pal
-#import pat.atmosphere as patm
 import pat3.utils as p3_u
 import pat3.plot_utils as p3_pu
 import pat3.atmosphere as p3_atm
@@ -229,7 +227,7 @@ def dyn(X, t, U, P):
     return Xdot
 
 
-def trim(P, args=None, debug=False):
+def trim(P, args=None, report=True, debug=False):
     """
     Find throttle, elevator  and angle of attack corresponding
     to the given airspeed and and flight path
@@ -239,7 +237,7 @@ def trim(P, args=None, debug=False):
     else:
         va, gamma, h = (P.Vref, 0., 0.)
 
-    if debug:
+    if report:
         print "searching for constant path trajectory with"
         print "  h      {:f} m".format(h)
         print "  va     {:f} m/s".format(va)
@@ -256,7 +254,7 @@ def trim(P, args=None, debug=False):
     p0 = [0.2, np.deg2rad(2.), np.deg2rad(0.)]
     thr_e, ele_e, alpha_e = scipy.optimize.fmin_powell(err_func, p0, disp=debug, ftol=1e-9)
 
-    if debug:
+    if report:
         print """result:
   throttle        : {:f} %
   elevator        : {:f} deg
@@ -268,9 +266,6 @@ def trim(P, args=None, debug=False):
     return Xe, Ue
 
 
-# import pat.vehicles.fixed_wing.dynamic_model_python_parameters
-# class ParamOld(pat.vehicles.fixed_wing.dynamic_model_python_parameters.Param):
-#     pass
 import pat3.vehicles.fixed_wing.legacy_parameter
 class ParamOld(pat3.vehicles.fixed_wing.legacy_parameter.Param):
     pass
