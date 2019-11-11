@@ -105,7 +105,7 @@ class Guidance:
         self.T_w2b_ref = np.eye(4)
         self.sum_err_z, self.sum_err_v = 0, 0
 
-    def get(self, t, X, Yc=None):
+    def get(self, t, X, Yc=None, debug=False):
         my_pos = X[p1_fw_dyn.sv_slice_pos]
         self.carrot = self.traj.get_point_ahead(my_pos, 15.)
         self.b2c_ned = self.carrot-my_pos
@@ -124,20 +124,22 @@ class Guidance:
             phi_sp = -0.75*err_psi
 
         max_phi = np.deg2rad(45)
-        phi_sp = np.clip(phi_sp, -max_phi, max_phi)
-        #U = self.att_ctl.get(t, X, np.deg2rad(25), self.Xe[p1_fw_dyn.sv_theta])
-        U = self.att_ctl.get(t, X, phi_sp, self.Xe[p1_fw_dyn.sv_theta])
+        self.phi_sp = np.clip(phi_sp, -max_phi, max_phi)
+        self.theta_sp = self.Xe[p1_fw_dyn.sv_theta] + 0.000025*self.sum_err_v
+        U = self.att_ctl.get(t, X, self.phi_sp, self.theta_sp)
         _thr, _ail, _ele = 0, 1, 2
         # elevator compensation for banking
         v_sp, z_sp, theta_sp = self.Xe[p1_fw_dyn.sv_v], self.Xe[p1_fw_dyn.sv_z], self.Xe[p1_fw_dyn.sv_theta]
         self.sum_err_v += (v-v_sp)
         self.sum_err_z += (z-z_sp)
-        d_ele = self.sum_err_v*-0.00001 # -np.deg2rad(3.)*np.abs(phi_sp)/max_phi
+        d_ele = 0#self.sum_err_v*-0.00001 # -np.deg2rad(3.)*np.abs(phi_sp)/max_phi
         U[_ele] += d_ele
         # throttle integrator
-        d_throttle = self.sum_err_z*0.000001
+        d_throttle = self.sum_err_z*0.000005
         U[_thr] += d_throttle
-        print('z {:.1f} v {:.1f} m/s phi {:.1f}/{:.1f} deg theta {:.1f}/{:.1f} deg dthrottle {:.1f} % dele {:.1f} deg s_ev: {:.0f} s_ez: {:.0f}'.format(z, v, np.rad2deg(phi), np.rad2deg(phi_sp), np.rad2deg(theta), np.rad2deg(theta_sp), d_throttle*100, np.rad2deg(d_ele), self.sum_err_v, self.sum_err_z))
+        if debug:
+            fmt = 'z {:.1f} v {:.1f} m/s phi {:.1f}/{:.1f} deg theta {:.1f}/{:.1f} deg dthrottle {:.1f} % dele {:.1f} deg s_ev: {:.0f} s_ez: {:.0f}'
+            print(fmt.format(z, v, np.rad2deg(phi), np.rad2deg(self.phi_sp), np.rad2deg(theta), np.rad2deg(self.theta_sp), d_throttle*100, np.rad2deg(d_ele), self.sum_err_v, self.sum_err_z))
         
         return U#self.Ue
 
@@ -145,19 +147,21 @@ def run_simulation(dm, ref_traj, tf=60.5, dt=0.01, trim_args = {'h':0, 'va':12, 
     time = np.arange(0, tf, dt)
     X = np.zeros((len(time), dm.sv_size))
     U = np.zeros((len(time),  dm.input_nb()))
-    carrots = np.zeros((len(time),  3))
+    carrots, att_sp = np.zeros((len(time),  3)), np.zeros((len(time), 2))
     ctl = Guidance(dm, ref_traj, trim_args, dt)
     X[0] = dm.reset(ctl.Xe)
     for i in range(1, len(time)):
         U[i-1] = ctl.get(time[i-1], X[i-1])
-        carrots[i-1] = ctl.carrot 
-        X[i] = dm.run(time[i] - time[i-1], U[i-1])
-    U[-1] = ctl.get(time[-1], X[-1])
+        carrots[i-1] = ctl.carrot; att_sp[i-1] = ctl.phi_sp, ctl.theta_sp 
+        X[i] = dm.run(time[i] - time[i-1], time[i], U[i-1])
+    U[-1] = ctl.get(time[-1], X[-1]); carrots[-1] = ctl.carrot; att_sp[-1] = ctl.phi_sp, ctl.theta_sp 
     if plot:
         dm.plot_trajectory(time, X, U)
         plt.subplot(5,3,1); plt.plot(time, carrots[:,0])
         plt.subplot(5,3,2); plt.plot(time, carrots[:,1])
         plt.subplot(5,3,3); plt.plot(time, carrots[:,2])
+        plt.subplot(5,3,7); plt.plot(time, np.rad2deg(att_sp[:,0]), label='setpoint')
+        plt.subplot(5,3,8); plt.plot(time, np.rad2deg(att_sp[:,1]), label='setpoint')
         plt.show()  
     return time, X, U
 

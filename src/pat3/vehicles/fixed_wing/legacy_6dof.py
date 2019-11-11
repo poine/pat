@@ -337,7 +337,7 @@ class DynamicModel(BaseDynamicModel):
         Uclip[self.iv_dr()]  = np.clip(U[self.iv_dr()], -max_rud, max_rud)
         return Uclip
         
-    def run(self, dt, U): # FIXME DT vs TF
+    def run(self, dt, tf, U): # FIXME DT vs TF
         # actuators.
         if 0: # no actuator dynamics
             self.X_act = self._clip_input(U)

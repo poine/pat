@@ -7,10 +7,9 @@ import pdb
 import pat3.algebra as pal
 import pat3.utils as pmu
 import pat3.ros_utils as pru
-import pat.vehicles.fixed_wing.dynamic_model_python_basic as p1_fw_dyn
+import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 import pat3.test.fixed_wing.test_03_guidance as p3_fw_guid
-#import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
-#import pat3.vehicles.rotorcraft.multirotor_control as ctl
+# we use rotorcraft trajectories...
 import pat3.vehicles.rotorcraft.multirotor_trajectory as pmt
 import pat3.vehicles.rotorcraft.multirotor_trajectory_factory as pmtf
 

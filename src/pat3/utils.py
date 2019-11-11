@@ -29,7 +29,7 @@ class Sim:
             #print(' compute control at {:.3f}'.format(self.fdm.t))
             U = self.ctl.get(self.fdm.t, self.fdm.X, self.Yc)
             #print(' run fdm from {:.3f} to {:.3f}'.format(self.fdm.t, self.fdm.t+self.fdm.dt))
-            self.fdm.run(self.fdm.dt, U)
+            self.fdm.run(self.fdm.dt, self.fdm.t+self.fdm.dt, U)
         return U, self.fdm.X
         
 

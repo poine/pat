@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="run_viz" default="true" />
+
+  <node name="glider_sim_node" pkg="ros_pat" type="glider_sim_guidance.py">
+    <param name="time_factor" value="1." />
+    <param name="traj_name" value="c42" />
+  </node>
+
+  <group if="$(arg run_viz)">
+    <node name="rviz" pkg="rviz" type="rviz" required="true"
+          args="-d $(find ros_pat)/rviz/glider.rviz" />
+  </group>
+
+</launch>
+
+
+

@@ -84,7 +84,7 @@ class FDM:
         self.update_byproducts()
         return self.X
     
-    def run(self, tf, U):
+    def run(self, dt, tf, U):
         remaining_to_tf = tf - self.t
         while remaining_to_tf > 0:
             dt = min(self.dt, remaining_to_tf)

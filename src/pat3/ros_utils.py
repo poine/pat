@@ -50,7 +50,7 @@ class MarkerArrayPublisher:
             marker.type = marker.MESH_RESOURCE
             marker.action = marker.ADD
             marker.id = i
-            marker.text = "{}".format(i)
+            #marker.text = "{}".format(i)
             marker.scale.x, marker.scale.y, marker.scale.z = 1., 1., 1.
             marker.color.r, marker.color.g, marker.color.b, marker.color.a  = color
             marker.mesh_resource = mesh

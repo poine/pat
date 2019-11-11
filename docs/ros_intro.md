@@ -47,21 +47,19 @@ catkin_make
 source ~/catkin_ws/src/devel/setup.bash
 ```
 
+
 ### Run a real time simulation
- * run the simulation
+
+  * Fixed Wing
+```console
+poine@nina:~$ roslaunch ros_pat sim_glider.launch
 ```
-rosrun ros_pat sim_guidance.py _traj_name:=oval_with_intro _time_factor:=0.5
-```
-  * view the simulation in rviz
-```
-rviz -d ~/pat/ros_pat/rviz/multirotor.rviz
+ * Multirotor
+```console
+poine@nina:~$ roslaunch ros_pat sim_multirotor.launch
 ```
 
-### Run a batch simulation
-* 
-```
-./src/sim_guidance.py
-```
+
 
 ### View a trajectory
 

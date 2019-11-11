@@ -85,7 +85,7 @@ def run_simulation(dm, tf=40.5, dt=0.0025, trim_args = {'h':0, 'va':12, 'gamma':
     ctl = AttCtl(Xe, Ue, dm, dt)
     for i in range(1, len(time)):
         U[i-1] = ctl.get(time[i-1], X[i-1], phi_sp[i-1], theta_sp[i-1])
-        X[i] = dm.run(time[i] - time[i-1], U[i-1])
+        X[i] = dm.run(time[i] - time[i-1], time[i], U[i-1])
         X_act[i] = dm.X_act
     U[-1] = ctl.get(time[-1], X[-1], phi_sp[-1], theta_sp[-1])
     if plot:

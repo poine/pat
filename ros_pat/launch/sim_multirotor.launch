@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="run_viz" default="true" />
+
+  <node name="multirotor_sim_node" pkg="ros_pat" type="multirotor_sim_guidance.py">
+    <param name="time_factor" value="0.5" />
+    <param name="traj_name" value="oval_with_intro" />
+  </node>
+
+  <group if="$(arg run_viz)">
+    <node name="rviz" pkg="rviz" type="rviz" required="true"
+          args="-d $(find ros_pat)/rviz/multirotor.rviz" />
+  </group>
+
+</launch>
+
+
+
