@@ -51,8 +51,8 @@ class BaseDynamicModel():
     
     def reset(self, X0=None, U0=None, t0=None):
         self.X = X0
-        if U0<>None: self.Xd = self.dyn(self.X, 0, U0, self.P)
-        print "dm:reset", self.X
+        if U0!=None: self.Xd = self.dyn(self.X, 0, U0, self.P)
+        print("dm:reset", self.X)
         return self.X
 
     def run(self, dt, U):
@@ -232,18 +232,19 @@ def trim(P, args=None, report=True, debug=False):
     Find throttle, elevator  and angle of attack corresponding
     to the given airspeed and and flight path
     """
-    if args<>None:
+    if args!=None:
         va, gamma, h = (args['va'], args['gamma'], args['h'] )
     else:
         va, gamma, h = (P.Vref, 0., 0.)
 
     if report:
-        print "searching for constant path trajectory with"
-        print "  h      {:f} m".format(h)
-        print "  va     {:f} m/s".format(va)
-        print "  gamma  {:f} deg".format(np.rad2deg(gamma))
+        print("searching for constant path trajectory with")
+        print("  h      {:f} m".format(h))
+        print("  va     {:f} m/s".format(va))
+        print("  gamma  {:f} deg".format(np.rad2deg(gamma)))
 
-    def err_func((throttle, elevator, alpha)):
+    def err_func(args):
+        throttle, elevator, alpha = args
         X=[0., 0., -h, va, alpha, 0., 0.,  gamma+alpha, 0., 0., 0., 0.]
         U = np.zeros(P.input_nb)
         U[0:P.eng_nb] = throttle; U[P.eng_nb+iv_de] = elevator
@@ -255,10 +256,10 @@ def trim(P, args=None, report=True, debug=False):
     thr_e, ele_e, alpha_e = scipy.optimize.fmin_powell(err_func, p0, disp=debug, ftol=1e-9)
 
     if report:
-        print """result:
+        print("""result:
   throttle        : {:f} %
   elevator        : {:f} deg
-  angle of attack : {:f} deg""".format(100.*thr_e, np.rad2deg(ele_e), np.rad2deg(alpha_e))
+  angle of attack : {:f} deg""".format(100.*thr_e, np.rad2deg(ele_e), np.rad2deg(alpha_e)))
 
     Ue = np.zeros(P.input_nb)
     Ue[0:P.eng_nb] = thr_e; Ue[P.eng_nb+iv_de] = ele_e
@@ -306,7 +307,7 @@ class DynamicModel(BaseDynamicModel):
     trim = lambda self, args=None, debug=False: trim(self.P, args, debug)
 
     def __init__(self, params=None):
-        print "Info: Dynamic fixed wing basic"
+        print("Info: Dynamic fixed wing basic")
         BaseDynamicModel.__init__(self)
         if params == None: params="../config/Rcam_single_engine.xml"
         #self.P = Param(params)
@@ -321,7 +322,7 @@ class DynamicModel(BaseDynamicModel):
         return "Fixed Wing Python Basic ({:s})".format(self.P.name)
 
     def reset(self, X0=None, t0=0):
-        if X0<>None: self.X = np.array(X0)
+        if X0!=None: self.X = np.array(X0)
         else: self.X = np.array([0., 0., 0., 68., 0., 0., 0., 0., 0., 0., 0., 0.])
         self.t = t0
         self._update_byproducts()
@@ -420,7 +421,7 @@ def plot_trajectory(time, X, U=None, figure=None, window_title="Trajectory",
             plt.plot(time, data)
             p3_pu.decorate(ax, title=title, ylab=ylab)
             
-        if legend<>None:
+        if legend!=None:
             plt.legend(legend, loc='best')
 
         for i, min_yspan in enumerate([1., 1., 1.,  1., 1., 1.,  1., 1., 1.,  1., 1., 1.]):

@@ -5,6 +5,7 @@ import pdb
 
 import sys
 sys.path.append('/home/poine/work/pat/src') # PAT3
+# sys.path.append('/Users/murat/Work/GIT/pat/src')
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 #import pat.vehicles.fixed_wing.dynamic_model_python_basic as p1_fw_dyn
 #import pat.vehicles.fixed_wing.control_3d as p1_fw_ctl
@@ -98,7 +99,7 @@ def run_simulation(dm, tf=40.5, dt=0.0025, trim_args = {'h':0, 'va':12, 'gamma':
         plt.show()  
     return time, X, U
         
-def main(param_filename='/home/poine/work/pat/data/vehicles/cularis.xml'):
+def main(param_filename='../../../../data/vehicles/cularis.xml'):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     run_simulation(dm)
     

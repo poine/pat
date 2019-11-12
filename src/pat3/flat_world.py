@@ -42,8 +42,9 @@ def dcm_eci_to_ecef(utc):
 
 
 
-def earth_to_body((phi, theta, psi)):
+def earth_to_body(args):
     """ computes the earth to body rotation matix """
+    phi, theta, psi = args
     cphi, sphi     = math.cos(phi),   math.sin(phi)
     ctheta, stheta = math.cos(theta), math.sin(theta)
     cpsi, spsi     = math.cos(psi),   math.sin(psi)
@@ -52,7 +53,7 @@ def earth_to_body((phi, theta, psi)):
                      [cphi*stheta*cpsi + sphi*spsi, cphi*stheta*spsi - sphi*cpsi, cphi*ctheta]])
 
 
-def body_to_earth((phi, theta, psi)): return earth_to_body((phi, theta, psi)).T
+def body_to_earth(args): return earth_to_body(args).T
 
 
 def aero_to_body(alpha, beta):
@@ -66,7 +67,8 @@ def aero_to_body(alpha, beta):
 
 def body_to_aero(alpha, beta): return aero_to_body(alpha, beta).T
 
-def aero_to_earth(eul, (alpha, beta)):
+def aero_to_earth(eul, alpha_beta):
+    alpha, beta = alpha_beta
     return np.dot(body_to_earth(eul), aero_to_body(alpha, beta))
 
 

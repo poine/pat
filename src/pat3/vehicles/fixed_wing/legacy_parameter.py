@@ -1,4 +1,5 @@
-import StringIO
+# import StringIO     ---python2
+from io import StringIO
 import xml.etree.ElementTree as ET
 import numpy as np
 
@@ -8,8 +9,8 @@ class Param:
     """
     def __init__(self, filename=None, avl_data=None):
         self.g = 9.81
-        if filename <> None : self.read_from_xml(filename)
-        elif avl_data <> None : self.compute_from_avl(avl_data) 
+        if filename != None : self.read_from_xml(filename)
+        elif avl_data != None : self.compute_from_avl(avl_data) 
         self.compute_auxiliary()
 
     def compute_auxiliary(self):
@@ -29,7 +30,7 @@ class Param:
         """
           Quick and dirty xml parsing
         """
-        print "Info: loading parameters from: {:s}".format(filename)
+        print("Info: loading parameters from: {:s}".format(filename))
         tree = ET.parse(filename)
         root = tree.getroot()
 
@@ -37,7 +38,7 @@ class Param:
 
         masses = root.find("masses")
         self.m = float(masses.find("mass").text)
-        self.I = np.genfromtxt(StringIO.StringIO(masses.find("inertia").text), delimiter=",")
+        self.I = np.genfromtxt(StringIO(masses.find("inertia").text), delimiter=",")
 
         aerodynamics = root.find("aerodynamics")
         for param in ["Sref", "Cref", "Bref"]:
@@ -62,8 +63,8 @@ class Param:
         engines = propulsion.findall("engine")
         self.eng_name = [e.attrib["name"] for e in engines]
         self.eng_nb = len(self.eng_name)
-        setattr(self, "eng_pos", [np.genfromtxt(StringIO.StringIO(e.attrib["pos"]),delimiter=",") for e in engines])
-        setattr(self, "eng_align", [np.genfromtxt(StringIO.StringIO(e.attrib["align"]),delimiter=",") for e in engines])
+        setattr(self, "eng_pos", [np.genfromtxt(StringIO(e.attrib["pos"]),delimiter=",") for e in engines])
+        setattr(self, "eng_align", [np.genfromtxt(StringIO(e.attrib["align"]),delimiter=",") for e in engines])
         for param in ["fmax", "rhoi", "nrho", "Vi", "nV", "tau"]:
             setattr(self, param+"s", [float(e.attrib[param]) for e in engines])
 

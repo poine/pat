@@ -8,7 +8,7 @@ import pat3.dynamics as pat_dyn
 import pat3.vehicles.fixed_wing.simple_6dof_fdm as fw_dyn
 
 def get_sim_env(tf=0.1, dt=0.01):
-    P = fw_dyn.Param(filename='/home/poine/work/pat/data/vehicles/cularis.xml')
+    P = fw_dyn.Param(filename='../../../../data/vehicles/cularis.xml')
     #_fdm = fw_dyn.FDM(P)
     _fdm = fw_dyn.FDM3(P)
     Xe, Ue = _fdm.trim({'h':0, 'va':15}, debug=True)
