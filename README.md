@@ -31,7 +31,7 @@ poine@nina:~$ python -c "import pat3; print(pat3.__version__)"
 
  * run examples:
 
-     * fixed wing
+   * fixed wing
  
 ```console
 poine@nina:~/pat$ ./src/pat3/test/fixed_wing/test_02_att_ctl.py
@@ -39,10 +39,10 @@ poine@nina:~/pat$ ./src/pat3/test/fixed_wing/test_02_att_ctl.py
 
 ```console
 poine@nina:~/pat$ ./src/pat3/test/fixed_wing/test_03_guidance.py
+```
 
 
-
-    * multirotor
+   * multirotor
  
 ```console
 poine@nina:~/pat$ ./src/pat3/test/rotorcraft/sim_guidance.py --traj smooth_oval2
