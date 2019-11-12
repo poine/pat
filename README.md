@@ -29,7 +29,7 @@ You can test that it worked with
 poine@nina:~$ python -c "import pat3; print(pat3.__version__)"
 ```
 
- * run examples:
+###  Running Examples:
 
    * fixed wing
  
