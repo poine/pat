@@ -62,6 +62,9 @@ def plot_in_grid(time, plots, ncol, figure=None, window_title="None", legend=Non
 3D
 '''
 import mpl_toolkits.mplot3d
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 def set_3D_axes_equal(ax=None):
     '''
     Make axes of 3D plot have equal scale so that spheres appear as spheres,
@@ -87,3 +90,40 @@ def set_3D_axes_equal(ax=None):
     ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
+    
+def plot_3D_traj(ref_traj, X=None):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    pts = ref_traj.get_points()
+    xs, ys, zs = pts[:,0], pts[:,1], pts[:,2] 
+    ax.plot(xs, ys, zs, color='g', label='ref trajectory')
+    ax.plot(xs, ys, np.zeros(len(xs)), linestyle='--', color='k', linewidth=0.5, label='ground track')
+    # https://stackoverflow.com/questions/36013063/what-is-the-purpose-of-meshgrid-in-python-numpy
+    if 1:
+        verts = []
+        for i in range(1, len(pts)):
+            verts.append([(xs[i-1], ys[i-1], 0), (xs[i-1], ys[i-1], zs[i-1]),
+                          (xs[i], ys[i], zs[i]), (xs[i], ys[i], 0)])
+        mesh = Poly3DCollection(verts, alpha=0.2, linewidth=0, facecolor=[0.5, 0.5, 1])
+        ax.add_collection3d(mesh)
+
+    if X is not None:
+        ax.plot(X[:,0], X[:,1], X[:,2], color='b', label='aircraft trajectory')
+        
+    set_3D_axes_equal()
+    plt.legend(loc='best')
+
+def plot_3D_wind(atm):
+    ax = plt.gca()
+    # Make the grid
+    x, y, z = np.meshgrid(np.linspace(-30., 30., 20),
+                          np.linspace(-30., 30., 20),
+                          np.linspace(0., 10, 10))
+
+    # Make the direction data for the arrows
+    u = np.sin(np.pi * x) * np.cos(np.pi * y) * np.cos(np.pi * z)
+    v = -np.cos(np.pi * x) * np.sin(np.pi * y) * np.cos(np.pi * z)
+    w = (np.sqrt(2.0 / 3.0) * np.cos(np.pi * x) * np.cos(np.pi * y) *
+         np.sin(np.pi * z))
+    
+    ax.quiver(x, y, z, u, v, w, length=0.1, normalize=True)

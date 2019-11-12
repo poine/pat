@@ -91,7 +91,7 @@ class TrackPublisher(MarkerArrayPublisher):
         MarkerArrayPublisher.publish(self, self.poses)
 
 
-
+# 4D traj...
 class TrajectoryPublisher:
 
     def __init__(self, traj, ms=0.01):
@@ -114,6 +114,34 @@ class TrajectoryPublisher:
         for t in time:
             p = geometry_msgs.msg.Point()
             p.x, p.y, p.z = traj.get(t)[:3, 0]
+            marker.points.append(p)
+        #marker.points.append(marker.points[0])
+
+        
+    def publish(self):
+        self.traj_pub.publish(self.traj_msg)
+
+# 3D traj
+class TrajectoryPublisher2:
+
+    def __init__(self, traj, ms=0.01):
+        self.traj_pub = rospy.Publisher('/pat/trajectory', visualization_msgs.msg.MarkerArray, queue_size=1)
+        self.traj_msg = visualization_msgs.msg.MarkerArray()
+        marker = visualization_msgs.msg.Marker()
+        marker.header.frame_id = "w_ned"
+        marker.type = marker.LINE_STRIP
+        marker.action = marker.ADD
+        marker.id = 0
+        marker.scale.x = ms
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a  = 1, 0, 0, 0.5
+        marker.pose.orientation.w = 1.0
+        marker.pose.position.x = 0
+        marker.pose.position.y = 0
+        marker.pose.position.z = 0
+        self.traj_msg.markers.append(marker)
+        for _p in traj.get_points():
+            p = geometry_msgs.msg.Point()
+            p.x, p.y, p.z = _p
             marker.points.append(p)
         #marker.points.append(marker.points[0])
 
