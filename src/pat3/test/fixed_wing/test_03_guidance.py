@@ -20,7 +20,7 @@ import pat3.algebra as pal
 
 import control.matlab
 
-import test_02_pitch_ctl
+import test_02_att_ctl
 
 
 class RefTraj:
@@ -100,7 +100,7 @@ class Guidance:
     def __init__(self, dm, traj, trim_args = {'h':0, 'va':12, 'gamma':0}, dt=0.01):
         self.Xe, self.Ue = dm.trim(trim_args, debug=True)
         self.traj = traj
-        self.att_ctl = test_02_pitch_ctl.AttCtl(self.Xe, self.Ue, dm, dt)
+        self.att_ctl = test_02_att_ctl.AttCtl(self.Xe, self.Ue, dm, dt)
         self.spv_size = 2
         self.T_w2b_ref = np.eye(4)
         self.sum_err_z, self.sum_err_v = 0, 0
@@ -205,7 +205,7 @@ def plot_3d_wind(atm):
 
     
     
-def main(param_filename='/home/poine/work/pat/data/vehicles/cularis.xml',
+def main(param_filename='../../../../data/vehicles/cularis.xml',
          trim_args = {'h':0, 'va':15, 'gamma':0}):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     ref_traj = CircleRefTraj2(c=[10, 0, 10])

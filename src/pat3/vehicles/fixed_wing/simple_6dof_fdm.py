@@ -3,7 +3,7 @@
 
 import numpy as np, math, matplotlib.pyplot as plt
 import scipy.integrate
-import StringIO
+from io import StringIO
 import xml.etree.ElementTree as ET
 import logging, ast
 
@@ -133,7 +133,7 @@ class FDM(pat_dyn.SolidFDM):
         
         Fb, f_eng_body = get_forces_body(rho, va, alpha, beta, euler, omega, Pdyn, Ueng, Usfc, self.P)
         Mb = get_moments_body(alpha, beta, euler, omega, Pdyn, f_eng_body, Usfc, self.P)
-        print Usfc, Mb
+        print(Usfc, Mb)
         # try:
         #     return ps.s1_dyn(X, t, Fb, Mb, P.m, P.I, P.invI, P.inv_mamat)
         # except AttributeError:
@@ -151,14 +151,15 @@ class FDM(pat_dyn.SolidFDM):
         
         va, gamma, h = args.get('va', self.P.Vref), args.get('gamma', 0.), args.get('h', 0.)
         if debug:
-            print "searching for constant path trajectory with"
-            print "  h      {:f} m".format(h)
-            print "  va     {:f} m/s".format(va)
-            print "  gamma  {:f} deg".format(np.rad2deg(gamma))
+            print("searching for constant path trajectory with")
+            print("  h      {:f} m".format(h))
+            print("  va     {:f} m/s".format(va))
+            print("  gamma  {:f} deg".format(np.rad2deg(gamma)))
         LOG.info(" Running trim for va {} gamma {} h {}".format(va, gamma, h))
         rho = patm.get_rho(h)
         Pdyn, beta, omega = 0.5*rho*va**2, 0, [0, 0, 0]
-        def err_func((ele, throttle, alpha)):
+        def err_func(args):
+            ele, throttle, alpha = args
             Ueng, Usfc = UengFun(throttle, self.P), UsfcFun(ele, self.P)
             eulers = [0, gamma+alpha, 0]
             Fb, f_eng_body = get_forces_body(rho, va, alpha, beta, eulers, omega, Pdyn, Ueng, Usfc, self.P)
@@ -171,10 +172,10 @@ class FDM(pat_dyn.SolidFDM):
         #print sol
         LOG.info(" elevator {:.1f} deg throttle {:.1f} % alpha {:.1f} deg".format(np.rad2deg(ele), 100*throttle, np.rad2deg(alpha)))
         if debug:
-            print """result:
+            print("""result:
   throttle        : {:f} %
   elevator        : {:f} deg
-  angle of attack : {:f} deg""".format(100.*throttle, np.rad2deg(ele), np.rad2deg(alpha))
+  angle of attack : {:f} deg""".format(100.*throttle, np.rad2deg(ele), np.rad2deg(alpha)) )
 
         #Xe = [0, 0, -h, va*math.cos(alpha), 0, va*math.sin(alpha), 0, gamma+alpha, 0, 0, 0, 0]
         q = pal.quat_of_euler([0, gamma+alpha, 0])
@@ -218,13 +219,14 @@ class FDM3(pat_dyn.SolidDM3):
     def trim(self, args={}, UengFun=Ueng_of_throttle, UsfcFun=Usfc_of_elevator, debug=False):
         va, gamma, h = args.get('va', self.P.Vref), args.get('gamma', 0), args.get('h', 0)
         if debug:
-            print "searching for constant path trajectory with"
-            print "  h      {:f} m".format(h)
-            print "  va     {:f} m/s".format(va)
-            print "  gamma  {:f} deg".format(np.rad2deg(gamma))
+            print("searching for constant path trajectory with")
+            print("  h      {:f} m".format(h))
+            print("  va     {:f} m/s".format(va))
+            print("  gamma  {:f} deg".format(np.rad2deg(gamma)))
         rho = patm.get_rho(h)
         Pdyn, beta, omega = 0.5*rho*va**2, 0, [0, 0, 0]
-        def err_func((ele, throttle, alpha)):
+        def err_func(args):
+            ele, throttle, alpha = args
             Ueng, Usfc = UengFun(throttle, self.P), UsfcFun(ele, self.P)
             eulers = [0, gamma+alpha, 0]
             Fb, f_eng_body = get_forces_body(rho, va, alpha, beta, eulers, omega, Pdyn, Ueng, Usfc, self.P)
@@ -235,10 +237,10 @@ class FDM3(pat_dyn.SolidDM3):
         sol = scipy.optimize.root(err_func, [0., 0.5, 0.], method='hybr')
         ele, throttle, alpha = sol.x
         if debug:
-            print """result:
+            print("""result:
   throttle        : {:f} %
   elevator        : {:f} deg
-  angle of attack : {:f} deg""".format(100.*throttle, np.rad2deg(ele), np.rad2deg(alpha))
+  angle of attack : {:f} deg""".format(100.*throttle, np.rad2deg(ele), np.rad2deg(alpha)) )
 
         Ue = np.zeros(self.P.input_nb)
         Ue[:self.P.eng_nb] = UengFun(throttle, self.P)

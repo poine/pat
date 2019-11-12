@@ -77,7 +77,7 @@ def decorate(ax, title=None, xlab=None, ylab=None, legend=None):
         ax.yaxis.set_label_text(ylab)
     if title:
         ax.set_title(title, {'color'    : 'k', 'fontsize'   : 20 })
-    if legend <> None:
+    if legend != None:
         ax.legend(legend, loc='best')
 
 
@@ -85,7 +85,7 @@ def plot(h0=1, h1=84000):
     h = np.linspace(h0, h1, 1000)
     v = np.array(map(isa, h))
     v1 = np.array(map(get_rho, h))
-    print v1
+    print(v1)
     #pdb.set_trace()
     ax = plt.subplot(1, 3, 1)
     plt.plot(v[:,2], h)
