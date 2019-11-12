@@ -200,7 +200,7 @@ register(SmoothOval2)
 class Traj19(pmt.Circle):
     name, desc = 'c42', 'circle r=30 v=15, looking forward'
     def __init__(self):
-        r, v = 30., 12.; om = v/r; alpha0 = 0
+        r, v = 20., 12.; om = v/r; alpha0 = 0
         #psit = pmt.AffineOne(om, alpha0+np.sign(r)*np.pi/2)
         #psit=pmt.SinOne(om=om)
         psit = None

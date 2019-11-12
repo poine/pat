@@ -2,6 +2,7 @@
 from io import StringIO
 import xml.etree.ElementTree as ET
 import numpy as np
+import pdb
 
 class Param:
     """
@@ -38,7 +39,10 @@ class Param:
 
         masses = root.find("masses")
         self.m = float(masses.find("mass").text)
-        self.I = np.genfromtxt(StringIO(masses.find("inertia").text), delimiter=",")
+        try:
+            self.I = np.genfromtxt(StringIO(masses.find("inertia").text), delimiter=",")
+        except TypeError:   # python 2 compatibility
+            self.I = np.genfromtxt(StringIO(unicode(masses.find("inertia").text)), delimiter=",")
 
         aerodynamics = root.find("aerodynamics")
         for param in ["Sref", "Cref", "Bref"]:
@@ -63,8 +67,13 @@ class Param:
         engines = propulsion.findall("engine")
         self.eng_name = [e.attrib["name"] for e in engines]
         self.eng_nb = len(self.eng_name)
-        setattr(self, "eng_pos", [np.genfromtxt(StringIO(e.attrib["pos"]),delimiter=",") for e in engines])
-        setattr(self, "eng_align", [np.genfromtxt(StringIO(e.attrib["align"]),delimiter=",") for e in engines])
+        try:
+            setattr(self, "eng_pos", [np.genfromtxt(StringIO(e.attrib["pos"]),delimiter=",") for e in engines])
+            setattr(self, "eng_align", [np.genfromtxt(StringIO(e.attrib["align"]),delimiter=",") for e in engines])
+        except TypeError:   # python 2 compatibility
+            setattr(self, "eng_pos", [np.genfromtxt(StringIO(unicode(e.attrib["pos"])),delimiter=",") for e in engines])
+            setattr(self, "eng_align", [np.genfromtxt(StringIO(unicode(e.attrib["align"])),delimiter=",") for e in engines])
+
         for param in ["fmax", "rhoi", "nrho", "Vi", "nV", "tau"]:
             setattr(self, param+"s", [float(e.attrib[param]) for e in engines])
 

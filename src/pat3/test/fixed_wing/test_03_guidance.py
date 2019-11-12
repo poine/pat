@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import math, numpy as np
+import sys, os, math, numpy as np
 import logging
 import pdb
 
@@ -7,11 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-import sys
-sys.path.append('/home/poine/work/pat/src') # PAT3
-#import pat.vehicles.fixed_wing.dynamic_model_python_basic as p1_fw_dyn
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
-
 import pat3.atmosphere as p3_atm
 import pat3.vehicles.rotorcraft.multirotor_trajectory as p3_mt
 import pat3.utils as p3_u
@@ -205,16 +201,13 @@ def plot_3d_wind(atm):
 
     
     
-def main(param_filename='../../../../data/vehicles/cularis.xml',
-         trim_args = {'h':0, 'va':15, 'gamma':0}):
+def main(param_filename, trim_args = {'h':0, 'va':11, 'gamma':0}):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     ref_traj = CircleRefTraj2(c=[10, 0, 10])
     #time, X, U = test_02_pitch_ctl.run_simulation(dm, plot=False)
     time, X, U = run_simulation(dm, ref_traj, plot=True)
-    #X = None
-    #print(traj.get_closest_point([0, 0, 0]))
     
-    atm =  p3_atm.Atmosphere()
+    #atm =  p3_atm.Atmosphere()
     plot_3d_traj(ref_traj, X)
     #plot_3d_wind(atm)
     plt.show()
@@ -222,4 +215,6 @@ def main(param_filename='../../../../data/vehicles/cularis.xml',
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     np.set_printoptions(linewidth=500)
-    main()
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    param_filename = os.path.abspath(os.path.join(dirname, '../../../../data/vehicles/cularis.xml'))
+    main(param_filename)

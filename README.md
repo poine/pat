@@ -11,7 +11,7 @@ Some stuff related to aerospace simulation
 ### Installing
 
  * clone sources:
- ```
+ ```console
  cd
  git clone https://github.com/poine/pat.git
  ```
@@ -31,12 +31,22 @@ poine@nina:~$ python -c "import pat3; print(pat3.__version__)"
 
  * run examples:
 
- ** fixed wing
+     * fixed wing
  
 ```console
 poine@nina:~/pat$ ./src/pat3/test/fixed_wing/test_02_att_ctl.py
 ```
 
+```console
+poine@nina:~/pat$ ./src/pat3/test/fixed_wing/test_03_guidance.py
+
+
+
+    * multirotor
+ 
+```console
+poine@nina:~/pat$ ./src/pat3/test/rotorcraft/sim_guidance.py --traj smooth_oval2
+```
 
 
 

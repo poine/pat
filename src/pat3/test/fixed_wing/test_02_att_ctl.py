@@ -1,17 +1,12 @@
 #! /usr/bin/env python
-import math, numpy as np, matplotlib.pyplot as plt
+import os, sys, math, numpy as np, matplotlib.pyplot as plt
 import logging
 import pdb
 
-import sys
-sys.path.append('/home/poine/work/pat/src') # PAT3
-# sys.path.append('/Users/murat/Work/GIT/pat/src')
-import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
-#import pat.vehicles.fixed_wing.dynamic_model_python_basic as p1_fw_dyn
-#import pat.vehicles.fixed_wing.control_3d as p1_fw_ctl
-import pat3.utils as p3_u
 import control.matlab
 
+import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
+import pat3.utils as p3_u
 
 class PitchCtl:
     def __init__(self, Xe, Ue, dm, dt):
@@ -32,9 +27,10 @@ class PitchCtl:
         theta_e, q_e = X[p1_fw_dyn.sv_theta]-theta_ref, X[p1_fw_dyn.sv_q]-q_ref
         #theta_e, q_e = np.clip([theta_e, q_e], np.deg2rad([-30, -80]), np.deg2rad([30, 80]))
         self.sum_theta_err += theta_e
+        # feedback
         d_ele = -self.k_theta*theta_e -self.k_q*q_e -self.k_itheta*self.sum_theta_err
+        # feedforward
         d_ele += self.h_theta*theta_ref + self.h_q*q_ref + self.h_qd*qd_ref 
-        #pdb.set_trace()
         return d_ele
 
 
@@ -71,7 +67,7 @@ class AttCtl:
         return U
     
     
-def run_simulation(dm, tf=40.5, dt=0.0025, trim_args = {'h':0, 'va':12, 'gamma':0}, plot=True):
+def run_simulation(dm, tf=40.5, dt=0.01, trim_args = {'h':0, 'va':12, 'gamma':0}, plot=True):
     Xe, Ue = dm.trim(trim_args, debug=True)
     time = np.arange(0, tf, dt)
     X = np.zeros((len(time), dm.sv_size))
@@ -99,16 +95,13 @@ def run_simulation(dm, tf=40.5, dt=0.0025, trim_args = {'h':0, 'va':12, 'gamma':
         plt.show()  
     return time, X, U
         
-def main(param_filename='../../../../data/vehicles/cularis.xml'):
+def main(param_filename):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     run_simulation(dm)
     
-
-    
-
-    
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     np.set_printoptions(linewidth=500)
-    main()
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    param_filename = os.path.abspath(os.path.join(dirname, '../../../../data/vehicles/cularis.xml'))
+    main(param_filename)
