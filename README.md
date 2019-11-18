@@ -1,10 +1,6 @@
-# PAT
-Python Aerospace Toolbox
+# PAT (Python Aerospace Toolbox)
 
-Some stuff related to aerospace simulation
-
-
-[Documentation index](https://poine.github.io/pat)
+Some stuff related to aerospace simulation, documentation over [there](https://poine.github.io/pat).
 
 ## Quickstart
 
