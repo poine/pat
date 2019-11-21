@@ -1,16 +1,32 @@
+import sys, os
 import numpy as np, math
 import threading
 
+
+import pat3.frames as p3_fr
 import pdb
 
+
+def norm_mpi_pi(v): return ( v + np.pi) % (2 * np.pi ) - np.pi
+def norm_0_2pi(v): return ( v + np.pi) % (2 * np.pi )
+
+
+# assume this file is pat_dir/src/pat3/utils.py
+def pat_dir():
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    return os.path.abspath(os.path.join(dirname, '../..'))
+    
 def step(t, a=-1., p=10., dt=0.): return a if math.fmod(t+dt, p) > p/2 else -a
 def step_vec(t, a=-1., p=10., dt=0.): return np.array([step(_t) for _t in t])
 
 class Sim:
 
-    def __init__(self, fdm, ctl):
-        self.fdm, self.ctl = fdm, ctl
+    def __init__(self, fdm, ctl, atm):
+        self.fdm, self.ctl, self.atm = fdm, ctl, atm
         self.Yc = np.zeros(ctl.spv_size)
+        self.max_n_X = 5000
+        self.Xs  = []  # stores original model state over time
+        self.Xees = [] # stores model state as euclidian/euler
         
     def reset(self, t0, X0=None):
         if X0 is None:
@@ -18,7 +34,8 @@ class Sim:
         return self.fdm.reset(X0, t0)
         
     def run(self, t1):
-        U = self.ctl.get(self.fdm.t, self.fdm.X, self.Yc) # in case we don't run the fdm
+        Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(self.fdm.X)
+        U = self.ctl.get(self.fdm.t, self.fdm.X, Xee, self.Yc) # in case we don't run the fdm
         #pdb.set_trace()
         #print('{} sim.run to {:.3f} (orig {:.3f})'.format(threading.currentThread().getName(), t1, self.fdm.t))
         #if t1 >= self.fdm.t+self.fdm.dt:
@@ -27,9 +44,15 @@ class Sim:
         #    print('not running sim at {:.3f} (next end scheduled to {:.3f}'.format(t1, self.fdm.t+self.fdm.dt))
         while t1 - self.fdm.t >= self.fdm.dt:#0:#self.fdm.dt:
             #print(' compute control at {:.3f}'.format(self.fdm.t))
-            U = self.ctl.get(self.fdm.t, self.fdm.X, self.Yc)
+            Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(self.fdm.X, self.atm)
+            U = self.ctl.get(self.fdm.t, self.fdm.X, Xee, self.Yc)
             #print(' run fdm from {:.3f} to {:.3f}'.format(self.fdm.t, self.fdm.t+self.fdm.dt))
-            self.fdm.run(self.fdm.dt, self.fdm.t+self.fdm.dt, U)
+            self.fdm.run(self.fdm.dt, self.fdm.t+self.fdm.dt, U, self.atm)
+            self.Xs.append(self.fdm.X)
+            self.Xees.append(self.fdm.state_six_dof_euclidian_euler(self.fdm.X, self.atm))
+            if len(self.Xs) > self.max_n_X:
+                del self.Xs[0]
+                del self.Xees[0]
         return U, self.fdm.X
         
 
@@ -101,7 +124,6 @@ def num_jacobian(X, U, P, dyn):
         dx = dX[i,:]
         delta_f = dyn(X+dx/2, 0, U, P) - dyn(X-dx/2, 0, U, P)
         delta_f = delta_f / dx[i]
-#        print delta_f
         A[:,i] = delta_f
 
     epsilonU = (0.1*np.ones(i_size)).tolist()

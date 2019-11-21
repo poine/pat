@@ -19,6 +19,8 @@
 #    along with PAT.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import pdb
+
 """
   atmophère, atmosphère, est-ce-que j'ai une gueule d'atmosphère?
 """
@@ -110,5 +112,120 @@ if __name__ == "__main__":
 
 class Atmosphere:
 
-    def get_wind(self, pos, t):
+    def sample(self, x_r=np.arange(-60., 60., 5), y_r=np.arange(-60., 60., 5), z_r=np.arange(0., -150, -10), t=0.):
+        x, y, z = np.meshgrid(x_r, y_r, z_r)
+        wx, wy, wz = np.meshgrid(x_r, y_r, z_r)
+        nx, ny, nz = x.shape
+        for ix in range(nx):
+            for iy in range(ny):
+                for iz in range(nz):
+                    pos = [x[ix, iy, iz], y[ix, iy, iz], z[ix, iy, iz]]
+                    wx[ix, iy, iz], wy[ix, iy, iz], wz[ix, iy, iz] = self.get_wind(pos, t)
+        return x, y, z, wx, wy, wz
+
+    
+    def get_wind(self, pos_ned, t):
         return [0, 0, 0]
+        #return [0., 0, 0.5] if pos[0] > 0 else [0, 0, -0.5]
+        #d = np.linalg.norm(pos-[10, 10, 0])
+        #return [0, 0, np.sin(0.1*d)]
+        #return [0., 0, 0.5] if pos[0] > 0 else [0, 0, -0.5]
+    
+
+
+class AtmosphereCalm(Atmosphere):
+    def get_wind(self, pos_ned, t):
+        return [0, 0, 0] 
+
+class AtmosphereCstWind(Atmosphere):
+    def __init__(self, v=[0, 0, 0]):
+        self.v = np.asarray(v)
+    def get_wind(self, pos, t):
+        #p = 120.
+        #return self.v if math.fmod(t, p) > p/3 else [0, 0, 0]
+        return self.v
+
+class AtmosphereVgradient(Atmosphere):
+    def get_wind(self, pos, t):
+        wmin, wmax, hmax = 0., 5., 10. # 
+        return [max(wmin, min(wmax/hmax*pos[2], wmax)), 0, 0]
+
+
+def thermal_model_gedeon(x, y, z, R_t=10, W_max=1):
+    r = np.sqrt(x**2+y**2)
+    top = (r/R_t)**2
+    w = W_max*np.exp(-top)*(1-top)
+    return w
+
+class AtmosphereThermal(Atmosphere):
+    def get_wind(self, pos_ned, t, wstar=256, wgain=1., rgain=1, zi=1000):
+        x,y,z = pos_ned
+        z=-z
+        w = thermal_model_gedeon(x, y, z, R_t=30, W_max=2)
+        return [0, 0, -w]
+
+
+class AtmosphereThermal1(Atmosphere):
+    def __init__(self):
+        self.c = np.array([0, 0, 0])
+        self.zi = 2000
+        self.wstar = 256.
+
+    def set_params(self, xc, yc, zi, wstar):
+        self.c = np.asarray([xc, yc, 0])
+        self.zi, self.wstar = zi, wstar
+
+    def get_params(self): return self.c[0], self.c[1], self.zi, self.wstar  
+        
+    def get_wind(self, pos_ned, t, wgain=1., rgain=1):
+        x,y,z = pos_ned - self.c
+        z=z+150
+        #CALCULATE AVERAGE UPDRAFT SIZE
+        zzi=z/self.zi
+        rbar=(.102*zzi**(1./3))*(1-(.25*zzi))*self.zi
+        #CALCULATE AVERAGE UPDRAFT STRENGTH
+        wtbar=np.power(zzi,1./3)*(1-1.1*zzi)*self.wstar
+        
+        #CALCULATE INNER AND OUTER RADIUS OF ROTATED TRAPEZOID UPDRAFT
+        r2=rbar*rgain #multiply by random perturbation gain
+        if r2<10: r2=10
+        if r2<600:
+            r1r2=.0011*r2+.14
+        else:
+            r1r2=.8
+        r1=r1r2*r2
+        #limit small updrafts to 20m diameter
+        #MULTIPLY AVERAGE UPDRAFT STRENGTH BY WGAIN FOR THIS UPDRAFT
+        wt=wtbar*wgain #add random perturbation
+        #CALCULATE STRENGTH AT CENTER OF ROTATED TRAPEZOID UPDRAFT
+        wc=(3*wt*((r2**3)-(r2**2)*r1)) / ((r2**3)-(r1**3))
+        #print wc
+        wc/=300.
+        R_ave = (r1+r2)/2.
+        w = thermal_model_gedeon(x, y, z, R_t=R_ave, W_max=wc)
+        return [0, 0, -w]
+
+class AtmosphereThermalMoving(AtmosphereThermal1):
+
+    def get_wind(self, pos_ned, t):
+        self.c = np.array([0, 50*np.sin(0.2*t), 0])
+        return AtmosphereThermal1.get_wind(self, pos_ned, t)
+
+class AtmosphereThermalMulti(Atmosphere):
+    def __init__(self):
+        self.thermals = [AtmosphereThermal1() for i in range(2)]
+        zi, wstar =850., 256.
+        self.thermals[0].set_params(0,  55, zi, wstar)
+        self.thermals[1].set_params(0, -55, zi, wstar)
+        
+    def set_params(self, xc, yc, zi, wstar, idx=0):
+        print('set params:', xc, yc, zi, wstar, idx)
+        self.thermals[idx].set_params(xc, yc, zi, wstar)
+
+    def get_params(self, idx=0):
+        return self.thermals[idx].get_params()
+    
+    def get_wind(self, pos_ned, t): 
+        #self.thermals[0].c = np.array([0, 55+10*np.sin(0.02*t), 0])
+        winds = [_t.get_wind(pos_ned, t) for _t in self.thermals]
+        return np.sum(winds, axis=0)

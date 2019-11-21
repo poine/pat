@@ -114,16 +114,44 @@ def plot_3D_traj(ref_traj, X=None):
     plt.legend(loc='best')
 
 def plot_3D_wind(atm):
-    ax = plt.gca()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
     # Make the grid
-    x, y, z = np.meshgrid(np.linspace(-30., 30., 20),
-                          np.linspace(-30., 30., 20),
-                          np.linspace(0., 10, 10))
+    x_r, y_r, z_r = np.arange(-50., 50., 5), np.arange(-50., 50., 5), np.arange(0., 100, 10)
+    x, y, z = np.meshgrid(x_r, y_r, z_r)
+    wx, wy, wz = np.meshgrid(x_r, y_r, z_r)
+    nx, ny, nz = x.shape
+    for ix in range(nx):
+        for iy in range(ny):
+            for iz in range(nz):
+                pos = [x[ix, iy, iz], y[ix, iy, iz], z[ix, iy, iz]]
+                wx[ix, iy, iz], wy[ix, iy, iz], wz[ix, iy, iz] = atm.get_wind(pos, t=0)
+    w = np.vstack((wx[np.newaxis],wy[np.newaxis],wz[np.newaxis]))
+    w_norm = np.linalg.norm(w, axis = 0)
+    c = (w_norm.ravel() - w_norm.min()) / w_norm.ptp()
+    c = np.concatenate((c, np.repeat(c, 2)))
+    # Colormap
+    c = plt.cm.hsv(c)
+    #pdb.set_trace()
+    #q = ax.quiver(x, y, z, wx, wy, wz)
+    #q = ax.quiver(x, y, z, wx, wy, wz, length=1., cmap='Reds
+    q = ax.quiver(x, y, z, wx, wy, wz, colors=c, length=1., lw=3, normalize=True)
+    #q = ax.quiver(x, y, z, wx, wy, wz, length=1.1, cmap='Reds', lw=2, normalize=True)
+    #q.set_array(np.random.rand(np.prod(x.shape)))
+    ax.set_xlabel('X axis')
+    ax.set_ylabel('Y axis')
+    ax.set_zlabel('Z axis')
 
-    # Make the direction data for the arrows
-    u = np.sin(np.pi * x) * np.cos(np.pi * y) * np.cos(np.pi * z)
-    v = -np.cos(np.pi * x) * np.sin(np.pi * y) * np.cos(np.pi * z)
-    w = (np.sqrt(2.0 / 3.0) * np.cos(np.pi * x) * np.cos(np.pi * y) *
-         np.sin(np.pi * z))
-    
-    ax.quiver(x, y, z, u, v, w, length=0.1, normalize=True)
+def plot_slice_wind(atm):
+    y=0
+    xlist, zlist = np.arange(-50., 50., 5), np.arange(-10., 150, 2)
+    x, z = np.meshgrid(xlist, zlist)
+    wz = np.zeros_like(z)
+    nx, nz = x.shape
+    for ix in range(x.shape[0]):
+        for iz in range(x.shape[1]):
+            wz[ix, iz] = -atm.get_wind([x[ix, iz], y, -z[ix, iz]], t=0)[2]
+    fig,ax=plt.subplots(1,1)
+    cp = ax.contourf(x, z, wz)
+    fig.colorbar(cp)
+    ax.set_title('Filled Contours Plot')

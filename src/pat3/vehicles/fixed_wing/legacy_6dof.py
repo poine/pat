@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 import importlib
 
 import pat3.utils as p3_u
+import pat3.frames as p3_fr
 import pat3.plot_utils as p3_pu
 import pat3.atmosphere as p3_atm
 import pat3.algebra as p3_alg
@@ -41,7 +42,7 @@ def load(type, variant, param=None):
     dm = importlib.import_module(mod_str)
     return dm.DynamicModel(param)
 
-
+# This is not very useful. taken from pat1 to avoid changin the dynamic model class
 class BaseDynamicModel():
 
     def __init__(self, param=None):
@@ -117,6 +118,7 @@ iv_dr   = 2
 iv_size = 4
 
 
+# REMOVE this... now in frames
 def get_aero_to_body(X):
     """
     computes the aero to body rotation matix
@@ -183,7 +185,7 @@ def get_m_aero_body(X, Usfc, P, Pdyn):
 
     return Pdyn*P.Sref*np.array([Cl*P.Bref, Cm*P.Cref, Cn*P.Bref])
 
-def dyn(X, t, U, P):
+def dyn(X, t, U, P, atm=None):
     """
     Dynamic model
     """
@@ -192,18 +194,27 @@ def dyn(X, t, U, P):
 
     Ueng = U[0:P.eng_nb]                    # engines part of input vector
     Usfc = U[P.eng_nb:P.eng_nb+P.sfc_nb]    # control surfaces part of input vector
-    X_rvel_body = X[sv_p:sv_r+1]            # body rotational velocities
-    X_euler = X[sv_phi:sv_psi+1]            # euler angles                          
+    X_pos = X[sv_slice_pos]                 #
+    X_rvel_body = X[sv_slice_rvel]          # body rotational velocities
+    X_euler = X[sv_slice_eul]               # euler angles                          
 
+    aero_to_body = get_aero_to_body(X)
+    earth_to_body = p3_alg.rmat_of_euler(X_euler)
+    body_to_earth = earth_to_body.T 
+    avel_aero = [X[sv_v], 0., 0.]
+    avel_body = np.dot(aero_to_body, avel_aero)
+    wvel_earth = (atm.get_wind(X_pos, t) if atm is not None else [0, 0, 0])
+    wvel_body = np.dot(earth_to_body, wvel_earth)
+    waccel_body = [0, 0, 0]  # np.dot(earth_to_body, waccel_earth)
+    ivel_body = avel_body + wvel_body
+    
     # Newton for forces in body frame
     f_aero_body = get_f_aero_body(X, Usfc, P, Pdyn)
     f_eng_body  = get_f_eng_body(X, Ueng, P)
-    earth_to_body = p3_alg.rmat_of_euler(X_euler)
     f_weight_body = np.dot(earth_to_body, [0., 0., P.m*P.g])
     forces_body = f_aero_body + np.sum(f_eng_body, axis=0) + f_weight_body
     
-    vel_body = np.dot(get_aero_to_body(X), [X[sv_v], 0., 0.])  # u, v, w
-    accel_body = 1./P.m*forces_body - np.cross(X_rvel_body, vel_body)
+    iaccel_body = 1./P.m*forces_body - np.cross(X_rvel_body, ivel_body)
 
     # Newton for moments in body frame
     m_aero_body = get_m_aero_body(X, Usfc, P, Pdyn)
@@ -212,14 +223,23 @@ def dyn(X, t, U, P):
     #raccel_body = np.dot(P.invJ, m_aero_body + m_eng_body - np.cross(X_rvel_body, np.dot(P.J, X_rvel_body)))
 
     Xdot = np.zeros(sv_size)
-    Xdot[sv_x:sv_z+1] = np.dot(np.transpose(earth_to_body), vel_body)
+    Xdot[sv_x:sv_z+1] = np.dot(body_to_earth, ivel_body)
 
-    Xdot[sv_v] = np.inner(vel_body, accel_body)/X[sv_v]
-    u, v, w = vel_body
-    ud, vd, wd = accel_body
-    Xdot[sv_alpha] = (u*wd - w*ud)/(u**2+w**2)
-    Xdot[sv_beta] = (X[sv_v]*vd - v*Xdot[sv_v]) / X[sv_v] / math.sqrt(u**2+w**2)
+    # CHECK...
+    # Air velocity kinematics
+    aaccel_body = iaccel_body - waccel_body
 
+    Xdot[sv_v] = np.inner(avel_body, aaccel_body)/X[sv_v]
+    #u, v, w = avel_body
+    #ud, vd, wd = aaccel_body
+    #Xdot[sv_alpha] = (u*wd - w*ud)/(u**2+w**2)
+    #Xdot[sv_beta] = (X[sv_v]*vd - v*Xdot[sv_v]) / X[sv_v] / math.sqrt(u**2+w**2)
+    (avx, avy, avz), (aax, aay, aaz) = avel_body, aaccel_body
+    Xdot[sv_alpha] = (avx*aaz - avz*aax)/(avx**2+avz**2)
+    Xdot[sv_beta] = (X[sv_v]*aay - avy*Xdot[sv_v]) / X[sv_v] / math.sqrt(avx**2+aaz**2)
+    
+
+    # Euler angles kinematics
     Xdot[sv_phi:sv_psi+1] = p3_alg.euler_derivatives(X_euler, X_rvel_body)
     
     Xdot[sv_p:sv_r+1] = raccel_body
@@ -239,9 +259,9 @@ def trim(P, args=None, report=True, debug=False):
 
     if report:
         print("searching for constant path trajectory with")
-        print("  h      {:f} m".format(h))
-        print("  va     {:f} m/s".format(va))
-        print("  gamma  {:f} deg".format(np.rad2deg(gamma)))
+        print("  h      {:.1f} m".format(h))
+        print("  va     {:.2f} m/s".format(va))
+        print("  gamma  {:.2f} deg".format(np.rad2deg(gamma)))
 
     def err_func(args):
         throttle, elevator, alpha = args
@@ -257,9 +277,9 @@ def trim(P, args=None, report=True, debug=False):
 
     if report:
         print("""result:
-  throttle        : {:f} %
-  elevator        : {:f} deg
-  angle of attack : {:f} deg""".format(100.*thr_e, np.rad2deg(ele_e), np.rad2deg(alpha_e)))
+  throttle        : {:.2f} %
+  elevator        : {:.2f} deg
+  angle of attack : {:.2f} deg""".format(100.*thr_e, np.rad2deg(ele_e), np.rad2deg(alpha_e)))
 
     Ue = np.zeros(P.input_nb)
     Ue[0:P.eng_nb] = thr_e; Ue[P.eng_nb+iv_de] = ele_e
@@ -321,9 +341,11 @@ class DynamicModel(BaseDynamicModel):
     def name(self):
         return "Fixed Wing Python Basic ({:s})".format(self.P.name)
 
-    def reset(self, X0=None, t0=0):
+    def reset(self, X0=None, t0=0, X_act0=None):
         if X0!=None: self.X = np.array(X0)
         else: self.X = np.array([0., 0., 0., 68., 0., 0., 0., 0., 0., 0., 0., 0.])
+        if X_act0 is not None:
+            self.X_act = np.asarray(X_act0)
         self.t = t0
         self._update_byproducts()
         return self.X
@@ -338,15 +360,14 @@ class DynamicModel(BaseDynamicModel):
         Uclip[self.iv_dr()]  = np.clip(U[self.iv_dr()], -max_rud, max_rud)
         return Uclip
         
-    def run(self, dt, tf, U): # FIXME DT vs TF
-        # actuators.
+    def run(self, dt, tf, U, atm):
         if 0: # no actuator dynamics
             self.X_act = self._clip_input(U)
         else:
-            act_tc = -np.array([0.1, 0.02, 0.02, 0.02, 0.02])
-            self.X_act += dt*((self.X_act-self._clip_input(U))/act_tc)
+            act_lambda = -1./np.array([0.1, 0.02, 0.02, 0.02, 0.02])
+            self.X_act += dt*((self.X_act-self._clip_input(U))*act_lambda)
        
-        foo, self.X = scipy.integrate.odeint(dyn, self.X, [self.t, self.t+dt], args=(self.X_act, self.P))#, hmax=0.001)
+        foo, self.X = scipy.integrate.odeint(dyn, self.X, [self.t, self.t+dt], args=(self.X_act, self.P, atm))#, hmax=0.001)
         self.t += dt
         self._update_byproducts()
         return self.X
@@ -374,12 +395,14 @@ class DynamicModel(BaseDynamicModel):
                                   v, self.P.Vis[i], self.P.nVs[i])
 
     # we need something for that...
-    # def state_SixDOFfEuclidianEuler(self):
+    # def state_SixDOFfEuclidianEuler(self, X):
     #     X = np.zeros(fr.SixDOFfEuclidianEuler.size)
     #     X[fr.SixDOFfEuclidianEuler.x:fr.SixDOFfEuclidianEuler.z+1] = self.X[sv_x:sv_z+1]
     #     X[fr.SixDOFfEuclidianEuler.phi:fr.SixDOFfEuclidianEuler.r+1] = self.X[sv_phi:sv_r+1]
     #     return X
-
+    def state_six_dof_euclidian_euler(self, X, atm=None):
+        return p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X, atm)
+    
     def get_jacobian(self, Xe, Ue):
         A,B = p3_u.num_jacobian(Xe, Ue, self.P, dyn)
         return A, B 

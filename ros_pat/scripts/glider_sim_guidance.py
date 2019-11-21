@@ -1,35 +1,109 @@
 #! /usr/bin/env python
 import numpy as np
 import rospy, tf2_ros, tf, geometry_msgs.msg, sensor_msgs.msg
+import dynamic_reconfigure.server as dyn_rec_srv
+import dynamic_reconfigure.client
 
 import pdb
 
 import pat3.algebra as pal
 import pat3.utils as pmu
-import pat3.ros_utils as pru
+import pat3.frames as p3_fr
+import pat3.trajectory_3D as p3_traj3d
+import pat3.atmosphere as p3_atm
+import pat3.ros_utils as p3_rpu
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 import pat3.test.fixed_wing.test_03_guidance as p3_fw_guid
-# we use rotorcraft trajectories...
-#import pat3.vehicles.rotorcraft.multirotor_trajectory as pmt
-#import pat3.vehicles.rotorcraft.multirotor_trajectory_factory as pmtf
 
+import ros_pat.cfg.guidanceConfig
+import ros_pat.cfg.atmosphereConfig
+import ros_pat.msg
 
 class Agent:
     def __init__(self, _traj=None, time_factor=1.):
-        traj = p3_fw_guid.CircleRefTraj(c=[0, 0, 0], r=15)
+        traj = p3_traj3d.CircleRefTraj(c=[0, 0, -20], r=15)
+        #traj = p3_fw_guid.LineRefTraj(p1=[0, 0, 0], p2=[50, 50, 0])
+        #traj = p3_fw_guid.SquareRefTraj()
+        #traj = p3_fw_guid.OctogonRefTraj()
         self.time_factor = time_factor
-        #_fdm = fdm.MR_FDM()
-        #_fdm = fdm.UFOFDM()
-        #_fdm = fdm.SolidFDM()
         param_filename='/home/poine/work/pat/data/vehicles/cularis.xml'
         _fdm = p1_fw_dyn.DynamicModel(param_filename)
-        self.traj_pub = pru.TrajectoryPublisher2(traj, ms=0.2)
-        _ctl = p3_fw_guid.Guidance(_fdm, traj, {'h':0, 'va':12, 'gamma':0})
-        self.sim = pmu.Sim(_fdm, _ctl)
-        self.tf_pub = pru.TransformPublisher()
-        self.carrot_pub = pru.MarkerPublisher('guidance/goal', 'w_ned', scale=(0.25, 0.25, 0.5))
-        self.pose_pub = pru.PoseArrayPublisher(dae='glider.dae')
+        #_ctl = p3_fw_guid.Guidance(_fdm, traj, {'h':0, 'va':10, 'gamma':0})
+        _ctl = p3_fw_guid.GuidanceThermal(_fdm, traj, {'h':0, 'va':10, 'gamma':0})
+        #_atm = p3_atm.AtmosphereCstWind([0, 0, -1])
+        #_atm = p3_atm.AtmosphereThermal1()
+        _atm = p3_atm.AtmosphereThermalMulti()
+        self.sim = pmu.Sim(_fdm, _ctl, _atm)
+        self.tf_pub = p3_rpu.TransformPublisher()
+        self.carrot_pub = p3_rpu.MarkerPublisher('guidance/goal', 'w_ned', scale=(0.25, 0.25, 0.5))
+        self.traj_pub = p3_rpu.TrajectoryPublisher2(traj, ms=0.2)
+        self.pose_pub = p3_rpu.PoseArrayPublisher(dae='glider.dae')
+        self.atm_pub = None#p3_rpu.AtmPointCloudPublisher(_atm)
+        self.status_pub = p3_rpu.GuidanceStatusPublisher()
+        self.atm_disp_dyn_rec_client = dynamic_reconfigure.client.Client("display_atmosphere", timeout=1, config_callback=self.atm_config_callback)
+        #self.my_own_reconfigure_client = dynamic_reconfigure.client.Client("real_time_sim", timeout=1, config_callback=None)
 
+        self.cur_thermal_id = 0
+        self.guidance_cfg_srv = dyn_rec_srv.Server(ros_pat.cfg.guidanceConfig,
+                                                   self.guidance_cfg_callback)
+        # we can not have two...
+        #self.atm_cfg_srv = dyn_rec_srv.Server(ros_pat.cfg.atmosphereConfig,
+        #                                      self.atm_dyn_cfg_callback)#, subname='foo')
+        self.nav_goal_sub = rospy.Subscriber("/move_base_simple/goal", geometry_msgs.msg.PoseStamped, self.nav_goal_callback)
+        
+        self.periodic_cnt = 0
+
+      
+    def nav_goal_callback(self, msg):
+        # frame id = enu
+        x, y = msg.pose.position.x, msg.pose.position.y 
+        z = self.sim.fdm.X[p1_fw_dyn.sv_z]
+        print(x, y, z)
+        self.guidance_cfg_srv.update_configuration({'xc': x, 'yc': y, 'zc': z, 'fms_mode':0})
+        #self.sim.ctl.set_circle(y, x, z, self.sim.ctl.traj.r)
+        #self.traj_pub.update_ref_traj(self.sim.ctl.traj)
+        
+    def atm_config_callback(self, config):
+        #rospy.loginfo("Config set to {int_param}, {double_param}, {str_param}, {bool_param}, {size}".format(**config))
+        #print config
+        print('atm_config_callback')
+        
+    # def atm_dyn_cfg_callback(self, config, level):
+    #     rospy.loginfo(" ATM Reconfigure Request:")
+    #     self.sim.atm.set_params(config['thxc'], config['thyc'], config['thzi'], config['thwstar'])
+    #     return config
+
+    
+    def guidance_cfg_callback(self, config, level):
+        rospy.loginfo(" Guidance Reconfigure Request:")
+        print level
+        self.sim.ctl.v_sp = config['vsp']
+        # reference trajectory
+        _e, _n, _u = config['xc'], config['yc'], self.sim.fdm.X[p1_fw_dyn.sv_z]
+        self.sim.ctl.set_circle(_n, _e, -_u, config['r'])
+        self.sim.ctl.set_mode(config['fms_mode'])
+        if self.sim.ctl.fms_mode == self.sim.ctl.fms_mode_circle:
+            self.traj_pub.update_ref_traj(self.sim.ctl.traj)
+        self.sim.ctl.set_param(config['centering_gain'])
+        self.sim.ctl.set_radius(config['circle_radius'])
+        #self.traj_pub.update_ref_traj(self.sim.ctl.traj)
+
+        if level == 1 or level == -1:
+            print('setting atm param {idx}'.format(**config))
+            if config['idx'] == self.cur_thermal_id:
+                print 'params'
+                self.sim.atm.set_params(config['thxc'], config['thyc'], config['thzi'], config['thwstar'], config['idx'])
+            else:
+                print 'idx'
+                self.cur_thermal_id = config['idx']
+                params = self.sim.atm.get_params(config['idx'])
+                # config does not want np.float64
+                config['thxc'], config['thyc'], config['thzi'], config['thwstar'] = float(params[0]), float(params[1]), params[2], params[3] 
+            if self.atm_pub is not None: self.atm_pub.update_atm(self.sim.atm)
+            self.atm_disp_dyn_rec_client.update_configuration({"thxc":config['thxc'], "thyc":config['thyc'], "thzi":config['thzi'], "thwstar":config['thwstar'], "idx":config['idx']})
+        return config 
+        
+        
     def periodic(self):
         now = rospy.Time.now()
         t_sim = (now.to_sec() - self.t0)*self.time_factor
@@ -38,7 +112,15 @@ class Agent:
         #self.pose_pub.publish([self.sim.fdm.T_w2b, self.sim.ctl.T_w2b_ref])
         self.pose_pub.publish([self.sim.fdm.T_w2b])
         self.carrot_pub.publish(self.sim.ctl.carrot)
-        if self.traj_pub is not None: self.traj_pub.publish() 
+        if self.traj_pub is not None and len(self.sim.Xs) > 0:# and self.periodic_cnt % 4 == 1:
+            #cval = np.array(self.sim.Xs)[:, p3_fr.SixDOFAeroEuler.sv_z]
+            cval = -np.array(self.sim.Xees)[:, p3_fr.SixDOFEuclidianEuler.sv_zd]
+            if self.sim.ctl.fms_mode == self.sim.ctl.fms_mode_thermaling:
+                self.traj_pub.update_ref_traj(self.sim.ctl.thermaling_traj)
+            self.traj_pub.publish(self.sim.Xs, self.sim.Xees, cval)
+        if self.atm_pub is not None and self.periodic_cnt % 12 == 0: self.atm_pub.publish(self.sim.atm)
+        self.status_pub.publish(self)
+        self.periodic_cnt += 1
         
     def run(self):
         rate = rospy.Rate(20.)

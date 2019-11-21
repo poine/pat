@@ -8,6 +8,11 @@
     <param name="traj_name" value="c42" />
   </node>
 
+  <node name="display_atmosphere" pkg="ros_pat" type="display_atmosphere.py">
+    <param name="time_factor" value="1." />
+    <param name="traj_name" value="c42" />
+  </node>
+
   <group if="$(arg run_viz)">
     <node name="rviz" pkg="rviz" type="rviz" required="true"
           args="-d $(find ros_pat)/rviz/glider.rviz" />

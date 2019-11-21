@@ -35,7 +35,7 @@ $$
 #### Velocities
 
 $$ 
-\dot{v} =  
+\dot{v} =  bla
 
 $$
 
@@ -72,3 +72,7 @@ def euler_derivatives(eu, om):
 ```python
  raccel_body = np.dot(P.invI, m_aero_body + m_eng_body - np.cross(X_rvel_body, np.dot(P.I, X_rvel_body)))
  ```
+
+```console
+poine@nina:~/pat$ ./src/pat3/test/fixed_wing/test_02_att_ctl.py
+```
