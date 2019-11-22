@@ -66,6 +66,5 @@ def main(param_filename):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     np.set_printoptions(linewidth=500)
-    dirname, filename = os.path.split(os.path.abspath(__file__))
-    param_filename = os.path.abspath(os.path.join(dirname, '../../../../data/vehicles/cularis.xml'))
+    param_filename = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml')
     main(param_filename)

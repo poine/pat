@@ -177,7 +177,7 @@ class TrajectoryPublisher2:
                 if cval is not None:
                     cmap_name =  ['PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu',
                                   'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic'][10]
-                    #cval = (cval - cval.min())/cval.ptp()   # Normalize
+                    cval = (cval - cval.min())/cval.ptp()   # Normalize
                     colors = plt.get_cmap(cmap_name)(cval)
                     self.marker_v.colors = [std_msgs.msg.ColorRGBA(*c) for c in  colors]
                 

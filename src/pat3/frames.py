@@ -16,7 +16,7 @@ def R_aero_to_body(alpha, beta):
 
 
 class SixDOFAeroEuler():
-    sv_x, zv_y, sv_z, sv_va, sv_alpha, sv_beta, sv_phi, sv_theta, sv_psi, sv_p, sv_q, sv_r, sv_size = range(0,13)
+    sv_x, sv_y, sv_z, sv_va, sv_alpha, sv_beta, sv_phi, sv_theta, sv_psi, sv_p, sv_q, sv_r, sv_size = range(0,13)
     sv_slice_pos   = slice(sv_x,   sv_z+1)
     sv_slice_vaero = slice(sv_va,   sv_beta+1)
     sv_slice_eul   = slice(sv_phi, sv_psi+1)
@@ -37,6 +37,16 @@ class SixDOFAeroEuler():
         wvel_earth = (atm.get_wind(X[cls.sv_slice_pos], t=0) if atm is not None else [0, 0, 0])
         Xee[SixDOFEuclidianEuler.sv_slice_v] = avel_earth + wvel_earth
         return Xee
+
+    @classmethod
+    def state_str(cls, X):
+        return """pos: {:-.2f}, {:-.2f}, {:-.2f} m
+        vel: {:-.2f} m/s, alpha {:-.2f}, beta {:-.2f} deg
+        att:    {:-.2f}, {:-.2f}, {:-.2f} deg
+        """.format(X[cls.sv_x], X[cls.sv_y], X[cls.sv_z],
+                   X[cls.sv_va], np.rad2deg(X[cls.sv_alpha]), np.rad2deg(X[cls.sv_beta]),
+                   np.rad2deg(X[cls.sv_phi]), np.rad2deg(X[cls.sv_theta]), np.rad2deg(X[cls.sv_psi]))
+
     
 class SixDOFEuclidianEuler():
     sv_x, sv_y, sv_z, sv_xd, sv_yd, sv_zd, sv_phi, sv_theta, sv_psi, sv_p, sv_q, sv_r, sv_size = range(0,13)

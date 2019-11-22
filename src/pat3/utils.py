@@ -17,7 +17,7 @@ def pat_dir():
     return os.path.abspath(os.path.join(dirname, '../..'))
     
 def step(t, a=-1., p=10., dt=0.): return a if math.fmod(t+dt, p) > p/2 else -a
-def step_vec(t, a=-1., p=10., dt=0.): return np.array([step(_t) for _t in t])
+def step_vec(t, a=-1., p=10., dt=0.): return np.array([step(_t, a, p, dt) for _t in t])
 
 class Sim:
 
@@ -110,7 +110,9 @@ class SecOrdLinRef(LinRef):
     def __init__(self, omega, xi, sats=None):
         LinRef.__init__(self, [-omega**2, -2*xi*omega], sats)
 
-    
+def lamdba_to_omxi(l1, l2): return 
+def omxi_to_lambda(om, xi): re, im = -xi*om, np.sqrt(1-xi**2)*om; return np.complex(re,im), np.complex(re, -im)
+        
 """
 Naive numerical differentiation
 """

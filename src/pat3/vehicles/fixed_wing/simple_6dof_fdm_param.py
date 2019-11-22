@@ -29,6 +29,7 @@ class Param:
         compute auxiliary coefficients
         """
         self.invJ = np.linalg.inv(self.J)
+        self.I, self.invI = self.J, self.invJ # FIXME
         try:
             self.inv_mamat = np.linalg.inv(self.mamat)
         except AttributeError:
@@ -40,8 +41,8 @@ class Param:
         for c in ["CL", "CY", "Cl", "Cm", "Cn"]:
             val = [getattr(self, '{:s}_{:s}'.format(c, ax)) for ax in ['p', 'q', 'r']]
             setattr(self, c+'_omega', val)
-        self.CY_omega[2] *= 242
-        self.CL_omega[1] *= 25
+        #self.CY_omega[2] *= 242
+        #self.CL_omega[1] *= 25
         #for i in range(0, 3): self.CY_omega[i] *= 200
 
     def read_from_xml(self, filename):
@@ -56,8 +57,11 @@ class Param:
 
         masses = root.find("masses")
         self.m = float(masses.find("mass").text)
-        self.J = np.genfromtxt(StringIO(masses.find("inertia").text), delimiter=",")
-
+        try:
+            self.J = np.genfromtxt(StringIO(masses.find("inertia").text), delimiter=",")
+        except TypeError:   # python 2 compatibility
+            self.J = np.genfromtxt(StringIO(unicode(masses.find("inertia").text)), delimiter=",")
+            
         aerodynamics = root.find("aerodynamics")
         for param in ["Sref", "Cref", "Bref"]:
             setattr(self, param, float(aerodynamics.find(param).text))
@@ -81,8 +85,12 @@ class Param:
         engines = propulsion.findall("engine")
         self.eng_name = [e.attrib["name"] for e in engines]
         self.eng_nb = len(self.eng_name)
-        setattr(self, "eng_pos", [np.genfromtxt(StringIO(e.attrib["pos"]),delimiter=",") for e in engines])
-        setattr(self, "eng_align", [np.genfromtxt(StringIO(e.attrib["align"]),delimiter=",") for e in engines])
+        try:
+            setattr(self, "eng_pos", [np.genfromtxt(StringIO(e.attrib["pos"]),delimiter=",") for e in engines])
+            setattr(self, "eng_align", [np.genfromtxt(StringIO(e.attrib["align"]),delimiter=",") for e in engines])
+        except TypeError:   # python 2 compatibility
+            setattr(self, "eng_pos", [np.genfromtxt(StringIO(unicode(e.attrib["pos"])),delimiter=",") for e in engines])
+            setattr(self, "eng_align", [np.genfromtxt(StringIO(unicode(e.attrib["align"])),delimiter=",") for e in engines])
         for param in ["fmax", "rhoi", "nrho", "Vi", "nV", "tau"]:
             setattr(self, param+"s", [float(e.attrib[param]) for e in engines])
         

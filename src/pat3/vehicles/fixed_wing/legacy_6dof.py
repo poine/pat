@@ -327,11 +327,11 @@ class DynamicModel(BaseDynamicModel):
     trim = lambda self, args=None, debug=False: trim(self.P, args, debug)
 
     def __init__(self, params=None):
-        print("Info: Dynamic fixed wing basic")
+        print("Info: Dynamic fixed wing legacy")
         BaseDynamicModel.__init__(self)
-        if params == None: params="../config/Rcam_single_engine.xml"
-        #self.P = Param(params)
-        self.P = ParamOld(params)
+        if params == None: params = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml')
+        self.P = Param(params)
+        #self.P = ParamOld(params)
         self.X = np.zeros(DynamicModel.sv_size)
         self.X_act = np.zeros(self.input_nb())
         self.t, self.dt = 0., 0.01
@@ -342,7 +342,7 @@ class DynamicModel(BaseDynamicModel):
         return "Fixed Wing Python Basic ({:s})".format(self.P.name)
 
     def reset(self, X0=None, t0=0, X_act0=None):
-        if X0!=None: self.X = np.array(X0)
+        if X0 is not None: self.X = np.asarray(X0)
         else: self.X = np.array([0., 0., 0., 68., 0., 0., 0., 0., 0., 0., 0., 0.])
         if X_act0 is not None:
             self.X_act = np.asarray(X_act0)
@@ -394,12 +394,6 @@ class DynamicModel(BaseDynamicModel):
                                   rho, self.P.rhois[i], self.P.nrhos[i], 
                                   v, self.P.Vis[i], self.P.nVs[i])
 
-    # we need something for that...
-    # def state_SixDOFfEuclidianEuler(self, X):
-    #     X = np.zeros(fr.SixDOFfEuclidianEuler.size)
-    #     X[fr.SixDOFfEuclidianEuler.x:fr.SixDOFfEuclidianEuler.z+1] = self.X[sv_x:sv_z+1]
-    #     X[fr.SixDOFfEuclidianEuler.phi:fr.SixDOFfEuclidianEuler.r+1] = self.X[sv_phi:sv_r+1]
-    #     return X
     def state_six_dof_euclidian_euler(self, X, atm=None):
         return p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X, atm)
     
@@ -407,13 +401,8 @@ class DynamicModel(BaseDynamicModel):
         A,B = p3_u.num_jacobian(Xe, Ue, self.P, dyn)
         return A, B 
 
-    def state_str(self):
-        return """pos: {:-.2f}, {:-.2f}, {:-.2f} m
-        vel: {:-.2f} m/s, alpha {:-.2f}, beta {:-.2f} deg
-        att:    {:-.2f}, {:-.2f}, {:-.2f} deg
-        """.format(self.X[sv_x], self.X[sv_y], self.X[sv_z],
-                   self.X[sv_v], np.rad2deg(self.X[sv_alpha]), np.rad2deg(self.X[sv_beta]),
-                   np.rad2deg(self.X[sv_phi]), np.rad2deg(self.X[sv_theta]), np.rad2deg(self.X[sv_psi]))
+    def state_str(self, X=None):
+        return p3_fr.SixDOFAeroEuler.state_str(X if X is not None else self.X)
 
     def plot_trajectory(self, time, X, U=None, figure=None, window_title="Trajectory", legend=None, filename=None): 
         plot_trajectory(time, X, U, figure, window_title, legend, filename)
