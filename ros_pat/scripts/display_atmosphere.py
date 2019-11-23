@@ -34,9 +34,9 @@ class Agent:
         
     def atm_dyn_cfg_callback(self, config, level):
         rospy.loginfo(" ATM Reconfigure Request:")
-        if level == -1 or level == 0:
+        if level == -1 or level == 1:
             self.atm.set_params(config['thxc'], config['thyc'], config['thzi'], config['thwstar'], config['idx'])
-        if  level == -1 or level == 1:
+        if  level == -1 or level == 0:
             xc = [config['xc'], config['yc'], -config['hc']]
             print xc, config['dx'], config['dy'], -config['dh'], config['spacing']
             self.atm_pub.update_grid(xc, config['dx'], config['dy'], -config['dh'], config['spacing'])

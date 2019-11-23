@@ -12,8 +12,8 @@ class RefTraj:
     def __init__(self):
         pass
 
-    def points(self):
-        return None
+    def get_points(self):
+        return []
 
 class CircleRefTraj():
     def __init__(self, c=(0, 0, 0), r=40.):

@@ -328,7 +328,7 @@ class GuidanceStatusPublisher(SimplePublisher):
         msg.air_vel = model.sim.fdm.X[p1_fw_dyn.sv_v]
         msg.phi = np.rad2deg(model.sim.fdm.X[p1_fw_dyn.sv_phi])
         msg.theta = np.rad2deg(model.sim.fdm.X[p1_fw_dyn.sv_theta])
-        msg.air_vel_sp = model.sim.ctl.v_sp
-        msg.phi_sp = np.rad2deg(model.sim.ctl.phi_sp)
-        msg.theta_sp = np.rad2deg(model.sim.ctl.theta_sp)
+        msg.air_vel_sp = model.sim.ctl.get_va_sp()
+        msg.phi_sp = np.rad2deg(model.sim.ctl.phi_sp())
+        msg.theta_sp = np.rad2deg(model.sim.ctl.theta_sp())
         SimplePublisher.publish(self, msg)
