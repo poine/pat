@@ -17,13 +17,6 @@ import control.matlab
 import test_03_guidance
 
 
-
-
-
-
-
-
-
 def main(param_filename):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     trim_args = {'h':0, 'va':11, 'gamma':0}

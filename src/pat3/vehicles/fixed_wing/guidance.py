@@ -17,7 +17,6 @@ class FMS:
     def __init__(self, dm, trim_args, dt=0.01):
         self.mode = FMS.mod_circle
         self.Xe, self.Ue = dm.trim(trim_args, debug=True)
-        self.spv_size = 2 # WTF is that?....
         self.guidances = [ GuidanceAuto1(self.Xe, self.Ue, dm, dt),
                            GuidanceCircle(dm, trim_args, dt=0.01),
                            GuidanceThermal(dm, trim_args),
@@ -41,7 +40,8 @@ class FMS:
     def theta_sp(self): return self.guidance().theta_sp
     def get_va_sp(self): return self.guidance().v_sp
     def set_va_sp(self, _v): self.guidance().v_sp = _v
-        
+
+
 class GuidanceAuto1:
     def __init__(self, Xe, Ue, dm, dt):
         self.Xe, self.Ue = Xe, Ue
@@ -49,8 +49,8 @@ class GuidanceAuto1:
         self.phi_sp = Xe[p3_fr.SixDOFAeroEuler.sv_phi]
         self.theta_sp = Xe[p3_fr.SixDOFAeroEuler.sv_theta]
         self.v_sp = self.Xe[p3_fr.SixDOFAeroEuler.sv_va]
-        self.carrot= (0, 0, 0)
-        self.traj = p3_traj3d.RefTraj()
+        self.carrot= (0, 0, 0)          # unused here
+        self.traj = p3_traj3d.RefTraj() # unused too
 
     def set_setpoints(self, phi_sp, theta_sp):
         #self.phi_sp, self.theta_sp = phi_sp, theta_sp
@@ -61,23 +61,20 @@ class GuidanceAuto1:
         return U
      
         
-class Guidance:
+class GuidancePurePursuit:
     v_mode_throttle, v_mode_vz, v_mode_alt = range(3)
 
-    def __init__(self, dm, traj, trim_args = {'h':0, 'va':12, 'gamma':0}, dt=0.01):
+    def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01):
         self.Xe, self.Ue = dm.trim(trim_args, debug=True)
         self.traj = traj
         self.phi_sp, self.theta_sp = self.Xe[p3_fr.SixDOFAeroEuler.sv_phi], self.Xe[p3_fr.SixDOFAeroEuler.sv_theta]
         self.att_ctl = p3_pil.AttCtl(self.Xe, self.Ue, dm, dt)
-        self.spv_size = 2
         self.T_w2b_ref = np.eye(4)
         self.sum_err_z, self.sum_err_v = 0, 0
         self.v_mode = self.v_mode_throttle#self.v_mode_alt
-        self.v_sp = 12
- 
-
-
-    
+        self.v_sp = trim_args['va']
+        self.throttle_sp = 0.
+     
     def _compute_roll_setpoint(self, t, X, traj, max_phi=np.deg2rad(45)):
         my_pos = X[p1_fw_dyn.sv_slice_pos]
         self.carrot = traj.get_point_ahead(my_pos, 15.)
@@ -96,13 +93,10 @@ class Guidance:
             phi_sp = -0.75*err_psi
         self.phi_sp = np.clip(phi_sp, -max_phi, max_phi)
         return phi_sp
-
-            
-        
         
     def get(self, t, X, Xee=None, Yc=None, debug=False, traj=None):
         if traj is None: traj = self.traj
-        phi_sp = self._compute_roll_setpoint(t, X, traj)
+        self._compute_roll_setpoint(t, X, traj)
         z, v = X[p1_fw_dyn.sv_z], X[p1_fw_dyn.sv_v]
         self.theta_sp = self.Xe[p1_fw_dyn.sv_theta] + 0.000025*self.sum_err_v
         U = self.att_ctl.get(t, X, self.phi_sp, self.theta_sp)
@@ -111,10 +105,10 @@ class Guidance:
         v_sp, z_sp, theta_sp = self.v_sp, self.Xe[p1_fw_dyn.sv_z], self.Xe[p1_fw_dyn.sv_theta]
         self.sum_err_v += (v-v_sp)
         self.sum_err_z += (z-z_sp)
-        d_ele = 0#self.sum_err_v*-0.00001 # -np.deg2rad(3.)*np.abs(phi_sp)/max_phi
+        d_ele = 0#self.sum_err_v*-0.00001 # -np.deg2rad(3.)*np.abs(self.phi_sp)/max_phi
         U[_ele] += d_ele
         if self.v_mode == self.v_mode_throttle:
-            U[_thr] = 0.0
+            U[_thr] = self.throttle_sp
         else: # throttle integrator
             d_throttle = self.sum_err_z*0.000005
             U[_thr] += d_throttle
@@ -125,21 +119,21 @@ class Guidance:
         return U
 
 
-class GuidanceCircle(Guidance):
+class GuidanceCircle(GuidancePurePursuit):
     def __init__(self, dm, trim_args = {'h':0, 'va':12, 'gamma':0}, dt=0.01):
         traj = p3_traj3d.CircleRefTraj(c=[0., 0., 0.], r=15.)
-        Guidance.__init__(self, dm, traj, trim_args, dt)
+        GuidancePurePursuit.__init__(self, dm, traj, trim_args, dt)
 
     def set_params(self, _c, _r):
         self.traj.c = np.asarray(_c)
         self.traj.r = _r
 
 
-class GuidanceThermal(Guidance):
+class GuidanceThermal(GuidancePurePursuit):
 
-    def __init__(self, dm, traj, trim_args = {'h':0, 'va':12, 'gamma':0}, dt=0.01):
-        Guidance.__init__(self, dm, p3_traj3d.CircleRefTraj(c=[0., 0., 0.], r=15.), trim_args, dt)
-        self.v_mode_throttle = Guidance.v_mode_throttle
+    def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01):
+        GuidancePurePursuit.__init__(self, dm, p3_traj3d.CircleRefTraj(c=[0., 0., 0.], r=15.), trim_args, dt)
+        self.v_mode_throttle = GuidancePurePursuit.v_mode_throttle
         self.throttle_sp = 0.
         self.k_centering = 0.002
         # circle discretization
@@ -168,6 +162,7 @@ class GuidanceThermal(Guidance):
         #print(self.avg_climb[idx_alpha])
         if np.isnan(self.avg_climb).any():
             self.delta_center = np.zeros(3)
+            #print('building gradiant')
         else:
             amin, amax = np.argmin(self.avg_climb), np.argmax(self.avg_climb)
             alpha_min, alpha_max = self._angle_of_idx(amin), self._angle_of_idx(amax)
@@ -184,9 +179,9 @@ class GuidanceThermal(Guidance):
         self.traj.offset(self.delta_center)
         
         self.traj.c[2] = Xee[p3_fr.SixDOFEuclidianEuler.sv_z]
-        return Guidance.get(self, t, X, Xee, Yc, debug)
+        return GuidancePurePursuit.get(self, t, X, Xee, Yc, debug)
 
     
-class GuidanceSearching(Guidance):
+class GuidanceSearching(GuidancePurePursuit):
     def __init__(self, dm, traj, trim_args = {'h':0, 'va':12, 'gamma':0}, dt=0.01):
-        Guidance.__init__(self, dm, p3_traj3d.CircleRefTraj(c=[0., 0., 0.], r=50.), trim_args, dt)
+        GuidancePurePursuit.__init__(self, dm, p3_traj3d.CircleRefTraj(c=[0., 0., 0.], r=50.), trim_args, dt)

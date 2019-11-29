@@ -143,23 +143,38 @@ def get_f_eng_body(X, U, P):
         f_engines_body[i] = np.dot(P.eng_to_body[i], np.array([thrust, 0., 0.]))
     return f_engines_body 
 
+def get_f_aero_coef(alpha, beta, rvel, Usfc, P):
+    d_alpha = alpha - P.alpha0
+    nrvel = rvel*np.array([P.Bref, P.Cref, P.Bref])/2/P.Vref
+    CL = P.CL0 + P.CL_alpha*d_alpha + P.CL_beta*beta + np.dot(P.CL_omega,nrvel) + np.dot(P.CL_sfc,Usfc)
+    CD = P.CD0 + P.CD_k1*CL + P.CD_k2*(CL**2) + np.dot(P.CD_sfc,Usfc)
+    CY = P.CY_alpha*d_alpha + P.CY_beta*beta + np.dot(P.CY_omega,nrvel) + np.dot(P.CY_sfc,Usfc)
+    return [CL, CY, CD]
+
+    
 def get_f_aero_body(X, Usfc, P, Pdyn):
     """
     return aerodynamic forces expressed in body frame
     """
-    d_alpha = X[sv_alpha] - P.alpha0
-    rvel =  X[sv_p:sv_r+1]*np.array([P.Bref, P.Cref, P.Bref])/2/P.Vref
+    if 0:
+        d_alpha = X[sv_alpha] - P.alpha0
+        rvel =  X[sv_slice_rvel]*np.array([P.Bref, P.Cref, P.Bref])/2/P.Vref
 
-    CL = P.CL0 + P.CL_alpha*d_alpha + P.CL_beta*X[sv_beta] +\
-         np.dot(P.CL_omega,rvel) + np.dot(P.CL_sfc,Usfc)
+        CL = P.CL0 + P.CL_alpha*d_alpha + P.CL_beta*X[sv_beta] +\
+             np.dot(P.CL_omega,rvel) + np.dot(P.CL_sfc,Usfc)
 
-    CD = P.CD0 + P.CD_k1*CL + P.CD_k2*(CL**2) + np.dot(P.CD_sfc,Usfc)
+        CD = P.CD0 + P.CD_k1*CL + P.CD_k2*(CL**2) + np.dot(P.CD_sfc,Usfc)
 
-    CY = P.CY_alpha*d_alpha + P.CY_beta*X[sv_beta] +\
-         np.dot(P.CY_omega,rvel) + np.dot(P.CY_sfc,Usfc)
+        CY = P.CY_alpha*d_alpha + P.CY_beta*X[sv_beta] +\
+             np.dot(P.CY_omega,rvel) + np.dot(P.CY_sfc,Usfc)
+        alpha, beta = X[sv_alpha], X[sv_beta]
+        F_aero_body = Pdyn*P.Sref*np.dot(p3_fr.R_aero_to_body(alpha, beta),[-CD, CY, -CL])
+    if 1:
+        alpha, beta, rvel = X[sv_alpha], X[sv_beta], X[sv_slice_rvel]
+        CL, CY, CD = get_f_aero_coef(alpha, beta, rvel, Usfc, P)
+        F_aero_body = Pdyn*P.Sref*np.dot(p3_fr.R_aero_to_body(alpha, beta),[-CD, CY, -CL])
+    return F_aero_body
     
-    return Pdyn*P.Sref*np.dot(get_aero_to_body(X),[-CD, CY, -CL])
-
 def get_m_eng_body(f_eng_body, P):
     """
     return propulsion moments expressed in body frame
@@ -247,16 +262,24 @@ def dyn(X, t, U, P, atm=None):
     return Xdot
 
 
-def trim(P, args=None, report=True, debug=False):
+def trim(P, args, report=True, debug=False):
     """
     Find throttle, elevator  and angle of attack corresponding
     to the given airspeed and and flight path
     """
-    if args!=None:
-        va, gamma, h = (args['va'], args['gamma'], args['h'] )
+    if 'gamma' in args:
+        va, gamma_e, h = args['va'], args['gamma'], args['h']
+        thr_e, ele_e, alpha_e = trim_cst_path(P, h, va, gamma_e, report, debug)
     else:
-        va, gamma, h = (P.Vref, 0., 0.)
-
+        va, h, thr_e = args['va'], args['h'], args['throttle']
+        gamma_e, ele_e, alpha_e = trim_cst_throttle(P, h, va, thr_e, report, debug)
+        
+    Ue = np.zeros(P.input_nb)
+    Ue[0:P.eng_nb] = thr_e; Ue[P.eng_nb+iv_de] = ele_e
+    Xe = [0., 0., -h, va, alpha_e, 0., 0., gamma_e+alpha_e, 0., 0., 0., 0.]  
+    return Xe, Ue
+        
+def trim_cst_path(P, h=0., va=12., gamma=0., report=True, debug=False):
     if report:
         print("searching for constant path trajectory with")
         print("  h      {:.1f} m".format(h))
@@ -281,12 +304,34 @@ def trim(P, args=None, report=True, debug=False):
   elevator        : {:.2f} deg
   angle of attack : {:.2f} deg""".format(100.*thr_e, np.rad2deg(ele_e), np.rad2deg(alpha_e)))
 
-    Ue = np.zeros(P.input_nb)
-    Ue[0:P.eng_nb] = thr_e; Ue[P.eng_nb+iv_de] = ele_e
-    Xe = [0., 0., -h, va, alpha_e, 0., 0., gamma+alpha_e, 0., 0., 0., 0.]  
-    return Xe, Ue
+    return thr_e, ele_e, alpha_e
 
 
+def trim_cst_throttle(P, h=0., va=12., throttle=0., report=True, debug=False):
+    if report:
+        print("searching for constant throttle trajectory with")
+        print("  h      {:.1f} m".format(h))
+        print("  va     {:.2f} m/s".format(va))
+        print("  throttle  {:.1f} %".format(100*throttle))
+    def err_func(args):
+        gamma, elevator, alpha = args
+        X=[0., 0., -h, va, alpha, 0., 0.,  gamma+alpha, 0., 0., 0., 0.]
+        U = np.zeros(P.input_nb)
+        U[0:P.eng_nb] = throttle; U[P.eng_nb+iv_de] = elevator
+        Xdot = dyn(X, 0., U, P)
+        Xdot_ref = [va*math.cos(gamma), 0., -va*math.sin(gamma), 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        return np.linalg.norm(Xdot - Xdot_ref)
+
+    p0 = [0., np.deg2rad(-2.), np.deg2rad(1.)]
+    gamma_e, ele_e, alpha_e = scipy.optimize.fmin_powell(err_func, p0, disp=debug, ftol=1e-9)
+    if report:
+        print("""result:
+  gamma           : {:.2f} deg
+  elevator        : {:.2f} deg
+  angle of attack : {:.2f} deg""".format(np.rad2deg(gamma_e), np.rad2deg(ele_e), np.rad2deg(alpha_e)))
+    return gamma_e, ele_e, alpha_e
+        
+    
 import pat3.vehicles.fixed_wing.legacy_parameter
 class ParamOld(pat3.vehicles.fixed_wing.legacy_parameter.Param):
     pass

@@ -91,25 +91,29 @@ def set_3D_axes_equal(ax=None):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     
-def plot_3D_traj(ref_traj, X=None):
+def plot_3D_traj(ref_traj=None, X=None):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    pts = ref_traj.get_points()
-    xs, ys, zs = pts[:,0], pts[:,1], pts[:,2] 
-    ax.plot(xs, ys, zs, color='g', label='ref trajectory')
-    ax.plot(xs, ys, np.zeros(len(xs)), linestyle='--', color='k', linewidth=0.5, label='ground track')
-    # https://stackoverflow.com/questions/36013063/what-is-the-purpose-of-meshgrid-in-python-numpy
-    if 1:
-        verts = []
-        for i in range(1, len(pts)):
-            verts.append([(xs[i-1], ys[i-1], 0), (xs[i-1], ys[i-1], zs[i-1]),
-                          (xs[i], ys[i], zs[i]), (xs[i], ys[i], 0)])
-        mesh = Poly3DCollection(verts, alpha=0.2, linewidth=0, facecolor=[0.5, 0.5, 1])
-        ax.add_collection3d(mesh)
+    if ref_traj is not None:
+        pts = ref_traj.get_points()
+        xs, ys, zs = pts[:,0], pts[:,1], pts[:,2] 
+        ax.plot(xs, ys, zs, color='g', label='ref trajectory')
+        ax.plot(xs, ys, np.zeros(len(xs)), linestyle='--', color='k', linewidth=0.5, label='ground track')
+        # https://stackoverflow.com/questions/36013063/what-is-the-purpose-of-meshgrid-in-python-numpy
+        if 1:
+            verts = []
+            for i in range(1, len(pts)):
+                verts.append([(xs[i-1], ys[i-1], 0), (xs[i-1], ys[i-1], zs[i-1]),
+                              (xs[i], ys[i], zs[i]), (xs[i], ys[i], 0)])
+            mesh = Poly3DCollection(verts, alpha=0.2, linewidth=0, facecolor=[0.5, 0.5, 1])
+            ax.add_collection3d(mesh)
 
     if X is not None:
         ax.plot(X[:,0], X[:,1], X[:,2], color='b', label='aircraft trajectory')
-        
+
+    ax.set_xlabel('North')
+    ax.set_ylabel('East')
+    ax.set_zlabel('Down')        
     set_3D_axes_equal()
     plt.legend(loc='best')
 
