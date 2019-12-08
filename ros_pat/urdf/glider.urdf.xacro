@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<robot name="glider" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find common_robots)/urdf/inertias.urdf.xacro" />
+
+  <!-- Body -->
+  <link name="base_link"></link>
+
+
+  <link name="fuselage_link">
+    <visual>
+      <xacro:if value="${high_definition_fuselage_visual}">
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+	  <mesh scale="1. 1. 1." filename="package://ros_pat/media/glider.dae"/>
+        </geometry>
+      </xacro:if>
+      <xacro:unless value="${high_definition_fuselage_visual}">
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry><box size="${fuselage_l} ${fuselage_w} ${fuselage_h}"/></geometry>
+	<material name="light_grey" />
+      </xacro:unless>
+    </visual>
+    <xacro:inertial_cuboid_with_pose
+	mass="${fuselage_m}" x_length="${fuselage_l}" y_length="${fuselage_w}" z_length="${fuselage_h}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cuboid_with_pose>
+  </link>
+
+  <joint name="fuselage_link_joint" type="fixed">
+    <origin xyz="${fuselage_dx} 0 ${fuselage_dz}" rpy="0 0 0" />
+    <parent link="base_link"/>
+    <child link="fuselage_link" />
+  </joint>
+
+
+  <!-- Wing -->
+  <link name="wing_link">
+    <xacro:unless value="${high_definition_wing_visual}">
+      <visual>
+	<origin xyz="0 0 0" rpy="0 0.1 0"/>
+	<geometry><box size="${wing_chord} ${wing_span} ${wing_thick}"/></geometry>
+	<material name="light_grey" />
+      </visual>
+    </xacro:unless>
+  </link>
+
+  <joint name="wing_link_joint" type="fixed">
+    <origin xyz="${wing_dx} 0 ${wing_dz}" rpy="0 0 0" />
+    <parent link="base_link"/>
+    <child link="wing_link" />
+  </joint>
+
+  <!-- Elevator -->
+  <link name="elevator_link">
+      <visual>
+	<xacro:unless value="${high_definition_ele_visual}">
+	  <origin xyz="0 0 0" rpy="0 0 0"/>
+	  <geometry><box size="${ele_chord} ${ele_span} ${ele_thick}"/></geometry>
+	  <material name="light_grey" />
+	</xacro:unless>
+	<xacro:if value="${high_definition_ele_visual}">
+	  <origin xyz="0.01 0 -0.01" rpy="0 0.07 0"/>
+          <geometry>
+	    <mesh scale="1. 1. 1." filename="package://ros_pat/media/glider_elevator.dae"/>
+          </geometry>
+	</xacro:if>
+      </visual>
+  </link>
+
+  <!-- <joint name="ele_link_joint" type="fixed"> -->
+  <!--   <origin xyz="${ele_dx} 0 ${ele_dz}" rpy="0 0 0" /> -->
+  <!--   <parent link="base_link"/> -->
+  <!--   <child link="elevator_link" /> -->
+  <!-- </joint> -->
+
+  <joint name="ele_link_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="elevator_link" />
+    <origin xyz="${ele_dx} 0 ${ele_dz}" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <!--<dynamics damping="${wheel_joint_damping}" friction="${wheel_joint_friction}"/> -->
+    <!--<limit effort="${wheel_joint_eff_limit}" velocity="${wheel_joint_vel_limit}"/>-->
+    <!--<limit effort="1" velocity="10"/>-->
+  </joint>
+
+</robot>

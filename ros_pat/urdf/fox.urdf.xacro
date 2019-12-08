@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf8"?>
+
+
+<robot name="fox" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property name="robot_name" value="fox" />	
+
+  <xacro:property name="high_definition_fuselage_visual" value="true" />
+  <xacro:property name="high_definition_wing_visual" value="false" />
+  <xacro:property name="high_definition_ele_visual" value="true" />
+
+  <!-- Fuselage -->
+  <xacro:property name="fuselage_l"  value="0.5" /> 
+  <xacro:property name="fuselage_w"  value="0.1" /> 
+  <xacro:property name="fuselage_h"  value="0.08" /> 
+  <xacro:property name="fuselage_dz" value="0.0" />
+  <xacro:property name="fuselage_dx" value="0.0" />
+  <xacro:property name="fuselage_m"  value="1.25" />
+  <!-- Wing -->
+  <xacro:property name="wing_span"   value="1.5" /> 
+  <xacro:property name="wing_chord"  value="0.25" /> 
+  <xacro:property name="wing_thick"  value="0.01" /> 
+  <xacro:property name="wing_dz"     value="-0.06" />
+  <xacro:property name="wing_dx"     value="-0.04" />
+  <!-- Elevator -->
+  <xacro:property name="ele_span"   value="0.6" /> 
+  <xacro:property name="ele_chord"  value="0.16" /> 
+  <xacro:property name="ele_thick"  value="0.01" /> 
+  <xacro:property name="ele_dz"     value="-0.105" />
+  <xacro:property name="ele_dx"     value="-0.78" />
+  
+
+  
+  <xacro:include filename="$(find ros_pat)/urdf/glider.urdf.xacro" />
+  
+</robot>
