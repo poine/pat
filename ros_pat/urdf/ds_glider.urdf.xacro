@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf8"?>
+
+
+<robot name="ds_glider" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property name="robot_name" value="ds_glider" />	
+
+  <xacro:property name="high_definition_fuselage_visual" value="true" />
+  <!-- <xacro:property name="fuselage_mesh" value="package://ros_pat/media/ds_glider_full.dae" /> -->
+  <xacro:property name="fuselage_mesh" value="package://ros_pat/media/ds_glider_no_sfc.dae" />
+  <xacro:property name="high_definition_wing_visual" value="true" />
+
+  <xacro:property name="hdv_elevator" value="true" />
+  <xacro:property name="hdv_elevator_mesh" value="package://ros_pat/media/ds_glider_elevator.dae" />
+  
+  <xacro:property name="hdv_aileron" value="true" />
+  <xacro:property name="hdv_right_aileron_mesh" value="package://ros_pat/media/ds_glider_right_aileron.dae" />
+  <xacro:property name="hdv_left_aileron_mesh" value="package://ros_pat/media/ds_glider_left_aileron.dae" />
+  
+  <xacro:property name="hdv_flap" value="true" />
+  <xacro:property name="hdv_flap_mesh" value="package://ros_pat/media/ds_glider_flap.dae" />
+
+  <!-- Fuselage -->
+  <xacro:property name="fuselage_l"  value="0.5" /> 
+  <xacro:property name="fuselage_w"  value="0.1" /> 
+  <xacro:property name="fuselage_h"  value="0.08" /> 
+  <xacro:property name="fuselage_dz" value="0.0" />
+  <xacro:property name="fuselage_dx" value="0.0" />
+  <xacro:property name="fuselage_m"  value="1.25" />
+  <!-- Wing -->
+  <xacro:property name="wing_span"   value="1.5" /> 
+  <xacro:property name="wing_chord"  value="0.25" /> 
+  <xacro:property name="wing_thick"  value="0.01" /> 
+  <xacro:property name="wing_dz"     value="0.0" />
+  <xacro:property name="wing_dx"     value="0.0" />
+  <!-- Elevators -->
+  <xacro:property name="ele_span"   value="0.252" /> 
+  <xacro:property name="ele_chord"  value="0.028" /> 
+  <xacro:property name="ele_thick"  value="0.0025" /> 
+  <xacro:property name="ele_dx"     value="-0.964" />
+  <xacro:property name="ele_dy"     value="0.129" />
+  <xacro:property name="ele_dz"     value="-0.0715" />
+  <xacro:property name="elevator_angle_deg" value="35." /> 
+  <!-- Ailerons -->
+  <xacro:property name="ail_span"   value="0.820" /> 
+  <xacro:property name="ail_chord"  value="0.06" /> 
+  <xacro:property name="ail_thick"  value="0.0025" /> 
+  <xacro:property name="ail_dx"     value="-0.1" />
+  <xacro:property name="ail_dy"     value="1.031" />
+  <xacro:property name="ail_dz"     value="-0.039" />
+  <xacro:property name="aileron_diedral_deg" value="4.0" /> 
+  <!-- Flaps -->
+  <xacro:property name="fla_span"   value="0.588" /> 
+  <xacro:property name="fla_chord"  value="0.064" /> 
+  <xacro:property name="fla_thick"  value="0.0025" /> 
+  <xacro:property name="fla_dx"     value="-0.095" />
+  <xacro:property name="fla_dy"     value="0.324" />
+  <xacro:property name="fla_dz"     value="-0.011" />
+  <xacro:property name="flap_diedral_deg" value="0." /> 
+  <!-- <xacro:property name="flap_zero_angle_deg" value="7.5" />  -->
+  <xacro:property name="flap_zero_angle_deg" value="0." /> 
+ 
+
+  
+  <xacro:include filename="$(find ros_pat)/urdf/vtail_glider.urdf.xacro" />
+  
+</robot>

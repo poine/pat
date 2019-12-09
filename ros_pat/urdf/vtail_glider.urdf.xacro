@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<robot name="glider" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find common_robots)/urdf/inertias.urdf.xacro" />
+
+  <material name="yellow"><color rgba="0.8 0.8 0.0 0.75" /></material>
+  
+  <!-- Body -->
+  <link name="base_link"></link>
+
+
+  <link name="fuselage_link">
+    <visual>
+      <xacro:if value="${high_definition_fuselage_visual}">
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+	  <mesh scale="1. 1. 1." filename="${fuselage_mesh}"/>
+        </geometry>
+      </xacro:if>
+      <xacro:unless value="${high_definition_fuselage_visual}">
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry><box size="${fuselage_l} ${fuselage_w} ${fuselage_h}"/></geometry>
+	<material name="light_grey" />
+      </xacro:unless>
+    </visual>
+    <xacro:inertial_cuboid_with_pose
+	mass="${fuselage_m}" x_length="${fuselage_l}" y_length="${fuselage_w}" z_length="${fuselage_h}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cuboid_with_pose>
+  </link>
+
+  <joint name="fuselage_link_joint" type="fixed">
+    <origin xyz="${fuselage_dx} 0 ${fuselage_dz}" rpy="0 0 0" />
+    <parent link="base_link"/>
+    <child link="fuselage_link" />
+  </joint>
+
+
+  <!-- Wing -->
+  <link name="wing_link">
+    <xacro:unless value="${high_definition_wing_visual}">
+      <visual>
+	<origin xyz="0 0 0" rpy="0 0.1 0"/>
+	<geometry><box size="${wing_chord} ${wing_span} ${wing_thick}"/></geometry>
+	<material name="light_grey" />
+      </visual>
+    </xacro:unless>
+  </link>
+
+  <joint name="wing_link_joint" type="fixed">
+    <origin xyz="${wing_dx} 0 ${wing_dz}" rpy="0 0 0" />
+    <parent link="base_link"/>
+    <child link="wing_link" />
+  </joint>
+
+  
+  <!--
+      Control Surface
+  -->
+  <xacro:macro name="_surface" params="name prefix chord span thick lr_reflect hdv hdv_mesh *joint_pose">
+    
+    <link name="${name}_${prefix}_link">
+      <visual>
+	  <xacro:unless value="${hdv}">
+	    <origin xyz="${-chord/2.} 0 0" rpy="0 0 0"/>
+	    <geometry><box size="${chord} ${span} ${thick}"/></geometry>
+	    <material name="yellow" />
+	  </xacro:unless>
+	  <xacro:if value="${hdv}">
+  	    <origin xyz="0.01 0 -0.01" rpy="0 0.07 0"/>
+            <geometry>
+  	      <mesh scale="1. 1. 1." filename="${hdv_mesh}"/>
+            </geometry>
+  	  </xacro:if>
+      </visual>
+    </link>
+
+    <joint name="${name}_${prefix}_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${name}_${prefix}_link" />
+      <xacro:insert_block name="joint_pose" />
+      <axis xyz="0 1 0" />
+    </joint>
+
+  </xacro:macro>
+
+  
+  <!-- Ailerons -->
+  <xacro:_surface name="aileron" prefix="left" chord="${ail_chord}" span="${ail_span}" thick="${ail_thick}" lr_reflect="-1"
+		  hdv="${hdv_aileron}" hdv_mesh="${hdv_left_aileron_mesh}">
+    <origin xyz="${ail_dx} -${ail_dy} ${ail_dz}" rpy="${aileron_diedral_deg/180.*pi} 0 0" />
+  </xacro:_surface>
+
+  <xacro:_surface name="aileron" prefix="right" chord="${ail_chord}" span="${ail_span}" thick="${ail_thick}" lr_reflect="1"
+		  hdv="${hdv_aileron}" hdv_mesh="${hdv_right_aileron_mesh}">
+    <origin xyz="${ail_dx} ${ail_dy} ${ail_dz}" rpy="${-aileron_diedral_deg/180.*pi} 0 0" />
+  </xacro:_surface>
+
+  
+  <!-- Elevator -->
+  <xacro:_surface name="elevator" prefix="left" chord="${ele_chord}" span="${ele_span}" thick="${ele_thick}" lr_reflect="-1"
+		  hdv="${hdv_elevator}" hdv_mesh="${hdv_elevator_mesh}">
+    <origin xyz="${ele_dx} -${ele_dy} ${ele_dz}" rpy="${elevator_angle_deg/180.*pi} 0 0" />
+  </xacro:_surface>
+
+  <xacro:_surface name="elevator" prefix="right" chord="${ele_chord}" span="${ele_span}" thick="${ele_thick}" lr_reflect="1"
+		  hdv="${hdv_elevator}" hdv_mesh="${hdv_elevator_mesh}">
+    <origin xyz="${ele_dx}  ${ele_dy} ${ele_dz}" rpy="${-elevator_angle_deg/180.*pi} 0 0" />
+  </xacro:_surface>
+
+
+  <!-- Flap -->
+  <xacro:_surface name="flap" prefix="left" chord="${fla_chord}" span="${fla_span}" thick="${fla_thick}" lr_reflect="-1"
+		  hdv="${hdv_flap}" hdv_mesh="${hdv_flap_mesh}">
+    <origin xyz="${fla_dx} -${fla_dy} ${fla_dz}" rpy="${flap_diedral_deg/180.*pi} ${flap_zero_angle_deg/180.*pi} 0" />
+  </xacro:_surface>
+
+  <xacro:_surface name="flap" prefix="right" chord="${fla_chord}" span="${fla_span}" thick="${fla_thick}" lr_reflect="1"
+		  hdv="${hdv_flap}" hdv_mesh="${hdv_flap_mesh}">
+    <origin xyz="${fla_dx} ${fla_dy} ${fla_dz}" rpy="${-flap_diedral_deg/180.*pi} ${flap_zero_angle_deg/180.*pi} 0" />
+  </xacro:_surface>
+
+
+  
+</robot>
