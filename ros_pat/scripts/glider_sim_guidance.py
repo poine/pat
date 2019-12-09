@@ -40,7 +40,8 @@ class Agent:
         self.tf_pub = p3_rpu.TransformPublisher()
         self.carrot_pub = p3_rpu.MarkerPublisher('guidance/goal', 'w_ned', scale=(0.25, 0.25, 0.5))
         self.traj_pub = p3_rpu.TrajectoryPublisher2(traj, ms=0.2)
-        self.pose_pub = p3_rpu.PoseArrayPublisher(dae='glider.dae')
+        #self.pose_pub = p3_rpu.PoseArrayPublisher(dae='glider.dae')
+        self.pose_pub = p3_rpu.PoseArrayPublisher(dae='ds_glider_full.dae')
         self.atm_pub = None#p3_rpu.AtmPointCloudPublisher(_atm)
         self.status_pub = p3_rpu.GuidanceStatusPublisher()
         self.atm_disp_dyn_rec_client = dynamic_reconfigure.client.Client("display_atmosphere", timeout=1, config_callback=self.atm_config_callback)
@@ -89,12 +90,12 @@ class Agent:
         if self.sim.ctl.mode == self.sim.ctl.mod_centering or self.sim.ctl.mode == self.sim.ctl.mod_circle:
             self.traj_pub.update_ref_traj(_g.traj)
         #self.traj_pub.update_ref_traj(self.sim.ctl.traj)
+        if level == 1 or level == -1:
+            self.dyn_cfg_atmosphere(config)
         if level == 2 or level == -1:
             self.dyn_cfg_guid_circle(config)
         if level == 3 or level == -1:
             self.dyn_cfg_guid_centering(config)
-        if level == 1 or level == -1:
-            self.dyn_cfg_atmosphere(config)
         return config 
 
     def dyn_cfg_guid_circle(self, config, set_current_z=True):

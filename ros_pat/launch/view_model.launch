@@ -1,18 +1,23 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="robot_name" default="fox" />
+  <arg name="robot_name" default="ds_glider" />
+
+  <arg name="use_gui" default="true" />
+  <arg name="publish_default_positions" default="true" />
 
   <include file="$(find ros_pat)/launch/glider_description.launch">
     <arg name="robot_name" value="$(arg robot_name)" />
     <arg name="use_tf_prefix" value="true" />
   </include>
 
-  <param name="use_gui" value="true"/>
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <remap from="robot_description" to="$(arg robot_name)/robot_description"/>
     <remap from="joint_states" to="$(arg robot_name)/joint_states" />
     <param name="tf_prefix" value="$(arg robot_name)"/>
-  </node>
+    <param name="rate" value="25"/>
+    <param name="use_gui" value="$(arg use_gui)"/>
+    <param name="publish_default_positions" value="$(arg publish_default_positions)"/>
+</node>
 
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ros_pat)/rviz/view_model_$(arg robot_name)_sim.rviz" />

@@ -154,3 +154,9 @@ class Param:
                 res += "{:16f}".format(getattr(self, param+"s")[i])
             res+="\n"
         return res
+
+    # some default actuator allocation
+    def u_slice_eng(self): return slice(0, self.eng_nb)
+    def u_slice_sfc(self): return slice(self.eng_nb, self.eng_nb+self.sfc_nb)
+    def u_size(self): return self.input_nb
+    def u_elevator(self): return self.eng_nb+1  # let's assume elevator is the second surface

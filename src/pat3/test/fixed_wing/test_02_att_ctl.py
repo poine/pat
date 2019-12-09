@@ -9,26 +9,21 @@ import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 import pat3.vehicles.fixed_wing.piloting as p3_pil
 import pat3.utils as p3_u
 import pat3.atmosphere as p3_atm
-
+import pat3.frames as p3_fr
+import pat3.plot_utils as p3_pu
 
 def get_sim_defaults(dm, t0=0, tf=5., dt=0.005, trim_args = {'h':0, 'va':12, 'gamma':0}):
     time = np.arange(t0, tf, dt)
-    Xe, Ue = dm.trim(trim_args, debug=True)
+    Xe, Ue = dm.trim(trim_args, report=True, debug=False)
     phi_sp = np.ones(len(time))*Xe[dm.sv_phi]
     theta_sp = np.ones(len(time))*Xe[dm.sv_theta]
     return time, Xe, Ue, phi_sp, theta_sp
 
 def run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True):
-    atm = p3_atm.AtmosphereCstWind([0, 0, -1])
-    #Xe, Ue = dm.trim(trim_args, debug=True)
-    X = np.zeros((len(time), dm.sv_size))
+    atm = p3_atm.AtmosphereCstWind([0, 0, 0])
+    X = np.zeros((len(time), dm.sv_size()))
     X_act = np.zeros((len(time), dm.input_nb()))
     U = np.zeros((len(time),  dm.input_nb()))
-    #phi_sp = np.array([p3_u.step(_t, a=np.deg2rad(1.), p=10., dt=5.) for _t in time])
-    #phi_sp = np.array([p3_u.step(_t, a=np.deg2rad(20.), p=5., dt=1.25) for _t in time])
-    #phi_sp = np.zeros(len(time))
-    #theta_sp = np.array([p3_u.step(_t, a=np.deg2rad(1.), p=10., dt=0.) for _t in time]) + np.ones(len(time))*Xe[dm.sv_theta]
-    #theta_sp = np.ones(len(time))*Xe[dm.sv_theta]
     X[0] = dm.reset(Xe)
     ctl = p3_pil.AttCtl(Xe, Ue, dm, time[1]-time[0])
     for i in range(1, len(time)):
@@ -46,15 +41,17 @@ def run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True):
     return time, X, U
 
 
+    
+
 def test_step_phi(dm, ampl=np.deg2rad(20.)):
     time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults(dm)
     phi_sp = np.array([p3_u.step(_t, a=ampl, p=5., dt=1.25) for _t in time])
-    run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True)
+    return run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True)
 
 def test_step_theta(dm, ampl=np.deg2rad(1.)):
     time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults(dm)
-    theta_sp = np.array([p3_u.step(_t, a=ampl, p=10., dt=2.5) for _t in time])
-    run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True)
+    theta_sp = Xe[p3_fr.SixDOFAeroEuler.sv_theta]+np.array([p3_u.step(_t, a=ampl, p=10., dt=2.5) for _t in time])
+    return run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True)
     
     
 def main(param_filename):

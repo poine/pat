@@ -23,10 +23,6 @@
 	<material name="light_grey" />
       </xacro:unless>
     </visual>
-    <xacro:inertial_cuboid_with_pose
-	mass="${fuselage_m}" x_length="${fuselage_l}" y_length="${fuselage_w}" z_length="${fuselage_h}">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-    </xacro:inertial_cuboid_with_pose>
   </link>
 
   <joint name="fuselage_link_joint" type="fixed">

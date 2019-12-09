@@ -6,7 +6,8 @@
   <xacro:property name="robot_name" value="fox" />	
 
   <xacro:property name="high_definition_fuselage_visual" value="true" />
-  <xacro:property name="high_definition_wing_visual" value="false" />
+  <xacro:property name="fuselage_mesh" value="package://ros_pat/media/glider.dae" />
+  <xacro:property name="high_definition_wing_visual" value="true" />
   <xacro:property name="high_definition_ele_visual" value="true" />
 
   <!-- Fuselage -->

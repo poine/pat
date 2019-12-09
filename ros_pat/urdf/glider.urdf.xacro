@@ -12,7 +12,7 @@
       <xacro:if value="${high_definition_fuselage_visual}">
 	<origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-	  <mesh scale="1. 1. 1." filename="package://ros_pat/media/glider.dae"/>
+	  <mesh scale="1. 1. 1." filename="${fuselage_mesh}"/>
         </geometry>
       </xacro:if>
       <xacro:unless value="${high_definition_fuselage_visual}">

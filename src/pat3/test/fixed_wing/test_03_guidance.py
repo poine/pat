@@ -20,7 +20,7 @@ import control.matlab
 
 def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, plot=False, atm=None):
     time = np.arange(0, tf, dt)
-    X = np.zeros((len(time), dm.sv_size))
+    X = np.zeros((len(time), dm.sv_size()))
     U = np.zeros((len(time),  dm.input_nb()))
     carrots, att_sp = np.zeros((len(time),  3)), np.zeros((len(time), 2))
     X[0] = dm.reset(ctl.Xe, t0=time[0], X_act0=None)#ctl.Ue)
@@ -38,7 +38,7 @@ def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma'
         plt.subplot(5,3,3); plt.plot(time, carrots[:,2])
         plt.subplot(5,3,7); plt.plot(time, np.rad2deg(att_sp[:,0]), label='setpoint')
         plt.subplot(5,3,8); plt.plot(time, np.rad2deg(att_sp[:,1]), label='setpoint')
-        plt.show()  
+        #plt.show()  
     return time, X, U
 
 def test_line(dm, trim_args, dt=0.01):
@@ -64,9 +64,14 @@ def test_climb(dm, trim_args, dt=0.01):
 def main(param_filename, trim_args = {'h':0, 'va':11, 'gamma':0}):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     #ref_traj, (time, X, U) = test_line(dm, trim_args)
-    #ref_traj, (time, X, U) = test_circle(dm, trim_args)
-    ref_traj, (time, X, U) = test_climb(dm, trim_args)
+    ref_traj, (time, X, U) = test_circle(dm, trim_args)
+    #ref_traj, (time, X, U) = test_climb(dm, trim_args)
     p3_pu.plot_3D_traj(ref_traj, X)
+
+    savefile_name = '/tmp/pat_glider_circle.npz'
+    np.savez(savefile_name, time=time, X=X)
+    print('saved {}'.format(savefile_name))
+                
     plt.show()
 
 if __name__ == "__main__":

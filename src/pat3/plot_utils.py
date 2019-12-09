@@ -146,9 +146,9 @@ def plot_3D_wind(atm):
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
 
-def plot_slice_wind(atm):
+def plot_slice_wind(atm, xmax=50, dx=5.):
     y=0
-    xlist, zlist = np.arange(-50., 50., 5), np.arange(-10., 150, 2)
+    xlist, zlist = np.arange(-xmax, xmax, dx), np.arange(-10., 150, 2)
     x, z = np.meshgrid(xlist, zlist)
     wz = np.zeros_like(z)
     nx, nz = x.shape

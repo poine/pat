@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import rospy, tf2_ros, tf
-import std_msgs.msg, geometry_msgs.msg, sensor_msgs.point_cloud2, sensor_msgs.msg, visualization_msgs.msg, sensor_msgs.msg
+import std_msgs.msg, geometry_msgs.msg, sensor_msgs.point_cloud2, sensor_msgs.msg, visualization_msgs.msg, sensor_msgs.msg, nav_msgs.msg
 import yaml
 import pat3.algebra as pal
+import pat3.utils as p3_u
 import pat3.frames as p3_fr
 import pat3.atmosphere as p3_atm
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
@@ -23,6 +24,8 @@ def _position_and_orientation_from_T(p, q, T):
 class TransformPublisher:
     def __init__(self):
         self.tfBcaster = tf2_ros.TransformBroadcaster()
+        # FIXME, use that for ENU to NED
+        self.static_tfBcaster = tf2_ros.StaticTransformBroadcaster()
         self.tfBuffer  = tf2_ros.Buffer()
         self.tfLstener = tf2_ros.TransformListener(self.tfBuffer)
 
@@ -33,12 +36,15 @@ class TransformPublisher:
     def send_w_enu_to_ned_transform(self, t):
         R_enu2ned = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
         T_enu2ned = np.eye(4); T_enu2ned[:3,:3] = R_enu2ned
-        self.send_transform("w_enu", "w_ned", t, T_enu2ned)
+        self.send_transform("w_enu", "w_ned", t, T_enu2ned, static=True)
 
     def send_w_ned_to_b_transform(self, t, T_w2b):
         self.send_transform("w_ned", "b_frd", t, T_w2b)
 
-    def send_transform(self, f1, f2, t, T_f1tof2):
+    def send_b_to_a_transform(self, t, T_b2a):
+        self.send_transform("b_frd", "a_ab", t, T_b2a)
+        
+    def send_transform(self, f1, f2, t, T_f1tof2, static=False):
         tf_msg = geometry_msgs.msg.TransformStamped()
         tf_msg.header.frame_id = f1
         tf_msg.child_frame_id = f2
@@ -47,7 +53,10 @@ class TransformPublisher:
         _r.x, _r.y, _r.z, _r.w = tf.transformations.quaternion_from_matrix(T_f1tof2)
         _t = tf_msg.transform.translation
         _t.x, _t.y, _t.z = T_f1tof2[:3,3]
-        self.tfBcaster.sendTransform(tf_msg)
+        if static:
+            self.static_tfBcaster.sendTransform(tf_msg)
+        else:
+            self.tfBcaster.sendTransform(tf_msg)
 
 
         
@@ -332,3 +341,90 @@ class GuidanceStatusPublisher(SimplePublisher):
         msg.phi_sp = np.rad2deg(model.sim.ctl.phi_sp())
         msg.theta_sp = np.rad2deg(model.sim.ctl.theta_sp())
         SimplePublisher.publish(self, msg)
+
+    
+class OdomPublisher(SimplePublisher):
+    def __init__(self, topic='ros_pat/odom', what='N/A', frame='w_ned'):
+        SimplePublisher.__init__(self, topic, nav_msgs.msg.Odometry, what) 
+        self.frame = frame
+        
+    def publish(self, model, _stamp):
+        msg = nav_msgs.msg.Odometry()
+        msg.header.stamp = _stamp
+        msg.header.frame_id = self.frame
+        x, y, z = p3_u.get_trans(model)
+        #_quat = tf.transformations.quaternion_from_euler(0, 0, 0)
+        _quat = tf.transformations.quaternion_from_matrix(model)
+        msg.pose.pose = geometry_msgs.msg.Pose(geometry_msgs.msg.Point(x, y, z), geometry_msgs.msg.Quaternion(*_quat))
+        # set the velocity
+        #odom.child_frame_id = "base_link"
+        #odom.twist.twist = Twist(Vector3(vx, vy, 0), Vector3(0, 0, vth))
+        SimplePublisher.publish(self, msg)
+
+#
+# Joint state
+#
+class JointStatePublisher(SimplePublisher):
+    def __init__(self, topic='/ds_glider/joint_states', what='N/A'):
+        SimplePublisher.__init__(self, topic, sensor_msgs.msg.JointState, what) 
+        self.msg = sensor_msgs.msg.JointState()
+        self.msg.name = ['aileron_left_joint', 'aileron_right_joint', 'elevator_left_joint', 'elevator_right_joint', 'flap_left_joint', 'flap_right_joint']
+        self.msg.position = np.zeros(len(self.msg.name))
+        self.msg.velocity = []
+        self.msg.effort = []
+
+    def publish(self, model, _stamp):
+        self.msg.header.stamp = _stamp
+        self.msg.position = model
+        SimplePublisher.publish(self, self.msg)
+#
+# Pose
+#
+class PosePublisher(SimplePublisher):
+    def __init__(self, topic='/ds_glider/inertial_vel', what='N/A'):
+        SimplePublisher.__init__(self, topic, geometry_msgs.msg.Pose, what)
+        self.msg = geometry_msgs.msg.Pose()
+        
+    def publish(self, model):
+        SimplePublisher.publish(self, self.msg)
+
+#
+# Text Marker
+#              
+class TextMarkerPublisher(SimplePublisher):
+    def __init__(self, topic, ref_frame, scale=1., argb=(1., 0., 1., 0.), what='N/A'):
+        SimplePublisher.__init__(self, topic, visualization_msgs.msg.Marker, what)
+        #self.marker_pub = rospy.Publisher(topic, visualization_msgs.msg.Marker, queue_size=1)
+        self.marker_msg = visualization_msgs.msg.Marker()
+        self.marker_msg.header.frame_id=ref_frame
+        self.marker_msg.type = visualization_msgs.msg.Marker.TEXT_VIEW_FACING
+        p = self.marker_msg.pose.position; p.x, p.y, p.z = 0, 0, -0.2
+        o = self.marker_msg.pose.orientation; o.x, o.y, o.z, o.w = 0, 0, 0, 1
+        self.marker_msg.scale.z = scale
+        c = self.marker_msg.color; c.a, c.r, c.g, c.b = argb
+        self.marker_msg.text = 'foo'
+
+    def publish(self, model):
+        self.marker_msg.header.stamp = rospy.Time.now()
+        self.marker_msg.text = model
+        #p = self.marker_msg.pose.position; p.x, p.y, p.z = carrot_pos[0], carrot_pos[1],carrot_pos[2]
+        SimplePublisher.publish(self, self.marker_msg)
+ 
+
+        
+#
+# periodic node
+#
+class PeriodicNode:
+
+    def __init__(self, name):
+        rospy.init_node(name)
+    
+    def run(self, freq):
+        rate = rospy.Rate(freq)
+        try:
+            while not rospy.is_shutdown():
+                self.periodic()
+                rate.sleep()
+        except rospy.exceptions.ROSInterruptException:
+            pass

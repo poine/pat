@@ -18,8 +18,8 @@ import pat3.test.fixed_wing.test_02_att_ctl  as test_pil
 class Agent(p3_rpu.PeriodicNode):
     mode_cst, mode_sim = range(2)
 
-    def __init__(self, mode=mode_sim):
-        p3_rpu.PeriodicNode.__init__(self, 'ros_pat_play_simulation')
+    def __init__(self, mode=mode_sim, name='ros_pat_play_simulation'):
+        p3_rpu.PeriodicNode.__init__(self, name)
         self.mode = mode
 
         pos_ned = [0, 0, -1]
@@ -28,14 +28,14 @@ class Agent(p3_rpu.PeriodicNode):
         self.T_a2b = np.eye(4)
         self.T_b2a = self.T_a2b#np.linalg.inv(self.T_a2b) # FIXME
         save=False
-        #savefile_name = '/tmp/pat_traj.npz'
-        savefile_name = '/tmp/pat_glider_circle.npz'
+        savefile_name = '/tmp/pat_traj.npz'
+        #savefile_name = '/tmp/pat_glider_circle.npz'
         if mode == self.mode_sim:
             if save:
                 #self.time, self.X = test_dyn.sim_step_thr()
                 #self.time, self.X = test_dyn.sim_step_ail()
                 #self.time, self.X = test_dyn.sim_step_ele()
-                self.time, self.X = test_dyn.sim_step_rud()
+                self.time, self.X, self.U = test_dyn.sim_step_rud()
                 #self.time, self.X, self.U = test_pil.test_step_theta(dm)
                 np.savez(savefile_name, time=self.time, X=self.X)
                 print('saved {}'.format(savefile_name))
@@ -49,7 +49,7 @@ class Agent(p3_rpu.PeriodicNode):
         self.tf_pub = p3_rpu.TransformPublisher()
         self.marker_pub = p3_rpu.PoseArrayPublisher(dae='ds_glider_full.dae')
         self.odom_pub = p3_rpu.OdomPublisher()
-        
+        self.joint_state_pub = p3_rpu.JointStatePublisher(what=name)
         
     def periodic(self):
         now = rospy.Time.now()
@@ -68,7 +68,10 @@ class Agent(p3_rpu.PeriodicNode):
             p3_u.set_rot(self.T_a2b, p3_fr.R_aero_to_body(alpha, beta))
             self.T_b2a = self.T_a2b#np.linalg.inv(self.T_a2b) # FIXME
             
-                
+        #joint_states = [self.dail, -self.dail, self.dele, self.dele, self.dflap, self.dflap]
+        joint_states = [0, 0, 0, 0, 0, 0]
+        self.joint_state_pub.publish(joint_states, now)
+        
         self.tf_pub.send_w_ned_to_b_transform(now, self.T_b2w)
         self.tf_pub.send_b_to_a_transform(now, self.T_b2a)
         self.tf_pub.send_transform('w_ned', 'ds_glider/base_link', now, self.T_b2w)

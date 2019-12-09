@@ -21,7 +21,7 @@ class FMS:
                            GuidanceCircle(dm, trim_args, dt=0.01),
                            GuidanceThermal(dm, trim_args),
                            GuidanceSearching(dm, trim_args)]
-
+        self.spv_size = 2
     
     def set_mode(self, m):
         if self.mode == FMS.mod_circle and m == FMS.mod_centering:
@@ -67,6 +67,7 @@ class GuidancePurePursuit:
     def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01):
         self.Xe, self.Ue = dm.trim(trim_args, debug=True)
         self.traj = traj
+        self.carrot = np.zeros(3)
         self.phi_sp, self.theta_sp = self.Xe[p3_fr.SixDOFAeroEuler.sv_phi], self.Xe[p3_fr.SixDOFAeroEuler.sv_theta]
         self.att_ctl = p3_pil.AttCtl(self.Xe, self.Ue, dm, dt)
         self.T_w2b_ref = np.eye(4)
@@ -152,7 +153,7 @@ class GuidanceThermal(GuidancePurePursuit):
     def _thermal_centering(self, t, X, Xee):
         X_pos = X[p1_fw_dyn.sv_slice_pos]
         # climb rate
-        ivel_ned = Xee[p3_fr.SixDOFEuclidianEuler.sv_slice_v]
+        ivel_ned = Xee[p3_fr.SixDOFEuclidianEuler.sv_slice_vel]
         alpha = self.traj.get_alpha(X_pos)
         #pdb.set_trace()
         idx_alpha = self._idx_of_angle(alpha)

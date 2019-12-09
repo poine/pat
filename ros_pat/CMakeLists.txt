@@ -48,15 +48,15 @@ catkin_python_setup()
 add_message_files(
   FILES
   guidance_status.msg
-#   Message2.msg
+  glider_status.msg
+#  glider_trim.msg
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  glider_trim.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -89,7 +89,8 @@ generate_messages(
 generate_dynamic_reconfigure_options(
   cfg/guidance.cfg
   cfg/atmosphere.cfg
-  )
+  cfg/glider_trim.cfg
+)
 
 ###################################
 ## catkin specific configuration ##

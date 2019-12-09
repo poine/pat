@@ -6,6 +6,10 @@ import threading
 import pat3.frames as p3_fr
 import pdb
 
+def set_rot(T, R): T[:3,:3]=R
+def set_trans(T, t): T[:3,3]=t
+def get_rot(T): return T[:3,:3]
+def get_trans(T): return T[:3,3]
 
 def norm_mpi_pi(v): return ( v + np.pi) % (2 * np.pi ) - np.pi
 def norm_0_2pi(v): return ( v + np.pi) % (2 * np.pi )
@@ -34,7 +38,7 @@ class Sim:
         return self.fdm.reset(X0, t0)
         
     def run(self, t1):
-        Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(self.fdm.X)
+        Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(self.fdm.X, self.atm)
         U = self.ctl.get(self.fdm.t, self.fdm.X, Xee, self.Yc) # in case we don't run the fdm
         #pdb.set_trace()
         #print('{} sim.run to {:.3f} (orig {:.3f})'.format(threading.currentThread().getName(), t1, self.fdm.t))
