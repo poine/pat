@@ -24,8 +24,11 @@ class Agent:
     def __init__(self, atm):
         #self.atm = p3_atm.AtmosphereThermal1()
         #self.atm = p3_atm.AtmosphereThermalMoving()
-        self.atm = p3_atm.AtmosphereThermalMulti()
+        #self.atm = p3_atm.AtmosphereThermalMulti()
         #self.atm.set_params(xc=15., yc=15., zi=850., wstar=256.)
+
+        self.atm = p3_atm.AtmosphereRidge()
+        
         #self.atm_pub = p3_rpu.AtmPublisher( self.atm, z0=-14. )
         self.atm_pub = p3_rpu.AtmPointCloudPublisher(self.atm, center=[0, 0, -50], dx=200., dy=200., dz=-100., dens=5.)
         self.tf_pub = p3_rpu.TransformPublisher()

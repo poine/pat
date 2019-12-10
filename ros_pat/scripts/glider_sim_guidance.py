@@ -33,7 +33,8 @@ class Agent:
         #_ctl = p3_guid.GuidanceThermal(_fdm, traj, {'h':0, 'va':10, 'gamma':0})
         #_atm = p3_atm.AtmosphereCstWind([0, 0, -1])
         #_atm = p3_atm.AtmosphereThermal1()
-        _atm = p3_atm.AtmosphereThermalMulti()
+        #_atm = p3_atm.AtmosphereThermalMulti()
+        _atm = p3_atm.AtmosphereRidge()
 
         
         self.sim = pmu.Sim(_fdm, _fms, _atm)

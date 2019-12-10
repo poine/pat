@@ -5,6 +5,23 @@
 import numpy as np, matplotlib.pyplot as plt
 import matplotlib, matplotlib.pyplot as plt, mpl_toolkits.mplot3d
 from matplotlib import cm
+
+
+import pat3.plot_utils as p3_plu, pat3.atmosphere as p3_atm
+
+def plot_vslice():
+    #atm = p3_atm.AtmosphereVgradient()
+    #atm = p3_atm.AtmosphereThermal()
+    #atm = p3_atm.AtmosphereThermal1()
+    #p3_plu.plot_slice_wind(atm, xmax=100, dx=2.5, h1=200)
+    atm = p3_atm.AtmosphereRidge()
+    p3_plu.plot_slice_wind (atm, xmax=40, dx=0.5, h0=-40, h1=40, dh=0.5)
+    p3_plu.plot_slice_wind2(atm, xmax=40, dx=1., h0=-40, h1=40, dh=1.)
+    #p3_plu.plot_3D_wind(atm) # does not work
+    plt.show()
+
+
+
 # This is for the thermal Bell shapes:
 
 def thermal_model_allen(x,y,z,wstar=256,wgain=1.,rgain=1.,zi=1000):
@@ -142,8 +159,10 @@ def main():
     
 
 
-if __name__ == "__main__":
-        main()
 
+    
+if __name__ == "__main__":
+        #main()
+    plot_vslice()
 
 

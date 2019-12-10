@@ -229,3 +229,29 @@ class AtmosphereThermalMulti(Atmosphere):
         #self.thermals[0].c = np.array([0, 55+10*np.sin(0.02*t), 0])
         winds = [_t.get_wind(pos_ned, t) for _t in self.thermals]
         return np.sum(winds, axis=0)
+
+
+
+class AtmosphereRidge(Atmosphere):
+    # wind over a cylinder obstacle.
+    # see: Langellan, long distance/duration trajectory optimization for small uavs
+    def __init__(self):
+        self.R = 30            # cylinder radius
+        self.winf = 2.         # 
+        self.R2 = self.R**2
+        self.c = np.array([40, 0, 15])
+        
+    def set_params(self, *args): pass
+
+
+    def get_wind(self, pos_ned, t): 
+        dpos = pos_ned - self.c
+        dpos[1]=0
+        r = np.linalg.norm(dpos)
+        if r < self.R: return [0, 0, 0]
+        eta = -np.arctan2(dpos[2], dpos[0])
+        ceta, seta = np.cos(eta), np.sin(eta)
+        R2ovr2 = self.R2/r**2
+        wx = self.winf*(1-R2ovr2*(ceta**2-seta**2))
+        wz = 2*self.winf*R2ovr2*ceta*seta
+        return [wx, 0, wz]

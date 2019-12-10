@@ -146,9 +146,11 @@ def plot_3D_wind(atm):
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
 
-def plot_slice_wind(atm, xmax=50, dx=5.):
+
+
+def plot_slice_wind(atm, xmax=50, dx=5., h0=-10, h1=150, dh=2.):
     y=0
-    xlist, zlist = np.arange(-xmax, xmax, dx), np.arange(-10., 150, 2)
+    xlist, zlist = np.arange(-xmax, xmax, dx), np.arange(h0, h1, dh)
     x, z = np.meshgrid(xlist, zlist)
     wz = np.zeros_like(z)
     nx, nz = x.shape
@@ -159,3 +161,20 @@ def plot_slice_wind(atm, xmax=50, dx=5.):
     cp = ax.contourf(x, z, wz)
     fig.colorbar(cp)
     ax.set_title('Filled Contours Plot')
+    ax.axis('equal')
+
+ 
+def plot_slice_wind2(atm, xmax=50, dx=5., h0=-10, h1=150, dh=2.):
+    xlist, zlist = np.arange(-xmax, xmax, dx), np.arange(h0, h1, dh)
+    x, z = np.meshgrid(xlist, zlist)
+    wx, wz = np.meshgrid(xlist, zlist)
+    for ix in range(wx.shape[0]):
+        for iz in range(wx.shape[1]):
+            pos = [x[ix, iz], 0, z[ix, iz]]
+            wx[ix, iz], _, wz[ix, iz] = atm.get_wind(pos, t=0)
+    fig, ax = plt.subplots(1,1)
+    cp = ax.contourf(x, z, -wz, alpha=0.5)
+    q = ax.quiver(xlist, zlist, wx, wz, units='width')
+    #ax.quiverkey(q, X=0.3, Y=1.1, U=10,
+    #             label='Quiver key, length = 10', labelpos='E')
+    ax.axis('equal')
