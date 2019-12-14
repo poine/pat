@@ -7,8 +7,11 @@ import pdb
 import pat3.utils as p3_u
 
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
+import pat3.vehicles.fixed_wing.aero as p3_fw_aero
+import pat3.vehicles.fixed_wing.simple_6dof_fdm_param as p3_fwparam
 import pat3.plot_utils as p3_pu
 import pat3.frames as p3_fr
+import pat3.atmosphere as p3_atm
 
 
 # redo with equilibrium Usfc
@@ -79,10 +82,33 @@ def plot_trims(dm, throttle=0., force_recompute=False, nvs=10, nhs=10):
     plt.contourf(vs, hs, zdots, v, cmap=plt.cm.jet)
     plt.colorbar(ticks=v)
     p3_pu.decorate(ax, title='zdot', xlab='velocity (m/s)', ylab='height (m)')
+
+#
+# test rewrite of aero functions
+#
+def test0():
+    h = 0
+    aero_vel = va, alpha, beta = [10, 0, 0]
+    euler, rvel = [0., 0, 0], [0.1, 0, 0]
+    Usfc = [0, 0, 0, 0]
+    Ueng = [0.1]
+    p_filename = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml')
+    P = p3_fwparam.Param(p_filename)
+    rho = p3_atm.get_rho(h)
+    Pdyn = 0.5*rho*va**2
+    X = np.concatenate(([0, 0, -h], aero_vel, euler, rvel))
+
+    print('f_eng new: {}'.format(p3_fw_aero.get_f_eng_body(h, va, Ueng, P)))
+    print('f_eng old: {}'.format(p1_fw_dyn.get_f_eng_body(X, Ueng, P)))
     
-def main():
-    logging.basicConfig(level=logging.INFO)
-    np.set_printoptions(linewidth=500)
+    
+    print('new: {}'.format(p1_fw_dyn.get_m_aero_body2(va, alpha, beta, rvel, Usfc, P, Pdyn)))
+    print('old {}'.format(p1_fw_dyn.get_m_aero_body(X, Usfc, P, Pdyn)))
+
+    
+    
+    
+def test1():
     param_filename = os.path.join(p3_u.pat_dir(), 'data/vehicles/skywalker_x8.xml')
     dm = p1_fw_dyn.DynamicModel(param_filename)
     plot_polar(dm)
@@ -90,7 +116,12 @@ def main():
     plot_trims(dm)
     plt.show()
 
-        
+def main():
+    logging.basicConfig(level=logging.INFO)
+    np.set_printoptions(linewidth=500)
+    test0()
+     #test1()
+    
 if __name__ == "__main__":
     main()
 

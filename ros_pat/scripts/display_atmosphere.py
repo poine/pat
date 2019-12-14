@@ -14,20 +14,20 @@ import ros_pat.cfg.atmosphereConfig
 import pdb
 
 '''
-This is a ROS agent that sends messages for displaying a trajectory in rviz
+This is a ROS agent displaying atmosphere in rviz
 '''
 
 
         
 class Agent:
 
-    def __init__(self, atm):
+    def __init__(self):
         #self.atm = p3_atm.AtmosphereThermal1()
         #self.atm = p3_atm.AtmosphereThermalMoving()
-        #self.atm = p3_atm.AtmosphereThermalMulti()
+        self.atm = p3_atm.AtmosphereThermalMulti()
         #self.atm.set_params(xc=15., yc=15., zi=850., wstar=256.)
 
-        self.atm = p3_atm.AtmosphereRidge()
+        #self.atm = p3_atm.AtmosphereRidge()
         
         #self.atm_pub = p3_rpu.AtmPublisher( self.atm, z0=-14. )
         self.atm_pub = p3_rpu.AtmPointCloudPublisher(self.atm, center=[0, 0, -50], dx=200., dy=200., dz=-100., dens=5.)
@@ -61,17 +61,7 @@ class Agent:
 
 def main():
     rospy.init_node('display_atmosphere')
-    #traj_name = rospy.get_param('~traj_name', 'circle4')
-    #if rospy.get_param('~list_available', False):
-    #    rospy.loginfo('  available trajectories\n{}'.format(pmtf.list()))
-    #try:
-        #rospy.loginfo('  Loading trajectory: {}'.format(traj_name))
-    atm = None
-        #rospy.loginfo('  Description: {}'.format(desc))
-    Agent(atm).run()
-    #except KeyError:
-    #    rospy.loginfo('  Unkwown trajectory: {}'.format(traj_name))
-    #    rospy.loginfo( '  available trajectories\n{}'.format(pmtf.list()))
+    Agent().run()
         
 if __name__ == "__main__":
     np.set_printoptions(linewidth=500)

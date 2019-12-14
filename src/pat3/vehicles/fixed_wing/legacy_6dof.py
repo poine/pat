@@ -37,6 +37,8 @@ import pat3.frames as p3_fr
 import pat3.plot_utils as p3_pu
 import pat3.atmosphere as p3_atm
 import pat3.algebra as p3_alg
+import pat3.vehicles.fixed_wing.aero as p3_fw_aero
+
 
 def load(type, variant, param=None):
     mod_str = "pat.vehicles.{:s}.dynamic_model_{:s}".format(type, variant)
@@ -77,30 +79,19 @@ iv_df   = 3
 iv_size = 4
 
 
-# REMOVE this... now in frames
-def get_aero_to_body(X):
-    """
-    computes the aero to body rotation matix
-    """
-    ca = math.cos(X[sv_alpha]); sa = math.sin(X[sv_alpha]) 
-    cb = math.cos(X[sv_beta]);  sb = math.sin(X[sv_beta])
-    return np.array([[ca*cb, -ca*sb, -sa],
-                     [sb   ,  cb   ,  0.],
-                     [sa*cb, -sa*sb,  ca]])
-
 def thrust_of_throttle(throttle, fmax, rho, rhor, nrho, v, vr, nv):
     return throttle*fmax*math.pow((rho/rhor),nrho)*math.pow((v/vr),nv)
 
-def get_f_eng_body2(h, va, U, P):
-    """
-    return propulsion forces expressed in body frame
-    """
-    rho = p3_atm.get_rho(h)
-    f_engines_body = np.zeros((P.eng_nb, 3))
-    for i in range(0, P.eng_nb): # FIXME use list constructor
-        thrust = thrust_of_throttle(U[i], P.fmaxs[i], rho, P.rhois[i], P.nrhos[i], va, P.Vis[i], P.nVs[i])
-        f_engines_body[i] = np.dot(P.eng_to_body[i], np.array([thrust, 0., 0.]))
-    return f_engines_body 
+# def get_f_eng_body2(h, va, U, P):
+#     """
+#     return propulsion forces expressed in body frame
+#     """
+#     rho = p3_atm.get_rho(h)
+#     f_engines_body = np.zeros((P.eng_nb, 3))
+#     for i in range(0, P.eng_nb): # FIXME use list constructor
+#         thrust = thrust_of_throttle(U[i], P.fmaxs[i], rho, P.rhois[i], P.nrhos[i], va, P.Vis[i], P.nVs[i])
+#         f_engines_body[i] = np.dot(P.eng_to_body[i], np.array([thrust, 0., 0.]))
+#     return f_engines_body 
 
 def get_f_eng_body(X, U, P):
     """
@@ -122,10 +113,10 @@ def get_f_aero_coef(alpha, beta, rvel, Usfc, P):
     return [CL, CY, CD]
 
 
-def get_f_aero_body2(va, alpha, beta, rvel, Usfc, P, Pdyn):
-    CL, CY, CD = get_f_aero_coef(alpha, beta, rvel, Usfc, P)
-    F_aero_body = Pdyn*P.Sref*np.dot(p3_fr.R_aero_to_body(alpha, beta), [-CD, CY, -CL])
-    return F_aero_body
+# def get_f_aero_body2(va, alpha, beta, rvel, Usfc, P, Pdyn):
+#     CL, CY, CD = get_f_aero_coef(alpha, beta, rvel, Usfc, P)
+#     F_aero_body = Pdyn*P.Sref*np.dot(p3_fr.R_aero_to_body(alpha, beta), [-CD, CY, -CL])
+#     return F_aero_body
 
 
 def get_f_aero_body(X, Usfc, P, Pdyn):
@@ -151,29 +142,30 @@ def get_f_aero_body(X, Usfc, P, Pdyn):
         F_aero_body = Pdyn*P.Sref*np.dot(p3_fr.R_aero_to_body(alpha, beta),[-CD, CY, -CL])
     return F_aero_body
     
-def get_m_eng_body(f_eng_body, P):
-    """
-    return propulsion moments expressed in body frame
-    """
-    m = np.zeros(3)
-    for i in range(0, P.eng_nb):
-        m += np.cross(P.eng_pos[i], f_eng_body[i])
-    return m
+# def get_m_eng_body(f_eng_body, P):
+#     """
+#     return propulsion moments expressed in body frame
+#     """
+#     m = np.zeros(3)
+#     for i in range(0, P.eng_nb):
+#         m += np.cross(P.eng_pos[i], f_eng_body[i])
+#     return m
 
 
-def get_m_aero_coef(alpha, beta, rvel, Usfc, P):
-    d_alpha = alpha - P.alpha0
-    Cl =         P.Cl_alpha*d_alpha + P.Cl_beta*beta +\
-         np.dot(P.Cl_omega,rvel) + np.dot(P.Cl_sfc,Usfc)
-    Cm = P.Cm0 + P.Cm_alpha*d_alpha + P.Cm_beta*beta +\
-         np.dot(P.Cm_omega,rvel) + np.dot(P.Cm_sfc,Usfc)
-    Cn =         P.Cn_alpha*d_alpha + P.Cn_beta*beta +\
-         np.dot(P.Cn_omega,rvel) + np.dot(P.Cn_sfc,Usfc)
-    return Cl, Cm, Cn
+# def get_m_aero_coef(alpha, beta, rvel, Usfc, P):
+#     d_alpha = alpha - P.alpha0
+#     nrvel =  rvel*np.array([P.Bref, P.Cref, P.Bref])/2/P.Vref
+#     Cl =         P.Cl_alpha*d_alpha + P.Cl_beta*beta +\
+#          np.dot(P.Cl_omega,nrvel) + np.dot(P.Cl_sfc,Usfc)
+#     Cm = P.Cm0 + P.Cm_alpha*d_alpha + P.Cm_beta*beta +\
+#          np.dot(P.Cm_omega,nrvel) + np.dot(P.Cm_sfc,Usfc)
+#     Cn =         P.Cn_alpha*d_alpha + P.Cn_beta*beta +\
+#          np.dot(P.Cn_omega,nrvel) + np.dot(P.Cn_sfc,Usfc)
+#     return Cl, Cm, Cn
 
-def get_m_aero_body2(va, alpha, beta, rvel, Usfc, P, Pdyn):
-    Cl, Cm, Cn = get_m_aero_coef(alpha, beta, rvel, Usfc, P)
-    return Pdyn*P.Sref*np.array([Cl*P.Bref, Cm*P.Cref, Cn*P.Bref])
+# def get_m_aero_body2(va, alpha, beta, rvel, Usfc, P, Pdyn):
+#     Cl, Cm, Cn = get_m_aero_coef(alpha, beta, rvel, Usfc, P)
+#     return Pdyn*P.Sref*np.array([Cl*P.Bref, Cm*P.Cref, Cn*P.Bref])
 
 def get_m_aero_body(X, Usfc, P, Pdyn):
     """
@@ -204,7 +196,7 @@ def dyn(X, t, U, P, atm=None):
     X_rvel_body = X[sv_slice_rvel]          # body rotational velocities
     X_euler = X[sv_slice_eul]               # euler angles                          
 
-    aero_to_body = get_aero_to_body(X)
+    aero_to_body = p3_fr.R_aero_to_body(X[sv_alpha], X[sv_beta])
     earth_to_body = p3_alg.rmat_of_euler(X_euler)
     body_to_earth = earth_to_body.T 
     avel_aero = [X[sv_v], 0., 0.]
@@ -224,7 +216,7 @@ def dyn(X, t, U, P, atm=None):
 
     # Newton for moments in body frame
     m_aero_body = get_m_aero_body(X, Usfc, P, Pdyn)
-    m_eng_body = get_m_eng_body(f_eng_body, P)
+    m_eng_body = p3_fw_aero.get_m_eng_body(f_eng_body, P)
     raccel_body = np.dot(P.invI, m_aero_body + m_eng_body - np.cross(X_rvel_body, np.dot(P.I, X_rvel_body)))
     #raccel_body = np.dot(P.invJ, m_aero_body + m_eng_body - np.cross(X_rvel_body, np.dot(P.J, X_rvel_body)))
 
@@ -258,6 +250,8 @@ def trim(P, args, report=True, debug=False):
     Find throttle, elevator  and angle of attack corresponding
     to the given airspeed and and flight path
     """
+    if report:
+        print("### legacy_6dof trim")
     flaps = args.get('flaps', 0.)
     if 'gamma' in args:
         va, gamma_e, h = args['va'], args['gamma'], args['h']
@@ -375,106 +369,181 @@ class Param(pat3.vehicles.fixed_wing.simple_6dof_fdm_param.Param):
     pass
 
 
-
-#class DynamicModel(BaseDynamicModel):
-class DynamicModel:
-
-    sv_x     = sv_x     # position x axis
-    sv_y     = sv_y     # position y axis
-    sv_z     = sv_z     # heigh above ground
-    sv_v     = sv_v     # airspeed
-    sv_alpha = sv_alpha # alpha
-    sv_beta  = sv_beta  # beta
-    sv_phi   = sv_phi   # roll  (euler, ltp to body)
-    sv_theta = sv_theta # pitch (euler, ltp to body)
-    sv_psi   = sv_psi   # yaw   (euler, ltp to body)
-    sv_p     = sv_p     # rotational vel body x
-    sv_q     = sv_q     # rotational vel body y
-    sv_r     = sv_r     # rotational vel body z
-    sv_size  = sv_size
-
-    
-    iv_th   = 0    # throttle
-    iv_da   = 1    # aileron
-    iv_de   = 2    # elevator
-    iv_dr   = 3    # rudder
-    iv_size = 4
-    # hack for multiple engines
-    _iv_da = 0
-    _iv_de = 1
-    _iv_dr = 2
-    _iv_df = 3
-
-    # looks broken... dyn = lambda self, X, t, U, P: dyn(X, t, U, self.P)
-    trim = lambda self, args=None, report=False, debug=False: trim(self.P, args, report, debug)
-    def dyn(self, X, t, U, atm=None):
-        return dyn(X, t, U, self.P, atm)
-
-    
+class FWDynamicModel:
     def __init__(self, params=None):
-        print("Info: Dynamic fixed wing legacy")
-        #BaseDynamicModel.__init__(self)
-        if params == None: params = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml')
+        if params is None: params = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml')
         self.P = Param(params)
         #self.P = ParamOld(params)
-        self.X = np.zeros(self.sv_size())
+        self.X = np.zeros(self.get_sv_size())
         self.X_act = np.zeros(self.input_nb())
-        self.t, self.dt = 0., 0.01
         self.T_w2b = np.eye(4)
+        self.t, self.dt = 0., 0.01
         self.reset()
 
-    def sv_size(self): return p3_fr.SixDOFAeroEuler.sv_size
- 
-    def name(self):
-        return "Fixed Wing Python Basic ({:s})".format(self.P.name)
+    def param(self): return str(self.P)
+
+    def _update_byproducts(self):
+        self.T_w2b[:3,:3] = p3_alg.rmat_of_euler(self.X[self.sv_slice_eul]).T
+        self.T_w2b[:3,3] = self.X[self.sv_slice_pos]
 
     def reset(self, X0=None, t0=0, X_act0=None):
-        if X0 is not None: self.X = np.asarray(X0)
-        else: self.X = np.array([0., 0., 0., 68., 0., 0., 0., 0., 0., 0., 0., 0.])
-        if X_act0 is not None:
-            self.X_act = np.asarray(X_act0)
+        self.X = np.asarray(X0) if X0 is not None else self.default_state()
+        self.X_act = np.asarray(X_act0)
         self.t = t0
         self._update_byproducts()
         return self.X
 
+    def run(self, dt, tf, U, atm):
+        if 0: # no actuator dynamics
+            self.X_act = self._clip_input(U)
+        else:
+            act_lambda = -1./np.array([0.1, 0.02, 0.02, 0.02, 0.2])
+            self.X_act += dt*((self.X_act-self._clip_input(U))*act_lambda)
+       
+        foo, self.X = scipy.integrate.odeint(self.dyn, self.X, [self.t, self.t+dt], args=(self.X_act, atm))#, hmax=0.001)
+        self.t += dt
+        self._update_byproducts()
+        return self.X
+    
+
+        
+    _iv_th   = 0    # throttle
+    _iv_da   = 1    # aileron
+    _iv_de   = 2    # elevator
+    _iv_dr   = 3    # rudder
+    _iv_df   = 4    # flap
+
+    def input_nb(self): return self.P.input_nb
+
     def _clip_input(self, U):
         Uclip = np.copy(U)
         # clip input
-        max_ail, max_ele, max_rud = np.deg2rad(30), np.deg2rad(25), np.deg2rad(30) 
+        max_ail, max_ele, max_rud = np.deg2rad(30), np.deg2rad(25), np.deg2rad(30)
         Uclip[self.iv_dth()] = np.clip(U[self.iv_dth()], 0., 1.)
         Uclip[self.iv_da()]  = np.clip(U[self.iv_da()], -max_ail, max_ail)
         Uclip[self.iv_de()]  = np.clip(U[self.iv_de()], -max_ele, max_ele)
         Uclip[self.iv_dr()]  = np.clip(U[self.iv_dr()], -max_rud, max_rud)
         return Uclip
-        
-    def run(self, dt, tf, U, atm):
-        if 0: # no actuator dynamics
-            self.X_act = self._clip_input(U)
-        else:
-            act_lambda = -1./np.array([0.1, 0.02, 0.02, 0.02, 0.02])
-            self.X_act += dt*((self.X_act-self._clip_input(U))*act_lambda)
-       
-        foo, self.X = scipy.integrate.odeint(dyn, self.X, [self.t, self.t+dt], args=(self.X_act, self.P, atm))#, hmax=0.001)
-        self.t += dt
-        self._update_byproducts()
-        return self.X
-
-    def _update_byproducts(self):
-        #self.T_w2b[:3,:3] = p3_alg.rmat_of_quat(self.X[sv_slice_quat]).T # that is freaking weird....
-        self.T_w2b[:3,:3] = p3_alg.rmat_of_euler(self.X[sv_slice_eul]).T
-        self.T_w2b[:3,3] = self.X[sv_slice_pos]
-        
-    def param(self):
-        return str(self.P)
 
     def iv_dth(self):
         if self.P.eng_nb>1: return range(0,self.P.eng_nb)
         else: return 0
-    def iv_da(self): return self.P.eng_nb + DynamicModel._iv_da
-    def iv_de(self): return self.P.eng_nb + DynamicModel._iv_de
-    def iv_dr(self): return self.P.eng_nb + DynamicModel._iv_dr
-    def iv_df(self): return self.P.eng_nb + DynamicModel._iv_df
-    def input_nb(self): return self.P.input_nb
+    def iv_da(self): return self.P.eng_nb + self._iv_da
+    def iv_de(self): return self.P.eng_nb + self._iv_de
+    def iv_dr(self): return self.P.eng_nb + self._iv_dr
+    def iv_df(self): return self.P.eng_nb + self._iv_df
+
+
+class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
+
+    #iv_th   = 0    # throttle
+    #iv_da   = 1    # aileron
+    #iv_de   = 2    # elevator
+    #iv_dr   = 3    # rudder
+    #iv_size = 4
+    # hack for multiple engines
+    #_iv_da = 0
+    #_iv_de = 1
+    #_iv_dr = 2
+    #_iv_df = 3
+
+    trim = lambda self, args=None, report=False, debug=False: trim(self.P, args, report, debug)
+
+    def __init__(self, params=None):
+        print("Info: Dynamic fixed wing legacy")
+        FWDynamicModel.__init__(self, params)
+
+
+    def dyn_old(self, X, t, U, atm=None):
+        return dyn(X, t, U, self.P, atm)
+
+    def dyn_new(self, X, t, U, atm=None):
+        Ueng = U[self.P.u_slice_eng()]                    # engines part of input vector
+        Usfc = U[self.P.u_slice_sfc()]                    # control surfaces part of input vector
+        X_pos = X[self.sv_slice_pos]                      # ned pos
+        X_avel = va, alpha, beta = X[self.sv_slice_vaero] # airvel, alpha, beta
+        X_euler = X[self.sv_slice_eul]                    # euler angles                          
+        X_rvel_body = X[self.sv_slice_rvel]               # body rotational velocities
+        earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
+        R_aero_to_body = p3_fr.R_aero_to_body(alpha, beta)
+        wind_ned = atm.get_wind(X_pos, t) if atm is not None else [0, 0, 0]
+        waccel_body = [0, 0, 0]  # np.dot(earth_to_body, waccel_earth)
+        avel_aero = [X[sv_v], 0., 0.]
+        avel_body = np.dot(R_aero_to_body, avel_aero)
+        ivel_world = p3_fr.vel_aero_to_world(X_avel, X_euler, wind_ned)
+        ivel_body = np.dot(earth_to_body_R, ivel_world)
+        
+        rho = p3_atm.get_rho(-X[self.sv_z])
+        Pdyn = 0.5*rho*va**2
+
+        # Forces
+        f_aero_body = p3_fw_aero.get_f_aero_body(va, alpha, beta, X_rvel_body, Usfc, self.P, Pdyn)
+        f_eng_body  =  p3_fw_aero.get_f_eng_body(-X[self.sv_z], va, Ueng, self.P)
+        f_weight_body = np.dot(earth_to_body_R, [0., 0., self.P.m*self.P.g])
+        forces_body = f_aero_body + np.sum(f_eng_body, axis=0) + f_weight_body
+        # Moments
+        m_aero_body = p3_fw_aero.get_m_aero_body(va, alpha, beta, X_rvel_body, Usfc, self.P, Pdyn)
+        m_eng_body = p3_fw_aero.get_m_eng_body(f_eng_body, self.P)
+        m_body = m_aero_body + m_eng_body
+        
+        Xdot = np.zeros(p3_fr.SixDOFAeroEuler.sv_size)
+        # Translational kinematics
+        Xdot[sv_x:sv_z+1] = ivel_world
+        # Translational dynamics
+        iaccel_body = 1./self.P.m*forces_body - np.cross(X_rvel_body, ivel_body)
+        aaccel_body = iaccel_body - waccel_body
+        Xdot[sv_v] = np.inner(avel_body, aaccel_body)/X[self.sv_va]
+        (avx, avy, avz), (aax, aay, aaz) = avel_body, aaccel_body
+        Xdot[sv_alpha] = (avx*aaz - avz*aax)/(avx**2+avz**2)
+        Xdot[sv_beta] = (X[self.sv_va]*aay - avy*Xdot[self.sv_va]) / X[self.sv_va] / math.sqrt(avx**2+aaz**2)
+        
+        
+        # Rotational kinematics
+        Xdot[self.sv_slice_eul] = p3_alg.euler_derivatives(X_euler, X_rvel_body)
+        # Rotational dynamics
+        raccel_body = np.dot(self.P.invI, m_body - np.cross(X_rvel_body, np.dot(self.P.I, X_rvel_body)))
+        Xdot[self.sv_slice_rvel] = raccel_body
+        return Xdot
+        #return SixDOFAeroEuler.cont_dyn(X, t, np.concatenate(forces_body, m_body), self.P)
+        
+
+    def dyn(self, X, t, U, atm=None): return self.dyn_new(X, t, U, atm)
+    
+    def get_sv_size(self): return p3_fr.SixDOFAeroEuler.sv_size
+ 
+    def name(self): return "Fixed Wing Python Basic ({:s})".format(self.P.name)
+
+    # def reset(self, X0=None, t0=0, X_act0=None):
+    #     if X0 is not None: self.X = np.asarray(X0)
+    #     else: self.X = np.array([0., 0., 0., 68., 0., 0., 0., 0., 0., 0., 0., 0.])
+    #     if X_act0 is not None:
+    #         self.X_act = np.asarray(X_act0)
+    #     self.t = t0
+    #     self._update_byproducts()
+    #     return self.X
+
+        
+    # def run(self, dt, tf, U, atm):
+    #     if 0: # no actuator dynamics
+    #         self.X_act = self._clip_input(U)
+    #     else:
+    #         act_lambda = -1./np.array([0.1, 0.02, 0.02, 0.02, 0.02])
+    #         self.X_act += dt*((self.X_act-self._clip_input(U))*act_lambda)
+       
+    #     #foo, self.X = scipy.integrate.odeint(dyn, self.X, [self.t, self.t+dt], args=(self.X_act, self.P, atm))#, hmax=0.001)
+    #     #foo, self.X = scipy.integrate.odeint(self.dyn_old, self.X, [self.t, self.t+dt], args=(self.X_act, atm))#, hmax=0.001)
+    #     foo, self.X = scipy.integrate.odeint(self.dyn_new, self.X, [self.t, self.t+dt], args=(self.X_act, atm))#, hmax=0.001)
+    #     self.t += dt
+    #     self._update_byproducts()
+    #     return self.X
+
+    # def _update_byproducts(self):
+    #     #self.T_w2b[:3,:3] = p3_alg.rmat_of_quat(self.X[sv_slice_quat]).T # that is freaking weird....
+    #     self.T_w2b[:3,:3] = p3_alg.rmat_of_euler(self.X[self.sv_slice_eul]).T
+    #     self.T_w2b[:3,3] = self.X[self.sv_slice_pos]
+        
+
+    def default_state(self): return np.array([0, 0, 0,   10, 0, 0,   0, 0, 0,   0, 0, 0])
 
     def thrust_of_throttle(self, throttle, i, h, v):
         rho = p3_atm.get_rho(h)
@@ -486,99 +555,102 @@ class DynamicModel:
         return p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X, atm)
     
     def get_jacobian(self, Xe, Ue):
-        A,B = p3_u.num_jacobian(Xe, Ue, self.P, dyn)
+        A,B = p3_u.num_jacobian(Xe, Ue, None, self.dyn_new)
         return A, B 
 
     def state_str(self, X=None):
         return p3_fr.SixDOFAeroEuler.state_str(X if X is not None else self.X)
 
-    def plot_trajectory(self, time, X, U=None, figure=None, window_title="Trajectory", legend=None, filename=None): 
-        plot_trajectory(time, X, U, figure, window_title, legend, filename)
+    def plot_trajectory(self, time, Xae, U=None, figure=None, window_title="Trajectory", legend=None, filename=None, atm=None): 
+        plot_trajectory_ae(time, Xae, U, figure, window_title, legend, filename, atm)
 
-    def plot_trajectory_ee(self, time, Xae, U=None, figure=None, window_title="Trajectory", legend=None, filename=None, atm=None): 
-        Xee = np.array([p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(_X, atm) for _X in Xae])
-        plot_trajectory_ee(time, Xee, U, figure, window_title, legend, filename)
+    def plot_trajectory_as_ae(self, time, X, U=None, figure=None, window_title="Trajectory", legend=None, filename=None, atm=None): 
+        plot_trajectory_ae(time, X, U, figure, window_title, legend, filename, atm)
+
+    def plot_trajectory_as_ee(self, time, Xae, U=None, figure=None, window_title="Trajectory", legend=None, filename=None, atm=None): 
+        Xee = np.array([p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(_X, atm, _t) for _X, _t in zip(Xae, time)])
+        plot_trajectory_ee(time, Xee, U, figure, window_title, legend, filename, atm)
 
 
 
-class DynamicModel_ee:
+class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
 
-    ss = p3_fr.SixDOFEuclidianEuler
-    
     def __init__(self, params_filesname=None):
         print("Info: Dynamic fixed wing legacy ee")
-        if params_filesname == None: params_filesname = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml')
-        self.P = Param(params_filesname)
-        self.T_w2b = np.eye(4)
+        FWDynamicModel.__init__(self, params_filesname)
+      
 
     def dyn(self, X, t, U, atm):
 
-        Ueng = U[self.P.u_slice_eng()]                       # engines part of input vector
-        Usfc = U[self.P.u_slice_sfc()]                       # control surfaces part of input vector
-        X_pos = X[self.ss.sv_slice_pos]                      #
-        X_rvel_body = X[self.ss.sv_slice_rvel]               # body rotational velocities
-        X_euler = X[self.ss.sv_slice_eul]                    # euler angles                          
+        Ueng = U[self.P.u_slice_eng()]                    # engines part of input vector
+        Usfc = U[self.P.u_slice_sfc()]                    # control surfaces part of input vector
+        X_pos = X[self.sv_slice_pos]                      #
+        X_euler = X[self.sv_slice_eul]                    # euler angles                          
+        X_rvel_body = X[self.sv_slice_rvel]               # body rotational velocities
 
         earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
-        va, alpha, beta = p3_fr.vel_world_to_aero(X_pos, X[self.ss.sv_slice_vel], X_euler, atm)
-        rho = p3_atm.get_rho(-X[self.ss.sv_z])
+        wind_ned = atm.get_wind(X_pos, t) if atm is not None else [0, 0, 0]
+        va, alpha, beta = p3_fr.vel_world_to_aero(X[self.sv_slice_vel], X_euler, wind_ned)
+        rho = p3_atm.get_rho(-X[self.sv_z])
         Pdyn = 0.5*rho*va**2
-        
-        Xdot = np.zeros(self.ss.sv_size)
+
+        Xdot = np.zeros(self.sv_size)
         # Position kinematics
-        Xdot[self.ss.sv_slice_pos] = X[self.ss.sv_slice_vel]
+        Xdot[self.sv_slice_pos] = X[self.sv_slice_vel]
         # Newton for forces in world frame
-        f_aero_body = get_f_aero_body2(va, alpha, beta, X_rvel_body, Usfc, self.P, Pdyn)
-        f_eng_body  =  get_f_eng_body2(-X[self.ss.sv_z], va, Ueng, self.P)
+        f_aero_body = p3_fw_aero.get_f_aero_body(va, alpha, beta, X_rvel_body, Usfc, self.P, Pdyn)
+        f_eng_body  =  p3_fw_aero.get_f_eng_body(-X[self.sv_z], va, Ueng, self.P)
         f_weight_body = np.dot(earth_to_body_R, [0., 0., self.P.m*self.P.g])
         forces_body = f_aero_body + np.sum(f_eng_body, axis=0) + f_weight_body
         forces_world = np.dot(earth_to_body_R.T, forces_body)
-        Xdot[self.ss.sv_slice_vel] = 1./self.P.m * forces_world
+        Xdot[self.sv_slice_vel] = 1./self.P.m * forces_world
         # Orientation kinematics
-        Xdot[self.ss.sv_slice_eul] = p3_alg.euler_derivatives(X_euler, X_rvel_body)
+        Xdot[self.sv_slice_eul] = p3_alg.euler_derivatives(X_euler, X_rvel_body)
         # Newton for moments in body frame
-        m_aero_body = get_m_aero_body2(va, alpha, beta, X_rvel_body, Usfc, self.P, Pdyn)
-        m_eng_body = get_m_eng_body(f_eng_body, self.P)
+        m_aero_body = p3_fw_aero.get_m_aero_body(va, alpha, beta, X_rvel_body, Usfc, self.P, Pdyn)
+        m_eng_body = p3_fw_aero.get_m_eng_body(f_eng_body, self.P)
         raccel_body = np.dot(self.P.invI, m_aero_body + m_eng_body - np.cross(X_rvel_body, np.dot(self.P.I, X_rvel_body)))
-        Xdot[self.ss.sv_slice_rvel] = raccel_body
+        Xdot[self.sv_slice_rvel] = raccel_body
 
         return Xdot
 
-    def reset(self, X0=None, t0=0, X_act0=None):
-        if X0 is not None: self.X = np.asarray(X0)
-        else: self.X = np.array([0., 0., 0., 68., 0., 0., 0., 0., 0., 0., 0., 0.])
-        if X_act0 is not None:
-            self.X_act = np.asarray(X_act0)
-        self.t = t0
-        self._update_byproducts()
-        return self.X
+    # def reset(self, X0=None, t0=0, X_act0=None):
+    #     if X0 is not None: self.X = np.asarray(X0)
+    #     else: self.X = np.array([0., 0., 0., 68., 0., 0., 0., 0., 0., 0., 0., 0.])
+    #     if X_act0 is not None:
+    #         self.X_act = np.asarray(X_act0)
+    #     self.t = t0
+    #     self._update_byproducts()
+    #     return self.X
 
-    def run(self, dt, tf, U, atm):
-        if 0: # no actuator dynamics
-            self.X_act = self._clip_input(U)
-        else:
-            act_lambda = -1./np.array([0.1, 0.02, 0.02, 0.02, 0.02])
-            self.X_act += dt*((self.X_act-self._clip_input(U))*act_lambda)
+    # def run(self, dt, tf, U, atm):
+    #     if 0: # no actuator dynamics
+    #         self.X_act = self._clip_input(U)
+    #     else:
+    #         act_lambda = -1./np.array([0.1, 0.02, 0.02, 0.02, 0.02])
+    #         self.X_act += dt*((self.X_act-self._clip_input(U))*act_lambda)
        
-        foo, self.X = scipy.integrate.odeint(dyn, self.X, [self.t, self.t+dt], args=(self.X_act, self.P, atm))#, hmax=0.001)
-        self.t += dt
-        self._update_byproducts()
-        return self.X
+    #     foo, self.X = scipy.integrate.odeint(self.dyn, self.X, [self.t, self.t+dt], args=(self.X_act, atm))#, hmax=0.001)
+    #     self.t += dt
+    #     self._update_byproducts()
+    #     return self.X
 
-    def _clip_input(self, U):
-        Uclip = np.copy(U)
-        # clip input
-        max_ail, max_ele, max_rud = np.deg2rad(30), np.deg2rad(25), np.deg2rad(30) 
-        Uclip[self.iv_dth()] = np.clip(U[self.iv_dth()], 0., 1.)
-        Uclip[self.iv_da()]  = np.clip(U[self.iv_da()], -max_ail, max_ail)
-        Uclip[self.iv_de()]  = np.clip(U[self.iv_de()], -max_ele, max_ele)
-        Uclip[self.iv_dr()]  = np.clip(U[self.iv_dr()], -max_rud, max_rud)
-        return Uclip
+    # def _clip_input(self, U):
+    #     Uclip = np.copy(U)
+    #     # clip input
+    #     max_ail, max_ele, max_rud = np.deg2rad(30), np.deg2rad(25), np.deg2rad(30) 
+    #     Uclip[self.iv_dth()] = np.clip(U[self.iv_dth()], 0., 1.)
+    #     Uclip[self.iv_da()]  = np.clip(U[self.iv_da()], -max_ail, max_ail)
+    #     Uclip[self.iv_de()]  = np.clip(U[self.iv_de()], -max_ele, max_ele)
+    #     Uclip[self.iv_dr()]  = np.clip(U[self.iv_dr()], -max_rud, max_rud)
+    #     return Uclip
 
-    def _update_byproducts(self):
-        self.T_w2b[:3,:3] = p3_alg.rmat_of_euler(self.X[self.ss.sv_slice_eul]).T
-        self.T_w2b[:3,3] = self.X[self.ss.sv_slice_pos]
- 
+    # def _update_byproducts(self):
+    #     self.T_w2b[:3,:3] = p3_alg.rmat_of_euler(self.X[self.sv_slice_eul]).T
+    #     self.T_w2b[:3,3] = self.X[self.sv_slice_pos]
+
+    def default_state(self): return np.array([0, 0, 0,   10, 0, 0,   0, 0, 0,   0, 0, 0])
+    
     def trim(self, args=None, report=False, debug=False):
 
         if 'gamma' in args:
@@ -624,67 +696,81 @@ class DynamicModel_ee:
 
         return thr_e, ele_e, alpha_e
 
-    def input_nb(self): return self.P.input_nb
-    def sv_size(self): return self.ss.sv_size
-    def iv_dth(self):
-        if self.P.eng_nb>1: return range(0,self.P.eng_nb)
-        else: return 0
-    def iv_da(self): return self.P.eng_nb + DynamicModel._iv_da
-    def iv_de(self): return self.P.eng_nb + DynamicModel._iv_de
-    def iv_dr(self): return self.P.eng_nb + DynamicModel._iv_dr
-    def iv_df(self): return self.P.eng_nb + DynamicModel._iv_df
+    def get_sv_size(self): return self.sv_size
+    # def iv_dth(self):
+    #     if self.P.eng_nb>1: return range(0,self.P.eng_nb)
+    #     else: return 0
+    # def iv_da(self): return self.P.eng_nb + DynamicModel._iv_da
+    # def iv_de(self): return self.P.eng_nb + DynamicModel._iv_de
+    # def iv_dr(self): return self.P.eng_nb + DynamicModel._iv_dr
+    # def iv_df(self): return self.P.eng_nb + DynamicModel._iv_df
  
-    def plot_trajectory_ee(self, time, Xee, U=None, figure=None, window_title="Trajectory", legend=None, filename=None): 
-        plot_trajectory_ee(time, Xee, U, figure, window_title, legend, filename)
+    def plot_trajectory(self, time, Xee, U=None, figure=None, window_title="Trajectory", legend=None, filename=None, atm=None): 
+        plot_trajectory_ee(time, Xee, U, figure, window_title, legend, filename, atm)
 
+    def plot_trajectory_as_ee(self, time, Xee, U=None, figure=None, window_title="Trajectory", legend=None, filename=None, atm=None): 
+        plot_trajectory_ee(time, Xee, U, figure, window_title, legend, filename, atm)
+
+    def plot_trajectory_as_ae(self, time, Xae, U=None, figure=None, window_title="Trajectory", legend=None, filename=None, atm=None):
+        Xae = np.array([p3_fr.SixDOFEuclidianEuler.to_six_dof_aero_euler(_X, atm, _t) for _X, _t in zip(Xae, time)])
+        plot_trajectory_ae(time, Xae, U, figure, window_title, legend, filename, atm)
+
+    # FIXME
+    def get_jacobian(self, Xe, Ue):
+        A,B = p3_u.num_jacobian(Xe, Ue, None, self.dyn)
+        return A, B 
+
+        
 #
 # Some plotting functions
 #
-def plot_trajectory(time, X, U=None, figure=None, window_title="Trajectory",
-                    legend=None, filename=None):
+def plot_trajectory_ae(time, X, U=None, figure=None, window_title="Trajectory",
+                       legend=None, filename=None, atm=None):
 
-        margins=(0.04, 0.05, 0.98, 0.96, 0.20, 0.34)
-        figure = p3_pu.prepare_fig(figure, window_title, figsize=(20.48, 10.24), margins=margins)
+    margins=(0.04, 0.05, 0.98, 0.96, 0.20, 0.34)
+    figure = p3_pu.prepare_fig(figure, window_title, figsize=(20.48, 10.24), margins=margins)
 
-        plots = [("x", "m", X[:,sv_x]), ("y", "m", X[:,sv_y]), ("z", "m", X[:,sv_z]),
-                 ("v",         "m/s",               X[:,sv_v]),
-                 ("$\\alpha$", "deg", np.rad2deg(X[:,sv_alpha])),
-                 ("$\\beta$",  "deg", np.rad2deg(X[:,sv_beta])),
-                 ("$\phi$",    "deg", np.rad2deg(X[:,sv_phi])),
-                 ("$\\theta$", "deg", np.rad2deg(X[:,sv_theta])),
-                 ("$\\psi$",   "deg", np.rad2deg(X[:,sv_psi])),
-                 ("$p$",     "deg/s", np.rad2deg(X[:,sv_p])),
-                 ("$q$",     "deg/s", np.rad2deg(X[:,sv_q])),
-                 ("$r$",     "deg/s", np.rad2deg(X[:,sv_r]))]
-
-        nrow = 5 if U is not None else 4
-        for i, (title, ylab, data) in enumerate(plots):
-            ax = plt.subplot(nrow, 3, i+1)
-            plt.plot(time, data)
-            p3_pu.decorate(ax, title=title, ylab=ylab)
-            
-        if legend!=None:
-            plt.legend(legend, loc='best')
-
-        for i, min_yspan in enumerate([1., 1., 1.,  1., 1., 1.,  1., 1., 1.,  1., 1., 1.]):
-            p3_pu.ensure_yspan(plt.subplot(nrow,3,i+1), min_yspan)
-
-        if U is not None:
-            ax = figure.add_subplot(5, 3, 13)
-            ax.plot(time, 100*U[:, 0])
-            p3_pu.decorate(ax, title="$d_{th}$", ylab="%")
-            ax = figure.add_subplot(5, 3, 14)
-            ax.plot(time, np.rad2deg(U[:, iv_da+1]))
-            p3_pu.decorate(ax, title="$d_a$", ylab="deg", min_yspan=1.)
-            ax = figure.add_subplot(5, 3, 15)
-            ax.plot(time, np.rad2deg(U[:, iv_de+1]))
-            p3_pu.decorate(ax, title="$d_e$", ylab="deg", min_yspan=1.)
+    plots = [("x", "m", X[:,sv_x]), ("y", "m", X[:,sv_y]), ("z", "m", X[:,sv_z]),
+             ("v",         "m/s",               X[:,sv_v]),
+             ("$\\alpha$", "deg", np.rad2deg(X[:,sv_alpha])),
+             ("$\\beta$",  "deg", np.rad2deg(X[:,sv_beta])),
+             ("$\phi$",    "deg", np.rad2deg(X[:,sv_phi])),
+             ("$\\theta$", "deg", np.rad2deg(X[:,sv_theta])),
+             ("$\\psi$",   "deg", np.rad2deg(X[:,sv_psi])),
+             ("$p$",     "deg/s", np.rad2deg(X[:,sv_p])),
+             ("$q$",     "deg/s", np.rad2deg(X[:,sv_q])),
+             ("$r$",     "deg/s", np.rad2deg(X[:,sv_r]))]
     
-        return figure
+    nrow = 5 if U is not None else 4
+    for i, (title, ylab, data) in enumerate(plots):
+        ax = plt.subplot(nrow, 3, i+1)
+        plt.plot(time, data)
+        p3_pu.decorate(ax, title=title, ylab=ylab)
+            
+    if legend!=None:
+        plt.legend(legend, loc='best')
+
+    for i, min_yspan in enumerate([1., 1., 1.,  1., 1., 1.,  1., 1., 1.,  1., 1., 1.]):
+        p3_pu.ensure_yspan(plt.subplot(nrow,3,i+1), min_yspan)
+
+    if U is not None:
+        ax = figure.add_subplot(5, 3, 13)
+        ax.plot(time, 100*U[:, 0])
+        p3_pu.decorate(ax, title="$d_{th}$", ylab="%", min_yspan=1.)
+        ax = figure.add_subplot(5, 3, 14)
+        ax.plot(time, np.rad2deg(U[:, iv_da+1]), label="aileron")
+        ax.plot(time, np.rad2deg(U[:, iv_dr+1]), label="rudder")
+        p3_pu.decorate(ax, title="$d_a/d_r$", ylab="deg", min_yspan=1., legend=True)
+        ax = figure.add_subplot(5, 3, 15)
+        ax.plot(time, np.rad2deg(U[:, iv_de+1]), label="elevator")
+        ax.plot(time, np.rad2deg(U[:, iv_df+1]), label="flap")
+        p3_pu.decorate(ax, title="$d_e/d_f$", ylab="deg", min_yspan=1., legend=True)
+        
+    return figure
         
 # FIXME, move that elsewhere
 def plot_trajectory_ee(time, Xee, U=None, figure=None, window_title="Trajectory",
-                    legend=None, filename=None):
+                       legend=None, filename=None, atm=None):
     margins=(0.04, 0.05, 0.98, 0.96, 0.20, 0.34)
     figure = p3_pu.prepare_fig(figure, window_title, figsize=(20.48, 10.24), margins=margins)
     plots = [("x", "m", Xee[:,sv_x]), ("y", "m", Xee[:,sv_y]), ("z", "m", Xee[:,sv_z]),
@@ -715,10 +801,12 @@ def plot_trajectory_ee(time, Xee, U=None, figure=None, window_title="Trajectory"
         ax.plot(time, 100*U[:, 0])
         p3_pu.decorate(ax, title="$d_{th}$", ylab="%", min_yspan=0.01)
         ax = figure.add_subplot(5, 3, 14)
-        ax.plot(time, np.rad2deg(U[:, iv_da+1]))
-        p3_pu.decorate(ax, title="$d_a$", ylab="deg", min_yspan=1.)
+        ax.plot(time, np.rad2deg(U[:, iv_da+1]), label="aileron")
+        ax.plot(time, np.rad2deg(U[:, iv_dr+1]), label="rudder")
+        p3_pu.decorate(ax, title="$d_a/d_r$", ylab="deg", min_yspan=1., legend=True)
         ax = figure.add_subplot(5, 3, 15)
-        ax.plot(time, np.rad2deg(U[:, iv_de+1]))
-        p3_pu.decorate(ax, title="$d_e$", ylab="deg", min_yspan=1.)
+        ax.plot(time, np.rad2deg(U[:, iv_de+1]), label="elevator")
+        ax.plot(time, np.rad2deg(U[:, iv_df+1]), label="flap")
+        p3_pu.decorate(ax, title="$d_e/d_f$", ylab="deg", min_yspan=1., legend=True)
     
     return figure

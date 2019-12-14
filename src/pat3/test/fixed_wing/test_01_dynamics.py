@@ -14,6 +14,7 @@ import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 
 def get_default_dm(ac_name='cularis'):#ac_name='skywalker_x8'):
     return p1_fw_dyn.DynamicModel(os.path.join(p3_u.pat_dir(), 'data/vehicles/{}.xml'.format(ac_name)))
+    #return p1_fw_dyn.DynamicModel_ee(os.path.join(p3_u.pat_dir(), 'data/vehicles/{}.xml'.format(ac_name)))
 
 def trimed_vz():
     dm = get_default_dm()
@@ -36,7 +37,7 @@ def get_sim_defaults(t0=0, tf=5., dt=0.005, trim_args = {'h':0, 'va':10, 'gamma'
     return dm, time, Xe, Ue
 
 def run_simulation(dm, time, X0, X_act0, U, atm=None):
-    X = np.zeros((len(time), dm.sv_size()))
+    X = np.zeros((len(time), dm.sv_size))
     X_act = np.zeros((len(time), dm.input_nb()))
     X[0] = dm.reset(X0, time[0], X_act0)
     X_act[0] = dm.X_act
@@ -47,9 +48,9 @@ def run_simulation(dm, time, X0, X_act0, U, atm=None):
 
 def sim_pert(pert_axis, pert_val, label, t0=0, tf=1., dt=0.01, trim_args = {'h':0, 'va':12, 'gamma':0}, plot=True):
     dm, time, Xe, Ue = get_sim_defaults(t0, tf, dt, trim_args)
-    dX0 = np.zeros(dm.sv_size())
+    dX0 = np.zeros(dm.sv_size)
     U = Ue*np.ones((len(time), dm.input_nb()))
-    Xpert = np.zeros(dm.sv_size()); Xpert[pert_axis] = pert_val
+    Xpert = np.zeros(dm.sv_size); Xpert[pert_axis] = pert_val
     X0, X_act0 = Xe+Xpert, Ue # we start with equilibred actuators
     time, X, X_act = run_simulation(dm, time, X0, X_act0, U, atm=None)
     if plot:
@@ -150,11 +151,11 @@ def main():
     #sim_pert_va()
     #sim_pert_alpha()
     #sim_pert_beta()
-    #sim_step_thr()
-    #sim_step_ele()
-    #sim_step_ail()
+    sim_step_thr()
+    sim_step_ele()
+    sim_step_ail()
     sim_step_rud()
-    #sim_step_flap()
+    sim_step_flap()
     #plot_poles()
     plt.show()
 

@@ -145,6 +145,14 @@ class AtmosphereCstWind(Atmosphere):
         #return self.v if math.fmod(t, p) > p/3 else [0, 0, 0]
         return self.v
 
+class AtmosphereSinetWind(AtmosphereCstWind):
+    def get_wind(self, pos, t, omega=1.):
+        return np.sin(omega*t)*self.v
+
+class AtmosphereSinedWind(AtmosphereSinetWind):
+    def get_wind(self, pos, t, omega=0.1):
+        return np.sin(omega*np.linalg.norm(pos))*self.v
+
 class AtmosphereVgradient(Atmosphere):
     def get_wind(self, pos, t):
         wmin, wmax, hmax = 0., 5., 10. # 
@@ -248,10 +256,9 @@ class AtmosphereRidge(Atmosphere):
         dpos = pos_ned - self.c
         dpos[1]=0
         r = np.linalg.norm(dpos)
-        if r < self.R: return [0, 0, 0]
         eta = -np.arctan2(dpos[2], dpos[0])
         ceta, seta = np.cos(eta), np.sin(eta)
         R2ovr2 = self.R2/r**2
         wx = self.winf*(1-R2ovr2*(ceta**2-seta**2))
         wz = 2*self.winf*R2ovr2*ceta*seta
-        return [wx, 0, wz]
+        return [wx, 0, wz] if r >= self.R else [0, 0, 0]

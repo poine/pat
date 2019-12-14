@@ -12,16 +12,18 @@ import pat3.atmosphere as p3_atm
 import pat3.frames as p3_fr
 import pat3.plot_utils as p3_pu
 
-def get_sim_defaults(dm, t0=0, tf=5., dt=0.005, trim_args = {'h':0, 'va':12, 'gamma':0}):
+def get_sim_defaults(t0=0, tf=5., dt=0.005, trim_args = {'h':0, 'va':12, 'gamma':0}):
+    dm = p1_fw_dyn.DynamicModel(param_filename)
+    #dm = p1_fw_dyn.DynamicModel_ee(param_filename)
     time = np.arange(t0, tf, dt)
     Xe, Ue = dm.trim(trim_args, report=True, debug=False)
     phi_sp = np.ones(len(time))*Xe[dm.sv_phi]
     theta_sp = np.ones(len(time))*Xe[dm.sv_theta]
-    return time, Xe, Ue, phi_sp, theta_sp
+    return dm, time, Xe, Ue, phi_sp, theta_sp
 
 def run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True):
     atm = p3_atm.AtmosphereCstWind([0, 0, 0])
-    X = np.zeros((len(time), dm.sv_size()))
+    X = np.zeros((len(time), dm.sv_size))
     X_act = np.zeros((len(time), dm.input_nb()))
     U = np.zeros((len(time),  dm.input_nb()))
     X[0] = dm.reset(Xe)
@@ -41,23 +43,21 @@ def run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True):
     return time, X, U
 
 
-    
-
-def test_step_phi(dm, ampl=np.deg2rad(20.)):
-    time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults(dm)
+def test_step_phi(ampl=np.deg2rad(20.)):
+    dm, time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults()
     phi_sp = np.array([p3_u.step(_t, a=ampl, p=5., dt=1.25) for _t in time])
     return run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True)
 
-def test_step_theta(dm, ampl=np.deg2rad(1.)):
-    time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults(dm)
+def test_step_theta(ampl=np.deg2rad(1.)):
+    dm, time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults()
     theta_sp = Xe[p3_fr.SixDOFAeroEuler.sv_theta]+np.array([p3_u.step(_t, a=ampl, p=10., dt=2.5) for _t in time])
     return run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True)
     
     
 def main(param_filename):
-    dm = p1_fw_dyn.DynamicModel(param_filename)
-    #test_step_phi(dm)
-    test_step_theta(dm)
+   
+    #test_step_phi()
+    test_step_theta()
     plt.show()  
     
 if __name__ == "__main__":

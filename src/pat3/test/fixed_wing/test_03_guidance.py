@@ -9,6 +9,9 @@ import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 import pat3.vehicles.fixed_wing.piloting as p3_pil
 import pat3.vehicles.fixed_wing.guidance as p3_guid
 
+import pat3.vehicles.fixed_wing.guidance_ardusoaring as p3_guidardu
+
+
 import pat3.atmosphere as p3_atm
 import pat3.frames as p3_fr
 import pat3.trajectory_3D as p3_traj3d
@@ -20,7 +23,7 @@ import control.matlab
 
 def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, plot=False, atm=None):
     time = np.arange(0, tf, dt)
-    X = np.zeros((len(time), dm.sv_size()))
+    X = np.zeros((len(time), dm.sv_size))
     U = np.zeros((len(time),  dm.input_nb()))
     carrots, att_sp = np.zeros((len(time),  3)), np.zeros((len(time), 2))
     X[0] = dm.reset(ctl.Xe, t0=time[0], X_act0=None)#ctl.Ue)
@@ -61,16 +64,27 @@ def test_climb(dm, trim_args, dt=0.01):
     ctl.set_circle_center((0., 15., 0.))
     return ref_traj, run_simulation(dm, ctl, tf=120.5, dt=dt, trim_args=trim_args, plot=True, atm=atm)
 
+def test_ardu(dm, trim_args, dt=0.01):
+    atm, ref_traj = p3_atm.AtmosphereThermal1(), None
+    atm.set_params(0., 0., 2000., 300.)
+    ctl = p3_guidardu.GuidanceArduSoaring(dm, ref_traj, trim_args, dt)
+    time, X, U = run_simulation(dm, ctl, tf=20.5, dt=dt, trim_args=trim_args, plot=True, atm=atm)
+    Xee = np.array([p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(_X) for _X in X])
+    dm.plot_trajectory_as_ee(time, X, U)
+    return ref_traj, (time, X, U)  
+
 def main(param_filename, trim_args = {'h':0, 'va':11, 'gamma':0}):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     #ref_traj, (time, X, U) = test_line(dm, trim_args)
-    ref_traj, (time, X, U) = test_circle(dm, trim_args)
+    #ref_traj, (time, X, U) = test_circle(dm, trim_args)
     #ref_traj, (time, X, U) = test_climb(dm, trim_args)
+    ref_traj, (time, X, U) = test_ardu(dm, trim_args)
     p3_pu.plot_3D_traj(ref_traj, X)
 
-    savefile_name = '/tmp/pat_glider_circle.npz'
-    np.savez(savefile_name, time=time, X=X)
-    print('saved {}'.format(savefile_name))
+    if 0:
+        savefile_name = '/tmp/pat_glider_circle.npz'
+        np.savez(savefile_name, time=time, X=X)
+        print('saved {}'.format(savefile_name))
                 
     plt.show()
 
