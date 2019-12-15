@@ -15,7 +15,7 @@ def norm_mpi_pi(v): return ( v + np.pi) % (2 * np.pi ) - np.pi
 def norm_0_2pi(v): return ( v + np.pi) % (2 * np.pi )
 
 
-# assume this file is pat_dir/src/pat3/utils.py
+# we assume this file is pat_dir/src/pat3/utils.py
 def pat_dir():
     dirname, filename = os.path.split(os.path.abspath(__file__))
     return os.path.abspath(os.path.join(dirname, '../..'))
@@ -30,15 +30,19 @@ class Sim:
         self.Yc = np.zeros(ctl.spv_size)
         self.max_n_X = 5000
         self.Xs  = []  # stores original model state over time
+        self.Us  = []  # stores model input over time
         self.Xees = [] # stores model state as euclidian/euler
         
-    def reset(self, t0, X0=None):
+    def reset(self, t0, X0=None, U0=None):
         if X0 is None:
             X0, U0 = self.fdm.trim()
-        return self.fdm.reset(X0, t0)
+        self.Xs = [X0]
+        self.Us = [U0]
+        self.Xees = [self.fdm.state_as_six_dof_euclidian_euler(X0)]
+        return self.fdm.reset(X0, t0, U0)
         
     def run(self, t1):
-        Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(self.fdm.X, self.atm)
+        Xee = self.fdm.state_as_six_dof_euclidian_euler(self.fdm.X, self.atm)
         U = self.ctl.get(self.fdm.t, self.fdm.X, Xee, self.Yc) # in case we don't run the fdm
         #pdb.set_trace()
         #print('{} sim.run to {:.3f} (orig {:.3f})'.format(threading.currentThread().getName(), t1, self.fdm.t))
@@ -49,13 +53,18 @@ class Sim:
         while t1 - self.fdm.t >= self.fdm.dt:#0:#self.fdm.dt:
             #print(' compute control at {:.3f}'.format(self.fdm.t))
             Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(self.fdm.X, self.atm)
+
             U = self.ctl.get(self.fdm.t, self.fdm.X, Xee, self.Yc)
+            #U =  self.Us[0]
+            
             #print(' run fdm from {:.3f} to {:.3f}'.format(self.fdm.t, self.fdm.t+self.fdm.dt))
             self.fdm.run(self.fdm.dt, self.fdm.t+self.fdm.dt, U, self.atm)
             self.Xs.append(self.fdm.X)
-            self.Xees.append(self.fdm.state_six_dof_euclidian_euler(self.fdm.X, self.atm))
+            self.Us.append(U)
+            self.Xees.append(self.fdm.state_as_six_dof_euclidian_euler(self.fdm.X, self.atm))
             if len(self.Xs) > self.max_n_X:
                 del self.Xs[0]
+                del self.Us[0]
                 del self.Xees[0]
         return U, self.fdm.X
         

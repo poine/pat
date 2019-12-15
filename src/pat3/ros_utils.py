@@ -331,12 +331,12 @@ class GuidanceStatusPublisher(SimplePublisher):
 
     def publish(self, model):
         msg = ros_pat.msg.guidance_status()
-        msg.h = -model.sim.fdm.X[p1_fw_dyn.sv_z]
+        msg.h = -model.sim.fdm.X[p3_fr.SixDOFAeroEuler.sv_z]
         if len(model.sim.Xees) > 0:
             msg.hdot = -model.sim.Xees[-1][p3_fr.SixDOFEuclidianEuler.sv_zd]
-        msg.air_vel = model.sim.fdm.X[p1_fw_dyn.sv_v]
-        msg.phi = np.rad2deg(model.sim.fdm.X[p1_fw_dyn.sv_phi])
-        msg.theta = np.rad2deg(model.sim.fdm.X[p1_fw_dyn.sv_theta])
+        msg.air_vel = model.sim.fdm.X[p3_fr.SixDOFAeroEuler.sv_va]
+        msg.phi = np.rad2deg(model.sim.fdm.X[p3_fr.SixDOFAeroEuler.sv_phi])
+        msg.theta = np.rad2deg(model.sim.fdm.X[p3_fr.SixDOFAeroEuler.sv_theta])
         msg.air_vel_sp = model.sim.ctl.get_va_sp()
         msg.phi_sp = np.rad2deg(model.sim.ctl.phi_sp())
         msg.theta_sp = np.rad2deg(model.sim.ctl.theta_sp())

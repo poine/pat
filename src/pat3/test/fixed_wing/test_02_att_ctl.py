@@ -12,13 +12,16 @@ import pat3.atmosphere as p3_atm
 import pat3.frames as p3_fr
 import pat3.plot_utils as p3_pu
 
-def get_sim_defaults(t0=0, tf=5., dt=0.005, trim_args = {'h':0, 'va':12, 'gamma':0}):
-    dm = p1_fw_dyn.DynamicModel(param_filename)
-    #dm = p1_fw_dyn.DynamicModel_ee(param_filename)
+def get_sim_defaults(t0=0, tf=5., dt=0.005, trim_args = {'h':0, 'va':12, 'gamma':0.}):
+    #dm = p1_fw_dyn.DynamicModel(param_filename)
+    dm = p1_fw_dyn.DynamicModel_ee(param_filename)
+    #dm = p1_fw_dyn.DynamicModel_eq(param_filename) # no yet
     time = np.arange(t0, tf, dt)
     Xe, Ue = dm.trim(trim_args, report=True, debug=False)
-    phi_sp = np.ones(len(time))*Xe[dm.sv_phi]
-    theta_sp = np.ones(len(time))*Xe[dm.sv_theta]
+    Xe_ae = dm.state_as_six_dof_euclidian_euler(Xe)
+    phi_sp = np.ones(len(time))*Xe_ae[p3_fr.SixDOFEuclidianEuler.sv_phi]
+    theta_sp = np.ones(len(time))*Xe_ae[p3_fr.SixDOFEuclidianEuler.sv_theta]
+
     return dm, time, Xe, Ue, phi_sp, theta_sp
 
 def run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True):
@@ -26,7 +29,8 @@ def run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True):
     X = np.zeros((len(time), dm.sv_size))
     X_act = np.zeros((len(time), dm.input_nb()))
     U = np.zeros((len(time),  dm.input_nb()))
-    X[0] = dm.reset(Xe)
+    X_act[0] = Ue
+    X[0] = dm.reset(Xe, time[0], X_act0=Ue)
     ctl = p3_pil.AttCtl(Xe, Ue, dm, time[1]-time[0])
     for i in range(1, len(time)):
         U[i-1] = ctl.get(time[i-1], X[i-1], phi_sp[i-1], theta_sp[i-1])
@@ -37,10 +41,14 @@ def run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True):
         dm.plot_trajectory(time, X, X_act)
         plt.subplot(5,3,7); plt.plot(time, np.rad2deg(phi_sp))
         plt.subplot(5,3,8); plt.plot(time, np.rad2deg(theta_sp))
-        plt.subplot(5,3,13); plt.plot(time, 100*U[:,dm.iv_dth()]) # throttle
+        plt.subplot(5,3,13); plt.plot(time, 100*U[:,dm.iv_dth()], label='input') # throttle
         plt.subplot(5,3,14); plt.plot(time, np.rad2deg(U[:,dm.iv_da()]), alpha=0.5)  # aileron
         plt.subplot(5,3,15); plt.plot(time, np.rad2deg(U[:,dm.iv_de()]), alpha=0.5)  # elevator
     return time, X, U
+
+def test_pert_theta(ampl=np.deg2rad(-10.)):
+    dm, time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults()
+    return run_simulation(dm, time, Xe, Ue, phi_sp, theta_sp, plot=True)
 
 
 def test_step_phi(ampl=np.deg2rad(20.)):
@@ -55,9 +63,9 @@ def test_step_theta(ampl=np.deg2rad(1.)):
     
     
 def main(param_filename):
-   
+    test_pert_theta()
     #test_step_phi()
-    test_step_theta()
+    #test_step_theta()
     plt.show()  
     
 if __name__ == "__main__":

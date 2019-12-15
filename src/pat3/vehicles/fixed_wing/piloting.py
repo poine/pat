@@ -14,23 +14,26 @@ class PitchCtl:
         self.Xe, self.Ue, self.dt = np.asarray(Xe), Ue, dt
         #self.k_itheta, self.k_theta, self.k_q = -0.075, -10., -1.5
         self.sum_theta_err = 0
-        #self.h_theta, self.h_q, self.h_qd = -0.001, -0.001, 0.
-        self.h_theta, self.h_q, self.h_qd = 0., -5.1, -1.
         self.ref = p3_u.SecOrdLinRef(omega=5, xi=0.9, sats=[np.deg2rad(45.), np.deg2rad(100.)])  # vel, accel
         self.compute_gain(dm, Xe, Ue, dt)
         
     def compute_gain(self, dm, Xe, Ue, dt):
         if 1:  # empirical
+            #self.h_theta, self.h_q, self.h_qd = -0.001, -0.001, 0.
+            self.h_theta, self.h_q, self.h_qd = 0., -5.1, -2.
+            #self.h_theta, self.h_q, self.h_qd = 0., 0., 0.
             self.k_alpha, self.k_itheta, self.k_theta, self.k_q = 0., -0.075, -6., -3.
-            print self.k_alpha, self.k_theta, self.k_q
-        A, B = dm.get_jacobian(Xe, Ue)
-        sv = p3_fr.SixDOFAeroEuler; iv_ele = 2
-        A1 = np.array([[A[sv.sv_alpha, sv.sv_alpha], A[sv.sv_alpha, sv.sv_theta], A[sv.sv_alpha, sv.sv_q]],
-                       [A[sv.sv_theta, sv.sv_alpha], A[sv.sv_theta, sv.sv_theta], A[sv.sv_theta, sv.sv_q]],
-                       [A[sv.sv_q,     sv.sv_alpha], A[sv.sv_q,     sv.sv_theta], A[sv.sv_q,     sv.sv_q]]])
-        B1 = np.array([[B[sv.sv_alpha, iv_ele]],
-                       [B[sv.sv_theta, iv_ele]],
-                       [B[sv.sv_q,     iv_ele]]])
+            #self.k_alpha, self.k_itheta, self.k_theta, self.k_q = 0., 0., -1., 0.
+            print('theta loop gains {} {} {} {}'.format(self.k_alpha, self.k_theta, self.k_q, self.k_itheta))
+        if 0:
+            A, B = dm.get_jacobian(Xe, Ue)
+            sv = p3_fr.SixDOFAeroEuler; iv_ele = 2
+            A1 = np.array([[A[sv.sv_alpha, sv.sv_alpha], A[sv.sv_alpha, sv.sv_theta], A[sv.sv_alpha, sv.sv_q]],
+                           [A[sv.sv_theta, sv.sv_alpha], A[sv.sv_theta, sv.sv_theta], A[sv.sv_theta, sv.sv_q]],
+                           [A[sv.sv_q,     sv.sv_alpha], A[sv.sv_q,     sv.sv_theta], A[sv.sv_q,     sv.sv_q]]])
+            B1 = np.array([[B[sv.sv_alpha, iv_ele]],
+                           [B[sv.sv_theta, iv_ele]],
+                           [B[sv.sv_q,     iv_ele]]])
         if 0:  # pole placement
             eigva, eigve = np.linalg.eig(A1)
             om, xi = 9, 0.99; l1, l2 = p3_u.omxi_to_lambda(om, xi)
@@ -59,7 +62,7 @@ class PitchCtl:
         sv = p3_fr.SixDOFAeroEuler
         alpha_ref = self.Xe[sv.sv_alpha]
         theta_ref, q_ref, qd_ref = self.ref.run(self.dt, theta_sp)
-        alpha_e, theta_e, q_e = X[sv.sv_alpha]-alpha_ref, X[p1_fw_dyn.sv_theta]-theta_ref, X[p1_fw_dyn.sv_q]-q_ref
+        alpha_e, theta_e, q_e = X[sv.sv_alpha]-alpha_ref, X[sv.sv_theta]-theta_ref, X[sv.sv_q]-q_ref
         #theta_e, q_e = np.clip([theta_e, q_e], np.deg2rad([-30, -80]), np.deg2rad([30, 80]))
         self.sum_theta_err += theta_e
         # feedforward
@@ -79,7 +82,7 @@ class RollCtl:
         
     def get(self, X, t, phi_sp):
         phi_ref, p_ref, pd_ref = self.ref.run(self.dt, phi_sp)
-        phi_e, p_e = X[p1_fw_dyn.sv_phi]-phi_ref, X[p1_fw_dyn.sv_p]-p_ref
+        phi_e, p_e = X[p3_fr.SixDOFAeroEuler.sv_phi]-phi_ref, X[p3_fr.SixDOFAeroEuler.sv_p]-p_ref
         phi_e, p_e = np.clip([phi_e, p_e], np.deg2rad([-30, -150]), np.deg2rad([30, 150]))
         d_aile = -self.k_phi*phi_e -self.k_p*p_e
         return d_aile

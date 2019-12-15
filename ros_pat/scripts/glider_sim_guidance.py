@@ -66,7 +66,7 @@ class Agent:
     def nav_goal_callback(self, msg):
         # frame id = enu
         x, y = round(msg.pose.position.x), round(msg.pose.position.y)
-        z = round(float(self.sim.fdm.X[p1_fw_dyn.sv_z]))
+        z = round(float(self.sim.fdm.X[p3_fr.SixDOFAeroEuler.sv_z]))
         print('nav_goal_callback {} {} {}'.format(x, y, z))
         self.dyn_cfg_srv.update_configuration({'circle_xc': x, 'circle_yc': y, 'circle_zc': z})
         self.dyn_cfg_srv.update_configuration({'fms_mode':p3_guid.FMS.mod_circle})
@@ -103,7 +103,7 @@ class Agent:
         print('dyn_cfg_guid_circle'.format(**config))
         _e, _n, _u = config['circle_xc'], config['circle_yc'], config['circle_zc']
         if set_current_z:
-            _u = config['circle_zc'] = float(self.sim.fdm.X[p1_fw_dyn.sv_z])
+            _u = config['circle_zc'] = float(self.sim.fdm.X[p3_fr.SixDOFAeroEuler.sv_z])
             #_u = self.sim.fdm.X[p1_fw_dyn.sv_z]
         self.sim.ctl.guidances[self.sim.ctl.mod_circle].set_params((_n, _e, _u), config['circle_r'])
         if self.traj_pub is not None:

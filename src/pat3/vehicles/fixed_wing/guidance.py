@@ -16,7 +16,7 @@ class FMS:
     mod_auto1, mod_circle, mod_centering, mod_searching, mod_nb = range(5)
     def __init__(self, dm, trim_args, dt=0.01):
         self.mode = FMS.mod_circle
-        self.Xe, self.Ue = dm.trim(trim_args, debug=True)
+        self.Xe, self.Ue = dm.trim(trim_args, report=True)
         self.guidances = [ GuidanceAuto1(self.Xe, self.Ue, dm, dt),
                            GuidanceCircle(dm, trim_args, dt=0.01),
                            GuidanceThermal(dm, trim_args),
@@ -65,7 +65,7 @@ class GuidancePurePursuit:
     v_mode_throttle, v_mode_vz, v_mode_alt = range(3)
 
     def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01):
-        self.Xe, self.Ue = dm.trim(trim_args, debug=True)
+        self.Xe, self.Ue = dm.trim(trim_args, report=True)
         self.traj = traj
         self.carrot = np.zeros(3)
         self.phi_sp, self.theta_sp = self.Xe[p3_fr.SixDOFAeroEuler.sv_phi], self.Xe[p3_fr.SixDOFAeroEuler.sv_theta]
@@ -77,19 +77,19 @@ class GuidancePurePursuit:
         self.throttle_sp = 0.
      
     def _compute_roll_setpoint(self, t, X, traj, max_phi=np.deg2rad(45)):
-        my_pos = X[p1_fw_dyn.sv_slice_pos]
+        my_pos = X[p3_fr.SixDOFAeroEuler.sv_slice_pos]
         self.carrot = traj.get_point_ahead(my_pos, 15.)
         self.b2c_ned = self.carrot-my_pos
-        R_w2b = p3_alg.rmat_of_euler(X[p1_fw_dyn.sv_slice_eul])
+        R_w2b = p3_alg.rmat_of_euler(X[p3_fr.SixDOFAeroEuler.sv_slice_eul])
         self.b2c_b = np.dot(R_w2b, self.b2c_ned)
-        phi, theta = X[p1_fw_dyn.sv_phi], X[p1_fw_dyn.sv_theta]
+        phi, theta = X[p3_fr.SixDOFAeroEuler.sv_phi], X[p3_fr.SixDOFAeroEuler.sv_theta]
         if 0:
             self.R = (np.linalg.norm(self.b2c_b)**2)/(2*self.b2c_b[1])
             # R.g.tan(phi) = v^2
             phi_sp = np.arctan(v**2/self.R/9.81)
         else:
             self.R = 0
-            err_psi = X[p1_fw_dyn.sv_psi] - np.arctan2(self.b2c_ned[1], self.b2c_ned[0])
+            err_psi = X[p3_fr.SixDOFAeroEuler.sv_psi] - np.arctan2(self.b2c_ned[1], self.b2c_ned[0])
             err_psi = p3_u.norm_mpi_pi(err_psi)
             phi_sp = -0.75*err_psi
         self.phi_sp = np.clip(phi_sp, -max_phi, max_phi)
@@ -98,12 +98,12 @@ class GuidancePurePursuit:
     def get(self, t, X, Xee=None, Yc=None, debug=False, traj=None):
         if traj is None: traj = self.traj
         self._compute_roll_setpoint(t, X, traj)
-        z, v = X[p1_fw_dyn.sv_z], X[p1_fw_dyn.sv_v]
-        self.theta_sp = self.Xe[p1_fw_dyn.sv_theta] + 0.000025*self.sum_err_v
+        z, v = X[p3_fr.SixDOFAeroEuler.sv_z], X[p3_fr.SixDOFAeroEuler.sv_va]
+        self.theta_sp = self.Xe[p3_fr.SixDOFAeroEuler.sv_theta] + 0.000025*self.sum_err_v
         U = self.att_ctl.get(t, X, self.phi_sp, self.theta_sp)
         _thr, _ail, _ele = 0, 1, 2
         # elevator compensation for banking
-        v_sp, z_sp, theta_sp = self.v_sp, self.Xe[p1_fw_dyn.sv_z], self.Xe[p1_fw_dyn.sv_theta]
+        v_sp, z_sp, theta_sp = self.v_sp, self.Xe[p3_fr.SixDOFAeroEuler.sv_z], self.Xe[p3_fr.SixDOFAeroEuler.sv_theta]
         self.sum_err_v += (v-v_sp)
         self.sum_err_z += (z-z_sp)
         d_ele = 0#self.sum_err_v*-0.00001 # -np.deg2rad(3.)*np.abs(self.phi_sp)/max_phi
@@ -151,7 +151,7 @@ class GuidanceThermal(GuidancePurePursuit):
     
          
     def _thermal_centering(self, t, X, Xee):
-        X_pos = X[p1_fw_dyn.sv_slice_pos]
+        X_pos = X[p3_fr.SixDOFAeroEuler.sv_slice_pos]
         # climb rate
         ivel_ned = Xee[p3_fr.SixDOFEuclidianEuler.sv_slice_vel]
         alpha = self.traj.get_alpha(X_pos)

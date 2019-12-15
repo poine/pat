@@ -22,7 +22,7 @@ def test0():
     va, alpha, beta = Xae[p3_fr.SixDOFAeroEuler.sv_slice_vaero]
     wind_ned = [0, 0, 0]
     ivel_ned =  p3_fr.vel_aero_to_world(vel_aero, eulers, wind_ned)
-    vaero_2 = p3_fr.vel_world_to_aero(ivel_ned, eulers, wind_ned)
+    vaero_2 = p3_fr.vel_world_to_aero_eul(ivel_ned, eulers, wind_ned)
     print vel_aero
     print ivel_ned
     print vaero_2
@@ -39,7 +39,7 @@ def test1():
     for euler in eulers:
         pos_ned = [0, 0, 0]
         ivel_ned = [10, 0, 0]
-        avel_aero = va, alpha, beta = p3_fr.vel_world_to_aero(ivel_ned, euler, wind_ned)
+        avel_aero = va, alpha, beta = p3_fr.vel_world_to_aero_eul(ivel_ned, euler, wind_ned)
         ivel_ned2 = p3_fr.vel_aero_to_world(avel_aero, euler, wind_ned)
 
         if not np.allclose(ivel_ned, ivel_ned2, rtol=1e-03, atol=1e-03, equal_nan=False):
@@ -47,7 +47,10 @@ def test1():
         else: pass_cnt += 1
 
     print 'passed {}/{}'.format(pass_cnt, len(eulers))
-        
+
+
+
+    
 def main():
     logging.basicConfig(level=logging.INFO)
     np.set_printoptions(linewidth=500)
