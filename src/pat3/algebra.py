@@ -175,7 +175,15 @@ def rvel_of_eulerd(eu, eud):
                        cph*eud[e_theta]  +sph*cth*eud[e_psi],
                       -sph*eud[e_theta]  +cph*cth*eud[e_psi]]
 
-
+def raccel_of_eulerdd(eu, eud, eudd):
+    sph, cph = math.sin(eu[e_phi]), math.cos(eu[e_phi])
+    sth, cth = math.sin(eu[e_theta]), math.cos(eu[e_theta])
+    M1 = np.array([[1, 0, -sth], [0, cph, sph*cth], [0, -sph, cph*cth]])
+    phd, thd = eud[0:2]
+    m12, m22 = phd*cph*cth-thd*sph*sth, -phd*sph*cth-thd*cph*sth
+    M2 = np.array([[0, 0, -thd*cth], [0, -phd*sph, m12], [0, -phd*cph, m22]])
+    return np.dot(M1, eudd) + np.dot(M2, eud)
+    
 def euler_derivatives(eu, om):
 
   sph = math.sin(eu[e_phi])
@@ -213,6 +221,12 @@ def quat_of_axis_angle(u, a):
     sa2 = math.sin(a/2.)
     ca2 = math.cos(a/2.)
     return [ca2, sa2*u[0], sa2*u[1], sa2*u[2]]
+
+def axis_angle_quat(_q):
+    angle = 2*np.arccos(_q[q_i])
+    _a = np.sqrt(1.-_q[q_i]**2)
+    axis = np.array(_q[q_x:q_z+1])/a if a > 1e-12 else [1., 0, 0]
+    return axis, angle
 
 
 def quat_comp(a2b, b2c):
