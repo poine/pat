@@ -22,7 +22,9 @@
 import pdb
 
 """
-  atmophère, atmosphère, est-ce-que j'ai une gueule d'atmosphère?
+  atmosphere related stuff
+   -isa model
+   -misc wind distributions
 """
 
 import math, numpy as np, matplotlib.pyplot as plt
@@ -262,3 +264,18 @@ class AtmosphereRidge(Atmosphere):
         wx = self.winf*(1-R2ovr2*(ceta**2-seta**2))
         wz = 2*self.winf*R2ovr2*ceta*seta
         return [wx, 0, wz] if r >= self.R else [0, 0, 0]
+
+
+class AtmosphereWharington(Atmosphere):
+    
+    def __init__(self, center=None, radius=50, strength=-2):
+        self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])
+        self.radius = radius
+        self.strength = strength
+        
+    def set_params(self, *args): pass
+
+    def get_wind(self, pos_ned, t): 
+        dpos = pos_ned - self.center
+        wz = self.strength*np.exp(-(dpos[0]**2+dpos[1]**2)/self.radius**2)
+        return np.array([0, 0, wz])
