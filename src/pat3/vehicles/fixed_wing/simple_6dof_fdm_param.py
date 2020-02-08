@@ -41,9 +41,6 @@ class Param:
         for c in ["CL", "CY", "Cl", "Cm", "Cn"]:
             val = [getattr(self, '{:s}_{:s}'.format(c, ax)) for ax in ['p', 'q', 'r']]
             setattr(self, c+'_omega', val)
-        #self.CY_omega[2] *= 242
-        #self.CL_omega[1] *= 25
-        #for i in range(0, 3): self.CY_omega[i] *= 200
 
     def read_from_xml(self, filename):
         """
