@@ -25,6 +25,8 @@ class CircleRefTraj():
 
     def offset(self, delta_center):
         self.c += delta_center
+    def set_center(self, _center):
+        self.c = np.asarray(_center)
     
     def get_points(self):
         alphas = np.linspace(self.alpha0, self.alpha0+self.dalpha, 360*self.dalpha/np.pi/2)
@@ -90,7 +92,7 @@ class CompositeRefTraj:
         dte = self.sub_trajs[self.cur_traj_id].dist_to_end(p)
         if dte < lookahead_dist:
             next_traj_id = (self.cur_traj_id+1) % len(self.sub_trajs)
-            print self.cur_traj_id, next_traj_id
+            print(self.cur_traj_id, next_traj_id)
             if dte <= 0:
                 self.cur_traj_id = next_traj_id
                 
