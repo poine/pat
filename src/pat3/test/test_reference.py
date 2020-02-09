@@ -26,7 +26,7 @@ def run_ref(_ref, _time, _sp):
         Xr[i] = _ref.run(dt, _sp[i])
     return Xr
     
-def work():
+def test_scalar_ref():
     _time = np.arange(0, 10, 0.01)
 
     _sats = [6., 50.]  # vel, accel
@@ -43,7 +43,8 @@ def work():
     plt.show()
         
 def main(args):
-    work()
+    test_scalar_ref()
+    
       
 if __name__ == '__main__':
     main(sys.argv)

@@ -71,12 +71,12 @@ class Sim:
 
 
 
-#
-#  Linear reference models
-#
-# Adaptive Control with a Nested Saturation Reference Model
-# https://pdfs.semanticscholar.org/8b5c/2718be69a651dc3233a934ac05f5edda7ffd.pdf
-#
+'''
+  Linear reference models
+
+ Adaptive Control with a Nested Saturation Reference Model
+ https://pdfs.semanticscholar.org/8b5c/2718be69a651dc3233a934ac05f5edda7ffd.pdf
+'''
 class LinRef:
     ''' Nested Saturation Linear Reference Model (with first order integration)'''
     def __init__(self, K, sats=None):

@@ -14,6 +14,7 @@ import pat3.atmosphere as p3_atm
 import pat3.ros_utils as p3_rpu
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 import pat3.vehicles.fixed_wing.guidance as p3_guid
+import pat3.vehicles.fixed_wing.fms as p3_fms
 
 import ros_pat.cfg.guidanceConfig
 import ros_pat.cfg.atmosphereConfig
@@ -28,7 +29,7 @@ class Agent:
         self.time_factor = time_factor
         param_filename='/home/poine/work/pat/data/vehicles/cularis.xml'
         _fdm = p1_fw_dyn.DynamicModel(param_filename)
-        _fms = p3_guid.FMS(_fdm, {'h':0, 'va':10, 'gamma':0})
+        _fms = p3_fms.FMS(_fdm, {'h':0, 'va':10, 'gamma':0})
         #_ctl = p3_fw_guid.Guidance(_fdm, traj, {'h':0, 'va':10, 'gamma':0})
         #_ctl = p3_guid.GuidanceThermal(_fdm, traj, {'h':0, 'va':10, 'gamma':0})
         #_atm = p3_atm.AtmosphereCstWind([0, 0, -1])
@@ -69,7 +70,7 @@ class Agent:
         z = round(float(self.sim.fdm.X[p3_fr.SixDOFAeroEuler.sv_z]))
         print('nav_goal_callback {} {} {}'.format(x, y, z))
         self.dyn_cfg_srv.update_configuration({'circle_xc': x, 'circle_yc': y, 'circle_zc': z})
-        self.dyn_cfg_srv.update_configuration({'fms_mode':p3_guid.FMS.mod_circle})
+        self.dyn_cfg_srv.update_configuration({'fms_mode':p3_fms.FMS.mod_circle})
         
     def atm_config_callback(self, config):
         #rospy.loginfo("Config set to {int_param}, {double_param}, {str_param}, {bool_param}, {size}".format(**config))

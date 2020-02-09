@@ -279,3 +279,14 @@ class AtmosphereWharington(Atmosphere):
         dpos = pos_ned - self.center
         wz = self.strength*np.exp(-(dpos[0]**2+dpos[1]**2)/self.radius**2)
         return np.array([0, 0, wz])
+
+
+class AtmosphereWharingtonArray(Atmosphere):
+    def __init__(self):
+        self.thermals = [AtmosphereWharington(radius=30, strength=-1) for i in range(2)]
+        self.thermals[0].center[0] -= 20
+        self.thermals[1].center[0] += 20
+
+    def get_wind(self, pos_ned, t): 
+        winds = [_t.get_wind(pos_ned, t) for _t in self.thermals]
+        return np.sum(winds, axis=0)

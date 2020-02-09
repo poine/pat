@@ -11,7 +11,9 @@ import pat3.dynamics as pat_dyn
 import pat3.vehicles.fixed_wing.simple_6dof_fdm as fw_dyn
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 
-def get_default_dm(ac_name='cularis'):#ac_name='skywalker_x8'):
+DEFAULT_AC='cularis'
+#DEFAULT_AC='skywalker_x8'
+def get_default_dm(ac_name=DEFAULT_AC):
     #return p1_fw_dyn.DynamicModel(os.path.join(p3_u.pat_dir(), 'data/vehicles/{}.xml'.format(ac_name)))
     return p1_fw_dyn.DynamicModel_ee(os.path.join(p3_u.pat_dir(), 'data/vehicles/{}.xml'.format(ac_name)))
 
@@ -61,7 +63,7 @@ def sim_step_act(act_id, act_val, label, t0=0., tf=10., dt=0.01, trim_args = {'h
     X0, X_act0 = Xe, Ue
     time, X, X_act = run_simulation(dm, time, Xe, Ue, U, atm=None)
     if plot:
-        dm.plot_trajectory(time, X, X_act, window_title=label) 
+        dm.plot_trajectory(time, X, X_act, window_title=label, label=dm.get_name()) 
     return time, X, U
 
 def sim_step_thr(): return sim_step_act(0, 0.05, 'step throttle', tf=20.)
@@ -75,21 +77,22 @@ def main():
     logging.basicConfig(level=logging.INFO)
     np.set_printoptions(linewidth=500)
 
-    #sim_pert_p()
-    #sim_pert_q()
-    #sim_pert_r()
-    #sim_pert_phi()
-    sim_pert_theta()
-    sim_pert_va()
-    sim_pert_alpha()
-    sim_pert_beta()
-
-    #sim_step_thr()
-    #sim_step_ele()
-    #sim_step_ail()
-    #sim_step_rud()
-    #sim_step_flap()
-    #plot_poles()
+    if 0:
+        sim_pert_p()
+        sim_pert_q()
+        sim_pert_r()
+    if 0:
+        sim_pert_phi()
+        sim_pert_theta()
+        sim_pert_va()
+        sim_pert_alpha()
+        sim_pert_beta()
+    if 1:
+        #sim_step_thr()
+        sim_step_ele()
+        #sim_step_ail()
+        #sim_step_rud()
+        #sim_step_flap()
     plt.show()
 
 

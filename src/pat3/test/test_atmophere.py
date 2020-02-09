@@ -9,14 +9,23 @@ from matplotlib import cm
 
 import pat3.plot_utils as p3_plu, pat3.atmosphere as p3_atm
 
+
+def plot_hslice(h0=0.):
+    atm =  p3_atm.AtmosphereWharington()
+    atm =  p3_atm.AtmosphereWharingtonArray()
+    p3_plu.plot_slice_wind_ne(atm, n0=-100, n1=100, dn=5., e0=-100., e1=100, de=5, h0=0., t0=0.)
+    plt.savefig('/tmp/atm2.png')
+    plt.show()
+
 def plot_vslice():
     #atm = p3_atm.AtmosphereVgradient()
     #atm = p3_atm.AtmosphereThermal()
     #atm = p3_atm.AtmosphereThermal1()
+    atm =  p3_atm.AtmosphereWharington()
     #p3_plu.plot_slice_wind(atm, xmax=100, dx=2.5, h1=200)
-    atm = p3_atm.AtmosphereRidge()
+    #atm = p3_atm.AtmosphereRidge()
     p3_plu.plot_slice_wind (atm, xmax=40, dx=0.5, h0=-40, h1=40, dh=0.5)
-    p3_plu.plot_slice_wind2(atm, xmax=40, dx=1., h0=-40, h1=40, dh=1.)
+    #p3_plu.plot_slice_wind2(atm, xmax=40, dx=1., h0=-40, h1=40, dh=1.)
     #p3_plu.plot_3D_wind(atm) # does not work
     plt.show()
 
@@ -163,6 +172,7 @@ def main():
     
 if __name__ == "__main__":
         #main()
-    plot_vslice()
+    #plot_vslice()
+    plot_hslice()
 
 

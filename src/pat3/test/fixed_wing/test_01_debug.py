@@ -44,7 +44,7 @@ def test1():
     print('Xee_dot {}'.format(Xee_dot))
     Xae = p3_fr.SixDOFEuclidianEuler.to_six_dof_aero_euler(Xee, atm)
     print('Xae {}'.format(Xae))
-    Xae_dot = dm_ae.dyn_new(Xae, t=0, U=U, atm=atm)
+    Xae_dot = dm_ae.dyn(Xae, t=0, U=U, atm=atm)
     print('Xae_dot {}'.format(Xae_dot))
     
 
@@ -107,15 +107,91 @@ def test_ee_vs_ae():
         dm_ae.plot_trajectory_as_ee(time, Xae, Xae_act, window_title='aero/euler model as euclian/euler')
         dm_ae.plot_trajectory_as_ae(time, Xae, Xae_act, window_title='aero/euler model as aero/euler')
         
-        plt.show()
+        #plt.show()
+
+def run_simulation(dm, time, X0, U, atm=None):
+    X = np.zeros((len(time), dm.sv_size))
+    X[0] = dm.reset(X0, time[0])
+    for i in range(1, len(time)):
+        X[i] = dm.run(time[i] - time[i-1], time[i], U[i-1], atm=atm, act_dyn=False)
+    return X
+
+def compare_dms(dms, time, dU):
+    atm=None
+    Xe, Ue = dms[0].trim({'h':0, 'va':10, 'gamma':0}, report=True, debug=False)
+    U = Ue*np.ones((len(time), dms[0].input_nb())) + dU
+    Xe_ee = dms[0].state_as_six_dof_euclidian_euler(Xe, atm, time[0])
+    X0s = [_dm.state_from_ee(Xe_ee, atm, time[0]) for _dm in dms]
+    figure = None
+    for _dm, _X0 in zip(dms, X0s):
+        X = run_simulation(_dm, time, _X0, U, atm)
+        figure = _dm.plot_trajectory_as_ee(time, X, U, figure, label=_dm.get_name())
+        #figure = _dm.plot_trajectory_as_ae(time, X, U, figure, label=_dm.get_name())
+
+def zero_input(time): return np.zeros((len(time), 5))
+        
+def step_ail(time, act_val=np.deg2rad(1)): 
+    dU = zero_input(time)
+    dU[:,1] = p3_u.step_vec(time, a=act_val, p=10., dt=2.5)
+    return dU
+def step_ele(time, act_val=np.deg2rad(1)): 
+    dU = zero_input(time)
+    dU[:,2] = p3_u.step_vec(time, a=act_val, p=10., dt=2.5)
+    return dU
+
+def test3():
+    dm_ee = p1_fw_dyn.DynamicModel_ee()
+    dm_eq = p1_fw_dyn.DynamicModel_eq()
+    #dm_ae = p1_fw_dyn.DynamicModel()
+    time = np.arange(0, 10, 0.01)
+    dU = step_ail(time)
+    compare_dms([dm_ee, dm_eq], time, dU)
+
+#    
+# open loop simulation with banked trim
+#
+def test4(h=0, va=15., phi=np.deg2rad(25.)):
+    atm=None
+    dm = p1_fw_dyn.DynamicModel_ee()
+    #dm = p1_fw_dyn.DynamicModel()
+    Xe, Ue = dm.foo_trim_aero_banked_cst_throttle(h=h, va=va, throttle=0., flaps=0., phi=phi, debug=True, report=True)
+    print Xe, Ue
+    #Ue[dm.iv_da()]=0
+    #Ue[dm.iv_dr()]=0#-Ue[dm.iv_dr()]
+    time = np.arange(0, 10, 0.01)
+    U = Ue*np.ones((len(time), dm.input_nb()))
+    X0 = np.array(Xe)
+    X = run_simulation(dm, time, X0, U, atm)
+    #dm.plot_trajectory_as_ee(time, X, U, label=dm.get_name())
+    dm.plot_trajectory_as_ae(time, X, U, label=dm.get_name())
+    ax =  plt.subplot(5,3,7)
+    plt.plot(time, np.rad2deg(Xe[p3_fr.SixDOFEuclidianEuler.sv_phi])*np.ones(len(time)), label='eq')
+    plt.legend()
+    ax =  plt.subplot(5,3,8)
+    plt.plot(time, np.rad2deg(Xe[p3_fr.SixDOFEuclidianEuler.sv_theta])*np.ones(len(time)), label='eq')
+    plt.legend()
+    ax =  plt.subplot(5,3,10)
+    plt.plot(time, np.rad2deg(Xe[p3_fr.SixDOFEuclidianEuler.sv_p])*np.ones(len(time)), label='eq')
+    plt.legend()
+    ax =  plt.subplot(5,3,11)
+    plt.plot(time, np.rad2deg(Xe[p3_fr.SixDOFEuclidianEuler.sv_q])*np.ones(len(time)), label='eq')
+    plt.legend()
+    ax =  plt.subplot(5,3,12)
+    plt.plot(time, np.rad2deg(Xe[p3_fr.SixDOFEuclidianEuler.sv_r])*np.ones(len(time)), label='eq')
+    plt.legend()
+
+    
     
 def main():
     logging.basicConfig(level=logging.INFO)
     np.set_printoptions(linewidth=500)
     #test0()
-    test1()
+    #test1()
     #test2()
-    test_ee_vs_ae()
+    #test_ee_vs_ae()
+    #test3()
+    test4()
+    plt.show()
 
 if __name__ == "__main__":
     main()

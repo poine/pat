@@ -4,7 +4,7 @@ import math, numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
-
+#import pat3.frames as p3_fr # FIXME... cross include :(
 """
 Plotting
 """
@@ -91,9 +91,9 @@ def set_3D_axes_equal(ax=None):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     
-def plot_3D_traj(ref_traj=None, X=None):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+def plot_3D_traj(ref_traj=None, X=None, fig=None, ax=None, val=None):
+    fig = fig if fig is not None else plt.figure()
+    ax = ax if ax is not None else fig.add_subplot(111, projection='3d')
     if ref_traj is not None:
         pts = ref_traj.get_points()
         xs, ys, zs = pts[:,0], pts[:,1], pts[:,2] 
@@ -109,7 +109,20 @@ def plot_3D_traj(ref_traj=None, X=None):
             ax.add_collection3d(mesh)
 
     if X is not None:
-        ax.plot(X[:,0], X[:,1], X[:,2], color='b', label='aircraft trajectory')
+        if val is None:
+            ax.plot(X[:,0], X[:,1], X[:,2], color='b', label='aircraft trajectory')
+        else:
+            #pdb.set_trace()
+            _skip=5
+            #ac_pos_ned = X[:, p3_fr.SixDOFEuclidianEuler.slice_pos].reshape(-1, 1, 3)
+            ac_pos_ned = X[::_skip, :3].reshape(-1, 1, 3)
+            segments_ = np.concatenate([ac_pos_ned[:-1], ac_pos_ned[1:]], axis=1)
+            #norm = plt.Normalize(_val.min(), _val.max())
+            norm = plt.Normalize(0., 1.5)
+            lc = mpl_toolkits.mplot3d.art3d.Line3DCollection(segments_, cmap=plt.get_cmap('viridis'), norm=norm)
+            lc.set_array(-val[::_skip]) 
+            lc.set_linewidth(2)
+            ax.add_collection3d(lc)#, zs=z, zdir='z')
 
     ax.set_xlabel('North')
     ax.set_ylabel('East')
@@ -117,29 +130,31 @@ def plot_3D_traj(ref_traj=None, X=None):
     set_3D_axes_equal()
     plt.legend(loc='best')
 
-def plot_3D_wind(atm):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+def plot_3D_wind(atm, x0=0, xspan=50, dx=5., h0=-10, hspan=150, dh=10., figure=None, ax=None):
+    fig = figure if figure is not None else plt.figure()
+    ax = ax if ax is not None else fig.add_subplot(111, projection='3d')
     # Make the grid
-    x_r, y_r, z_r = np.arange(-50., 50., 5), np.arange(-50., 50., 5), np.arange(0., 100, 10)
+    x_r, y_r, z_r = np.arange(-(xspan-x0), xspan-x0, dx), np.arange(-50., 50., 5), np.arange(h0, h0+hspan, dh)
     x, y, z = np.meshgrid(x_r, y_r, z_r)
     wx, wy, wz = np.meshgrid(x_r, y_r, z_r)
     nx, ny, nz = x.shape
     for ix in range(nx):
         for iy in range(ny):
             for iz in range(nz):
-                pos = [x[ix, iy, iz], y[ix, iy, iz], z[ix, iy, iz]]
+                pos = [x[ix, iy, iz], y[ix, iy, iz], -z[ix, iy, iz]]  # we plot z axis up
                 wx[ix, iy, iz], wy[ix, iy, iz], wz[ix, iy, iz] = atm.get_wind(pos, t=0)
     w = np.vstack((wx[np.newaxis],wy[np.newaxis],wz[np.newaxis]))
     w_norm = np.linalg.norm(w, axis = 0)
     c = (w_norm.ravel() - w_norm.min()) / w_norm.ptp()
     c = np.concatenate((c, np.repeat(c, 2)))
     # Colormap
-    c = plt.cm.hsv(c)
+    #c = plt.cm.hsv(c)
+    cmap=plt.get_cmap('viridis')
+    c = cmap(c)
     #pdb.set_trace()
     #q = ax.quiver(x, y, z, wx, wy, wz)
     #q = ax.quiver(x, y, z, wx, wy, wz, length=1., cmap='Reds
-    q = ax.quiver(x, y, z, wx, wy, wz, colors=c, length=1., lw=3, normalize=True)
+    q = ax.quiver(x, y, z, wx, wy, -wz, colors=c, length=1., lw=3, normalize=True)
     #q = ax.quiver(x, y, z, wx, wy, wz, length=1.1, cmap='Reds', lw=2, normalize=True)
     #q.set_array(np.random.rand(np.prod(x.shape)))
     ax.set_xlabel('X axis')
@@ -164,17 +179,35 @@ def plot_slice_wind(atm, xmax=50, dx=5., h0=-10, h1=150, dh=2.):
     ax.axis('equal')
 
  
-def plot_slice_wind2(atm, xmax=50, dx=5., h0=-10, h1=150, dh=2.):
-    xlist, zlist = np.arange(-xmax, xmax, dx), np.arange(h0, h1, dh)
+def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2.):
+    xlist, zlist = np.arange(n0, n1, dn), np.arange(h0, h1, dh)
     x, z = np.meshgrid(xlist, zlist)
     wx, wz = np.meshgrid(xlist, zlist)
     for ix in range(wx.shape[0]):
         for iz in range(wx.shape[1]):
-            pos = [x[ix, iz], 0, z[ix, iz]]
-            wx[ix, iz], _, wz[ix, iz] = atm.get_wind(pos, t=0)
+            pos_ned = [x[ix, iz], e0, -z[ix, iz]]  # we plot with z axis up
+            wx[ix, iz], _, wz[ix, iz] = atm.get_wind(pos_ned, t=0)
     fig, ax = plt.subplots(1,1)
-    cp = ax.contourf(x, z, -wz, alpha=0.5)
-    q = ax.quiver(xlist, zlist, wx, wz, units='width')
-    #ax.quiverkey(q, X=0.3, Y=1.1, U=10,
-    #             label='Quiver key, length = 10', labelpos='E')
+    cp = ax.contourf(x, z, -wz, alpha=0.4)
+    q = ax.quiver(xlist, zlist, wx, -wz, units='width')
+    cbar = fig.colorbar(cp)
+    cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
+    decorate(ax, title='Atmosphere vert slice', xlab='north in m', ylab='z in m', legend=None, xlim=None, ylim=None, min_yspan=None)
     ax.axis('equal')
+    return fig, ax
+
+
+def plot_slice_wind_ne(atm, n0=-100, n1=100, dn=5., e0=-100., e1=100, de=5, h0=0., t0=0.):
+    xlist, ylist = np.arange(n0, n1, dn), np.arange(e0, e1, de)
+    x, y = np.meshgrid(xlist, ylist)
+    wz = np.zeros_like(x)
+    for ix in range(wz.shape[0]):
+        for iy in range(wz.shape[1]):
+            pos_ned = [x[ix, iy], y[ix, iy], -h0]  # FIXME ned/enu
+            wz[ix, iy] = -atm.get_wind([x[ix, iy], y[ix, iy], -h0], t=0)[2]
+            
+    fig, ax = plt.subplots(1,1)
+    cp = ax.contourf(x, y, -wz, alpha=0.4)
+    if 0:
+        cbar = fig.colorbar(cp)
+        cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
