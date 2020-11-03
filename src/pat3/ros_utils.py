@@ -20,6 +20,45 @@ def _position_and_orientation_from_T(p, q, T):
     p.x, p.y, p.z = T[:3, 3]
     q.x, q.y, q.z, q.w = tf.transformations.quaternion_from_matrix(T)
 
+# Transforms
+def T_of_t_rpy(t, rpy):
+    T = tf.transformations.euler_matrix(rpy[0], rpy[1], rpy[2], 'sxyz')
+    T[:3,3] = t
+    return T
+
+def t_rpy_of_T(T):
+    t = T[:3,3]
+    rpy = tf.transformations.euler_from_matrix(T, 'sxyz')
+    return t, rpy
+
+def T_of_t_q(t, q):
+    T = tf.transformations.quaternion_matrix(q)
+    T[:3,3] = t
+    return T
+
+def T_of_t_R(t, R):
+    T = np.eye(4); T[:3,:3] = R; T[:3,3] = t
+    return T
+
+def T_of_t_r(t, r):
+    R, _ = cv2.Rodrigues(r)
+    return T_of_t_R(t, R)
+
+def tq_of_T(T):
+    return T[:3, 3], tf.transformations.quaternion_from_matrix(T)
+
+def tR_of_T(T):
+    return T[:3,3], T[:3,:3]
+
+def tr_of_T(T):
+    ''' return translation and rodrigues angles from a 4x4 transform matrix '''
+    r, _ = cv2.Rodrigues(T[:3,:3])
+    return T[:3,3], r.squeeze()
+
+
+def transform(a_to_b_T, p_a):
+    return np.dot(a_to_b_T[:3,:3], p_a) + a_to_b_T[:3,3]
+
 
 class TransformPublisher:
     def __init__(self):
@@ -41,6 +80,9 @@ class TransformPublisher:
     def send_w_ned_to_b_transform(self, t, T_w2b):
         self.send_transform("w_ned", "b_frd", t, T_w2b)
 
+    def send_w_enu_to_b_transform(self, t, T_w2b, bf='b_frd'):
+        self.send_transform("w_enu", bf, t, T_w2b)
+
     def send_b_to_a_transform(self, t, T_b2a):
         self.send_transform("b_frd", "a_ab", t, T_b2a)
         
@@ -61,31 +103,33 @@ class TransformPublisher:
 
         
 class MarkerArrayPublisher:
-    def __init__(self, topic, meshes, colors=[[0.2, 1., 0.2, 0.5]]):
+    def __init__(self, topic, meshes, colors=[[0.2, 1., 0.2, 0.5]], scales=[(1., 1., 1.)], frame_id="w_ned"):
         self.meshes = meshes
         self.pub = rospy.Publisher(topic, visualization_msgs.msg.MarkerArray, queue_size=1)
         self.msg = visualization_msgs.msg.MarkerArray()
-        for i, (mesh, color) in enumerate(zip(meshes, colors)):
+        for i, (mesh, color, scale) in enumerate(zip(meshes, colors, scales)):
             marker = visualization_msgs.msg.Marker()
-            marker.header.frame_id = "w_ned"
+            marker.header.frame_id = frame_id
             marker.type = marker.MESH_RESOURCE
             marker.action = marker.ADD
             marker.id = i
             #marker.text = "{}".format(i)
-            marker.scale.x, marker.scale.y, marker.scale.z = 1., 1., 1.
+            marker.scale.x, marker.scale.y, marker.scale.z = scale
             marker.color.r, marker.color.g, marker.color.b, marker.color.a  = color
+            #p = marker.pose.position; p.x, p.y, p.z = 0.3, 0, 0
             marker.mesh_resource = mesh
             marker.mesh_use_embedded_materials = True
             self.msg.markers.append(marker)
         
-    def publish(self, T_ned2bs):
+    def publish(self, T_ned2bs, delete=False):
         for marker, T_ned2b in zip(self.msg.markers, T_ned2bs):
+            marker.action = marker.DELETE if delete else marker.ADD
             _position_and_orientation_from_T(marker.pose.position, marker.pose.orientation, T_ned2b)
         self.pub.publish(self.msg)
 
 class PoseArrayPublisher(MarkerArrayPublisher):
-    def __init__(self, dae='quad.dae'):
-        MarkerArrayPublisher.__init__(self, '/pat/vehicle_marker',  ["package://ros_pat/media/{}".format(dae)])
+    def __init__(self, topic='/pat/vehicle_marker', dae='quad.dae', scales=[(1., 1., 1.)], frame_id="w_ned"):
+        MarkerArrayPublisher.__init__(self, topic,  ["package://ros_pat/media/{}".format(dae)], scales=scales, frame_id=frame_id)
 
 
 class QuadAndRefPublisher(MarkerArrayPublisher):
