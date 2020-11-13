@@ -103,7 +103,7 @@ class Logger:
     def plot3D(self, time, X, _ctl, atm):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        _val = np.asarray(self.meas_vz)
+        _val = np.asarray(meas_vz)
         p3_pu.plot_3D_traj(ref_traj=None, X=X, fig=fig, ax=ax)#, val=_val)
         p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=-10, dh=-30., figure=fig, ax=ax) 
         center = np.array(self.center)

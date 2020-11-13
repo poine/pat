@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 #
-# Copyright 2013-2015 Antoine Drouin (poinix@gmail.com)
+# Copyright 2013-2020 Antoine Drouin (poinix@gmail.com)
 #
 # This file is part of PAT.
 #
@@ -28,6 +28,8 @@ import pdb
 """
 
 import math, numpy as np, matplotlib.pyplot as plt
+import scipy.interpolate
+import netCDF4
 
 def mach_of_va(va, T, k=1.4, Rs=287.05): return va/math.sqrt(k*Rs*T)
 
@@ -265,28 +267,133 @@ class AtmosphereRidge(Atmosphere):
         wz = 2*self.winf*R2ovr2*ceta*seta
         return [wx, 0, wz] if r >= self.R else [0, 0, 0]
 
-
+#
+# Gaussian model
+#
 class AtmosphereWharington(Atmosphere):
     
     def __init__(self, center=None, radius=50, strength=-2):
         self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])
         self.radius = radius
         self.strength = strength
+        self.r2 = self.radius**2
+        self.x0, self.x1, self.y0, self.y1, self.z0, self.z1 = -100, 100, -100, 100, 0, 100
         
     def set_params(self, *args): pass
 
     def get_wind(self, pos_ned, t): 
         dpos = pos_ned - self.center
-        wz = self.strength*np.exp(-(dpos[0]**2+dpos[1]**2)/self.radius**2)
+        r2 = dpos[0]**2+dpos[1]**2
+        wz = self.strength*np.exp(-r2/self.r2)
         return np.array([0, 0, wz])
 
 
+#
+# Improved Gaussian model (with downdraft)
+#
+class AtmosphereGedeon(AtmosphereWharington):
+
+    def get_wind(self, pos_ned, t): 
+        dpos = pos_ned - self.center
+        r2 = dpos[0]**2+dpos[1]**2
+        top = r2/self.r2
+        wz =  self.strength*np.exp(-top)*(1-top)
+        return np.array([0, 0, wz])
+
+#
+# Allen model
+#
+# This needs to be fixed, not sure i understand the equations :(
+class AtmosphereAllen(Atmosphere):
+    def __init__(self, center=None):
+        self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])
+        self.zi = 2000
+        self.wstar = 256.
+        self.dz = 200.
+        self.x0, self.x1, self.y0, self.y1, self.z0, self.z1 = -100, 100, -100, 100, 0, 100
+       
+    def get_wind(self, pos_ned, t, rgain=1., wgain=1.):
+        x,y,z = pos_ned - self.center
+        if z < -self.dz: return [0, 0, 0]
+        z=z+self.dz
+        #CALCULATE AVERAGE UPDRAFT SIZE
+        zzi=z/self.zi
+        rbar=(.102*zzi**(1./3))*(1-(.25*zzi))*self.zi
+        #CALCULATE AVERAGE UPDRAFT STRENGTH
+        wtbar=np.power(zzi,1./3)*(1-1.1*zzi)*self.wstar
+        
+        #CALCULATE INNER AND OUTER RADIUS OF ROTATED TRAPEZOID UPDRAFT
+        r2=rbar*rgain #multiply by random perturbation gain
+        if r2<10: r2=10
+        if r2<600:
+            r1r2=.0011*r2+.14
+        else:
+            r1r2=.8
+        r1=r1r2*r2
+        #limit small updrafts to 20m diameter
+        #MULTIPLY AVERAGE UPDRAFT STRENGTH BY WGAIN FOR THIS UPDRAFT
+        wt=wtbar*wgain #add random perturbation
+        #CALCULATE STRENGTH AT CENTER OF ROTATED TRAPEZOID UPDRAFT
+        wc=(3*wt*((r2**3)-(r2**2)*r1)) / ((r2**3)-(r1**3))
+        #print wc
+        wc/=300.
+        R_ave = (r1+r2)/2.
+        w = thermal_model_gedeon(x, y, z, R_t=R_ave, W_max=wc)
+        return [0, 0, -w]
+
+    
 class AtmosphereWharingtonArray(Atmosphere):
-    def __init__(self):
-        self.thermals = [AtmosphereWharington(radius=30, strength=-1) for i in range(2)]
-        self.thermals[0].center[0] -= 20
-        self.thermals[1].center[0] += 20
+    def __init__(self, centers, radiuses, strengths):
+        if 0:
+            self.thermals = [AtmosphereWharington(radius=30, strength=-1) for i in range(2)]
+            self.thermals[0].center[0] -= 20
+            self.thermals[1].center[0] += 20
+        else:
+            self.thermals = [AtmosphereWharington(_c, _r, _s) for _c, _r, _s in zip(centers, radiuses, strengths)]
 
     def get_wind(self, pos_ned, t): 
         winds = [_t.get_wind(pos_ned, t) for _t in self.thermals]
         return np.sum(winds, axis=0)
+
+
+    
+class AtmosphereNC(Atmosphere):
+    def __init__(self, filename, center=None):
+        self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])
+        self.nc_f = netCDF4.Dataset(filename, 'r')
+        self.UT, self.VT, self.WT = [self.nc_f.variables[what][:] for what in ['UT', 'VT', 'WT']]
+        #nc_attrs, nc_dims, nc_vars = analyse_nc(self.nc_f)
+        self.ni, self.nj, self.level = [self.nc_f.variables[what][:] for what in ['ni', 'nj', 'level']]
+        self.x0, self.x1 = self.ni[0], self.ni[-1]; self.dx = self.x1-self.x0
+        self.y0, self.y1 = self.nj[0], self.nj[-1]; self.dy = self.y1-self.y0
+        _id, _z = np.arange(len(self.level)), self.level
+        self.level_of_z = scipy.interpolate.interp1d(_z, _id)
+        self.z0, self.z1 = self.level[0], self.level[-1]; self.dz=self.z1-self.z0
+        if 0:
+            #pdb.set_trace()
+            z_new = np.arange(self.z0, self.z1, 100)
+            id_new = self.level_of_z(z_new)
+            plt.plot(_id, _z)
+            plt.plot(id_new, z_new)
+    
+    def get_wind(self, pos_ned, t):
+        ni, nj, level = 0, 0, 0
+        ni = int((pos_ned[0]-self.x0)/self.dx*len(self.ni))
+        nj = int((pos_ned[1]-self.y0)/self.dy*len(self.nj))
+        #pdb.set_trace()
+        z = np.clip(-pos_ned[2], self.z0, self.z1)
+        level = int(self.level_of_z(z))
+        #print(z, level)
+        #pdb.set_trace()
+        _t=0 # TODO: fixme
+        return [0, 0, self.WT[_t, level, nj, ni]]
+
+
+
+    def get_wind_ned(self, pos_ned, t):
+        pass
+
+
+    def get_wind_enu(self, pos_enu, t):
+        pass
+    

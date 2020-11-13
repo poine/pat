@@ -178,26 +178,41 @@ def plot_slice_wind(atm, xmax=50, dx=5., h0=-10, h1=150, dh=2.):
     ax.set_title('Filled Contours Plot')
     ax.axis('equal')
 
- 
-def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2.):
+#
+# vertical wind slice
+#
+def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., zdir=-1.,
+                       show_quiver=True, show_color_bar=True,
+                       title=None,
+                       figure=None, ax=None):
+    fig = figure if figure is not None else plt.figure()
+    ax = ax if ax is not None else fig.add_subplot(111)
     xlist, zlist = np.arange(n0, n1, dn), np.arange(h0, h1, dh)
     x, z = np.meshgrid(xlist, zlist)
     wx, wz = np.meshgrid(xlist, zlist)
     for ix in range(wx.shape[0]):
         for iz in range(wx.shape[1]):
-            pos_ned = [x[ix, iz], e0, -z[ix, iz]]  # we plot with z axis up
+            pos_ned = [x[ix, iz], e0, zdir*z[ix, iz]]  # we plot with z axis up
             wx[ix, iz], _, wz[ix, iz] = atm.get_wind(pos_ned, t=0)
-    fig, ax = plt.subplots(1,1)
-    cp = ax.contourf(x, z, -wz, alpha=0.4)
-    q = ax.quiver(xlist, zlist, wx, -wz, units='width')
-    cbar = fig.colorbar(cp)
-    cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
-    decorate(ax, title='Atmosphere vert slice', xlab='north in m', ylab='z in m', legend=None, xlim=None, ylim=None, min_yspan=None)
+    cp = ax.contourf(x, z, zdir*wz, alpha=0.4)
+    if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
+    if show_color_bar:
+        cbar = fig.colorbar(cp)
+        cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
+    title = 'Atmosphere vert slice' if title is None else title 
+    decorate(ax, title=title, xlab='north in m', ylab='z in m', legend=None, xlim=None, ylim=None, min_yspan=None)
     ax.axis('equal')
     return fig, ax
 
-
-def plot_slice_wind_ne(atm, n0=-100, n1=100, dn=5., e0=-100., e1=100, de=5, h0=0., t0=0.):
+#
+# horizontal wind slice
+#
+def plot_slice_wind_ne(atm, n0=-100, n1=100, dn=5., e0=-100., e1=100, de=5, h0=0., t0=0.,
+                       show_color_bar=False,
+                       title=None,
+                       figure=None, ax=None):
+    fig = figure if figure is not None else plt.figure()
+    ax = ax if ax is not None else fig.add_subplot(111)
     xlist, ylist = np.arange(n0, n1, dn), np.arange(e0, e1, de)
     x, y = np.meshgrid(xlist, ylist)
     wz = np.zeros_like(x)
@@ -206,8 +221,11 @@ def plot_slice_wind_ne(atm, n0=-100, n1=100, dn=5., e0=-100., e1=100, de=5, h0=0
             pos_ned = [x[ix, iy], y[ix, iy], -h0]  # FIXME ned/enu
             wz[ix, iy] = -atm.get_wind([x[ix, iy], y[ix, iy], -h0], t=0)[2]
             
-    fig, ax = plt.subplots(1,1)
     cp = ax.contourf(x, y, -wz, alpha=0.4)
-    if 0:
+    if show_color_bar:
         cbar = fig.colorbar(cp)
         cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
+    title = 'Atmosphere horiz slice' if title is None else title
+    decorate(ax, title=title, xlab='east in m', ylab='north in m', legend=None, xlim=None, ylim=None, min_yspan=None)
+    ax.axis('equal')
+    return figure, ax
