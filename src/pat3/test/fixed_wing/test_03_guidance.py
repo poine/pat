@@ -123,6 +123,31 @@ def test_ridge(dm, trim_args, dt=0.01, compute=False):
     plt.plot(X[:,0],-X[:,2])
     return ref_traj, (time, X, U)  
 
+def test_shearX(dm, trim_args, dt=0.01, compute=False):
+    save_filename = '/tmp/pat_glider_shearX.npz'
+    atm = p3_atm.AtmosphereShearX(wind1=15.0, wind2=-2.0, xlayer=60.0, zlayer=40.0)
+
+    trim_args={'h':30, 'va':17, 'gamma':0}
+
+    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[0, 0, -40], r=40)
+    ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
+    #ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0.4#ctl.Ue[0]#0.1#
+    ctl.v_mode = ctl.v_mode_alt
+    ctl_logger = p3_guid.GuidancePurePursuitLogger()
+    if compute or not os.path.exists(save_filename):
+        time, X, U =  run_simulation(dm, ctl, tf=35.5, trim_args=trim_args, plot=True, atm=atm)
+        ctl_logger.save(time, X, U, save_filename)
+    else:
+        time, X, U =  ctl_logger.load(save_filename)
+
+    # n0, n1, dn, h0, h1, dh = -20, 100, 5., 0, 60, 2.
+    n0, n1, dn, h0, h1, dh = -80, 80., 5., -20, 90, 2.
+    p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=0., h0=h0, h1=h1, dh=dh, zdir=-1.,
+                             show_quiver=True, show_color_bar=True, title="ShearX",
+                             figure=None, ax=None, use_wx=True)
+    plt.plot(X[:,0],-X[:,2])
+    return ref_traj, (time, X, U)  
+
 
 def test_climb(dm, trim_args, dt=0.01, compute=True):
     ref_traj = None
@@ -180,12 +205,13 @@ def main(param_filename, trim_args = {'h':0, 'va':11, 'gamma':0}, force_recomput
     dm = p1_fw_dyn.DynamicModel(param_filename)
     #ref_traj, (time, X, U) = test_line(dm, trim_args)
     #ref_traj, (time, X, U) = test_circle(dm, trim_args)
-    #ref_traj, (time, X, U) = test_vctl(dm, trim_args, compute=force_recompute)
-    ref_traj, (time, X, U) = test_ridge(dm, trim_args, compute=force_recompute)
+    # ref_traj, (time, X, U) = test_vctl(dm, trim_args, compute=force_recompute)
+    # ref_traj, (time, X, U) = test_ridge(dm, trim_args, compute=force_recompute)
     #ref_traj, (time, X, U) = test_climb(dm, trim_args, compute=False)
     #ref_traj, (time, X, U) = test_ardu(dm, trim_args)
-    if 1:
-        p3_pu.plot_3D_traj(ref_traj, X)
+    ref_traj, (time, X, U) = test_shearX(dm, trim_args, compute=force_recompute)
+    # if 1:
+    #     p3_pu.plot_3D_traj(ref_traj, X)
 
     if 0:
         savefile_name = '/tmp/pat_glider_circle.npz'

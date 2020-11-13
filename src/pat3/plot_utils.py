@@ -184,7 +184,7 @@ def plot_slice_wind(atm, xmax=50, dx=5., h0=-10, h1=150, dh=2.):
 def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., zdir=-1.,
                        show_quiver=True, show_color_bar=True,
                        title=None,
-                       figure=None, ax=None):
+                       figure=None, ax=None, use_wx=False):
     fig = figure if figure is not None else plt.figure()
     ax = ax if ax is not None else fig.add_subplot(111)
     xlist, zlist = np.arange(n0, n1, dn), np.arange(h0, h1, dh)
@@ -195,6 +195,7 @@ def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., 
             pos_ned = [x[ix, iz], e0, zdir*z[ix, iz]]  # we plot with z axis up
             wx[ix, iz], _, wz[ix, iz] = atm.get_wind(pos_ned, t=0)
     cp = ax.contourf(x, z, zdir*wz, alpha=0.4)
+    if use_wx: cp = ax.contourf(x, z, zdir*wx, alpha=0.4) # FIX ME : this can be made more generic for x-y-z
     if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
     if show_color_bar:
         cbar = fig.colorbar(cp)

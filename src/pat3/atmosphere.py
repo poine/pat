@@ -267,6 +267,38 @@ class AtmosphereRidge(Atmosphere):
         wz = 2*self.winf*R2ovr2*ceta*seta
         return [wx, 0, wz] if r >= self.R else [0, 0, 0]
 
+class AtmosphereShearX(Atmosphere):
+    # Wind shear, only in X.
+    # Adapted from Drela's DSOpt
+    def __init__(self, wind1=15.0, wind2=-2.0, xlayer=30.0, zlayer=40.0,txcon=0.11):
+        self.wind1  = wind1    #   wind speed above shear layer  [m/s] ,   V[m/s] = V[mph] * 0.44694
+        self.wind2  = wind2    #   wind speed below shear layer  [m/s]
+        self.xlayer = xlayer   #   shear layer origin distance from orbit center     [m]
+        self.zlayer = zlayer   #   shear layer centerline height above orbit center  [m]
+        self.txcon  = txcon    # 0.11  shear layer spreading constant (0.11 is from mixing-layer theory)
+        # shear layer spreading rate  d(thickness)/dx
+        self.tlayerx = 2.0*self.txcon * (self.wind1-self.wind2)/(self.wind1+self.wind2) # wind1 should not be = to -wind2 !!!
+        
+    def set_params(self, *args): pass
+
+
+    def get_wind(self, pos_ned, t):
+        ''' Outputs wind vector : wind = [windx,windy,windz]'''
+        xdel = pos_ned[0] - self.xlayer
+        zdel = -pos_ned[2] - self.zlayer
+
+        tlayer = -xdel*self.tlayerx
+        tlayer = max( tlayer , 1.0e-5 )
+
+        znorm = zdel / tlayer
+        znorm = max( -0.5 , min( 0.5 , znorm ) )
+
+        frac = 0.5 + 0.5*np.sin(np.pi*znorm)
+        wx = -self.wind1*frac - self.wind2*(1.0-frac) 
+        wy = 0.
+        wz = 0.
+        return [wx,wy,wz]
+
 #
 # Gaussian model
 #
