@@ -31,7 +31,7 @@ class CircleRefTraj():
         self.c = np.asarray(_center)
     
     def get_points(self):
-        alphas = np.linspace(self.alpha0, self.alpha0+self.dalpha, 360*self.dalpha/np.pi/2)
+        alphas = np.linspace(self.alpha0, self.alpha0+self.dalpha, int(360*self.dalpha/np.pi/2))
         xs = self.c[0] + self.r*np.cos(alphas)
         ys = self.c[1] + self.r*np.sin(alphas)
         zs = self.c[2] + self._zfun(alphas)# - 5*np.ones_like(alphas)#
