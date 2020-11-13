@@ -199,9 +199,9 @@ def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., 
     if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
     if show_color_bar:
         cbar = fig.colorbar(cp)
-        cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
+        cbar.ax.set_ylabel('wz in m/s (>0 up)', rotation=270); cbar.ax.set_xlabel('thermal')
     title = 'Atmosphere vert slice' if title is None else title 
-    decorate(ax, title=title, xlab='north in m', ylab='z in m', legend=None, xlim=None, ylim=None, min_yspan=None)
+    decorate(ax, title=title, xlab='north in m', ylab='h in m (positive up)', legend=None, xlim=None, ylim=None, min_yspan=None)
     ax.axis('equal')
     return fig, ax
 

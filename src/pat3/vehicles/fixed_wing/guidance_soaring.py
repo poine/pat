@@ -103,7 +103,7 @@ class Logger:
     def plot3D(self, time, X, _ctl, atm):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        _val = np.asarray(meas_vz)
+        _val = np.asarray(self.meas_vz)
         p3_pu.plot_3D_traj(ref_traj=None, X=X, fig=fig, ax=ax)#, val=_val)
         p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=-10, dh=-30., figure=fig, ax=ax) 
         center = np.array(self.center)
@@ -128,3 +128,9 @@ class Logger:
         plt.plot(time,  meas_netto, label='netto')
         plt.plot(time, meas_vz, label='vz')
         p3_pu.decorate(ax, title='measurement', ylab='m/s', legend=True)
+
+    def plot_slice_nu(self, time, X, U, _ctl, atm, n0=-40, n1=100, dn=5., h0=0., h1=60., dh=2.):
+        p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=0., h0=h0, h1=h1, dh=dh, zdir=-1.,
+                                 show_quiver=True, show_color_bar=True, title="North Up slice",
+                                 figure=None, ax=None)
+        plt.plot(X[:,0],-X[:,2])

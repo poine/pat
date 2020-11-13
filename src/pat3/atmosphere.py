@@ -29,7 +29,10 @@ import pdb
 
 import math, numpy as np, matplotlib.pyplot as plt
 import scipy.interpolate
-import netCDF4
+try:
+    import netCDF4
+except ImportError:
+    print('pat3.atmosphere: netcfd4 not available on your system')
 
 def mach_of_va(va, T, k=1.4, Rs=287.05): return va/math.sqrt(k*Rs*T)
 
@@ -248,7 +251,7 @@ class AtmosphereRidge(Atmosphere):
     # wind over a cylinder obstacle.
     # see: Langellan, long distance/duration trajectory optimization for small uavs
     def __init__(self):
-        self.R = 30            # cylinder radius
+        self.R = 50            # cylinder radius (was 30)
         self.winf = 2.         # 
         self.R2 = self.R**2
         self.c = np.array([40, 0, 15])
@@ -258,7 +261,7 @@ class AtmosphereRidge(Atmosphere):
 
     def get_wind(self, pos_ned, t): 
         dpos = pos_ned - self.c
-        dpos[1]=0
+        dpos[1]=0  # cylinder axis is y
         r = np.linalg.norm(dpos)
         eta = -np.arctan2(dpos[2], dpos[0])
         ceta, seta = np.cos(eta), np.sin(eta)

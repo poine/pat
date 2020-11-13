@@ -33,7 +33,7 @@ def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma'
         U[i-1] = ctl.get(time[i-1], X[i-1], Xee)
         carrots[i-1] = ctl.carrot; att_sp[i-1] = ctl.phi_sp, ctl.theta_sp 
         X[i] = dm.run(time[i] - time[i-1], time[i], U[i-1], atm)
-        if cbk is not None: cbk()
+        if cbk is not None: cbk()  # used for recording ctl variables
     Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X[-1], atm, time[-1])
     U[-1] = ctl.get(time[-1], X[-1], Xee); carrots[-1] = ctl.carrot; att_sp[-1] = ctl.phi_sp, ctl.theta_sp
     if cbk is not None: cbk()
@@ -44,7 +44,6 @@ def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma'
         plt.subplot(5,3,3); plt.plot(time, carrots[:,2])
         plt.subplot(5,3,7); plt.plot(time, np.rad2deg(att_sp[:,0]), label='setpoint')
         plt.subplot(5,3,8); plt.plot(time, np.rad2deg(att_sp[:,1]), label='setpoint')
-        #plt.show()  
     return time, X, U
 
 def test_line(dm, trim_args, dt=0.01):
@@ -59,8 +58,19 @@ def test_circle(dm, trim_args, dt=0.01):
     ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = ctl.Ue[0]
     return ref_traj, run_simulation(dm, ctl, tf=30.5, trim_args=trim_args, plot=True)
 
+# load and save simulations
+def _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_compute, save_filename):
+    if force_compute or not os.path.exists(save_filename):
+        time, X, U =  run_simulation(dm, ctl, tf=tf, dt=dt, trim_args=trim_args, atm=atm, cbk=lambda:ctl_logger.record(ctl))
+        ctl_logger.save(time, X, U, save_filename)
+    else:
+        time, X, U =  ctl_logger.load(save_filename)
+    return time, X, U
 
-def test_vctl(dm, trim_args, dt=0.01, compute=False, tf=120.5):
+#
+# test vertical control on a few trajectories
+#
+def test_vctl(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
     save_filename = '/tmp/pat_glider_vctl.npz'
     atm = p3_atm.AtmosphereCalm()
     trim_args={'h':26, 'va':17, 'gamma':0}
@@ -71,112 +81,88 @@ def test_vctl(dm, trim_args, dt=0.01, compute=False, tf=120.5):
     ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
     ctl.v_mode = ctl.v_mode_alt#vz#alt
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
-    if compute or not os.path.exists(save_filename):
-        time, X, U =  run_simulation(dm, ctl, tf=tf, trim_args=trim_args, plot=False, atm=atm, cbk=lambda:ctl_logger.record(ctl))
-        ctl_logger.save(time, X, U, save_filename)
-    else:
-        time, X, U =  ctl_logger.load(save_filename)
 
-    if 0:
-        n0, n1, dn, h0, h1, dh = -20, 100, 5., 0, 60, 2.
-        p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=0., h0=h0, h1=h1, dh=dh, zdir=-1.,
-                                 show_quiver=True, show_color_bar=True, title="Ridge",
-                                 figure=None, ax=None)
-        plt.plot(X[:,0],-X[:,2])
-    if 1:
-        #dm.plot_trajectory_as_ee(time, X, U)
-        dm.plot_trajectory(time, X, U)
-        Xee = np.array([dm.to_six_dof_euclidian_euler(_X, atm, _t) for _X, _t in zip(X, time)])
-        ax=plt.subplot(5,3,3); plt.cla()
-        plt.plot(time, -Xee[:,2], label='plant')#dm.sv_zd])
-        plt.plot(time, -np.asarray(ctl_logger.carrot)[:,2], label='setpoint')
-        p3_pu.decorate(ax, title="$h$", ylab="m", min_yspan=1., legend=True)
-        ax=plt.subplot(5,3,6);plt.cla()
-        plt.plot(time, -Xee[:,5], label="plant")
-        plt.plot(time, -np.asarray(ctl_logger.zd_sp), label="setpoint")
-        plt.plot(time, -np.asarray(ctl_logger.zd_sp_traj), label="setpoint_ff")
-        p3_pu.decorate(ax, title="$\dot{h}$", ylab="m/s", min_yspan=1., legend=True)
-    
-    return ref_traj, (time, X, U)  
+    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+ 
+    ctl_logger.plot_slice_nu(time, X, U, ctl, atm)
+    ctl_logger.plot_chronograms(time, X, U, ctl, atm)
         
-def test_ridge(dm, trim_args, dt=0.01, compute=False):
-    save_filename = '/tmp/pat_glider_ridge.npz'
+    return ref_traj, (time, X, U)  
+
+#
+# Slope soaring, gliding with throttle off
+#
+def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=60.5):
+    save_filename = '/tmp/pat_glider_slope_soaring.npz'
     atm = p3_atm.AtmosphereRidge()
+    trim_args={'h':30, 'va':12, 'gamma':0}
+    ref_traj = p3_traj3d.CircleRefTraj(c=[-10, 0, -50], r=25)
+    ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
+    ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0. # we glide
+    ctl_logger = p3_guid.GuidancePurePursuitLogger()
+
+    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, compute, save_filename)
+
+    ctl_logger.plot_slice_nu(time, X, U, ctl, atm, n0=-50, n1=40)
+    ctl_logger.plot_chronograms(time, X, U, ctl, atm)
+
+    return ref_traj, (time, X, U)
+
+#
+# Dynamic soaring
+#
+def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=120.):
+    save_filename = '/tmp/pat_glider_ds.npz'
+    #atm = p3_atm.AtmosphereShearX(wind1=15.0, wind2=-2.0, xlayer=60.0, zlayer=40.0)
+    atm = p3_atm.AtmosphereShearX(wind1=7.0, wind2=-1.0, xlayer=60.0, zlayer=40.0)
     #atm = p3_atm.AtmosphereCalm()
     trim_args={'h':30, 'va':17, 'gamma':0}
+
     #ref_traj = p3_traj3d.CircleRefTraj(c=[0, 0, -20], r=20)
-    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[120, 0, -40], r=50)
+    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[100, 0, -40], r=60, slope=np.deg2rad(15))
     ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
-    #ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0.4#ctl.Ue[0]#0.1#
+    #ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0.4
     ctl.v_mode = ctl.v_mode_alt
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
-    if compute or not os.path.exists(save_filename):
-        time, X, U =  run_simulation(dm, ctl, tf=120.5, trim_args=trim_args, plot=True, atm=atm)
-        ctl_logger.save(time, X, U, save_filename)
-    else:
-        time, X, U =  ctl_logger.load(save_filename)
-    #ctl_logger.plot3D(time, X, ctl, atm)
-    n0, n1, dn, h0, h1, dh = -20, 100, 5., 0, 60, 2.
-    p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=0., h0=h0, h1=h1, dh=dh, zdir=-1.,
-                             show_quiver=True, show_color_bar=True, title="Ridge",
-                             figure=None, ax=None)
-    plt.plot(X[:,0],-X[:,2])
-    return ref_traj, (time, X, U)  
+    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
 
-def test_shearX(dm, trim_args, dt=0.01, compute=False):
-    save_filename = '/tmp/pat_glider_shearX.npz'
-    atm = p3_atm.AtmosphereShearX(wind1=15.0, wind2=-2.0, xlayer=60.0, zlayer=40.0)
-
-    trim_args={'h':30, 'va':17, 'gamma':0}
-
-    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[0, 0, -40], r=40)
-    ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
-    #ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0.4#ctl.Ue[0]#0.1#
-    ctl.v_mode = ctl.v_mode_alt
-    ctl_logger = p3_guid.GuidancePurePursuitLogger()
-    if compute or not os.path.exists(save_filename):
-        time, X, U =  run_simulation(dm, ctl, tf=35.5, trim_args=trim_args, plot=True, atm=atm)
-        ctl_logger.save(time, X, U, save_filename)
-    else:
-        time, X, U =  ctl_logger.load(save_filename)
-
-    # n0, n1, dn, h0, h1, dh = -20, 100, 5., 0, 60, 2.
+    ctl_logger.plot3D(time, X, ctl, atm)
     n0, n1, dn, h0, h1, dh = -80, 80., 5., -20, 90, 2.
-    p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=0., h0=h0, h1=h1, dh=dh, zdir=-1.,
-                             show_quiver=True, show_color_bar=True, title="ShearX",
-                             figure=None, ax=None, use_wx=True)
-    plt.plot(X[:,0],-X[:,2])
+    ctl_logger.plot_slice_nu(time, X, U, ctl, atm, ref_traj, n0=0, n1=210, dn=10, h0=0, h1=80, dh=10)
+    ctl_logger.plot_chronograms(time, X, U, ctl, atm)
     return ref_traj, (time, X, U)  
 
-
-def test_climb(dm, trim_args, dt=0.01, compute=True):
+#
+# Thermal centering
+#
+def test_thermal_centering(dm, trim_args, force_recompute, dt=0.01, tf=170.2):
     ref_traj = None
     save_filename = '/tmp/pat_glider_climb.npz'
-    #atm = p3_atm.AtmosphereWharington(center=[-40., 0, 0], radius=40, strength=-1.5)
-    #atm = p3_atm.AtmosphereThermal1()
-    #atm.set_params(0., 0., 2000., 300.)
-    nc_f = '/home/poine/work/glider_experiments/data/extr_IHODC.1.RK4DI.007.nc'
-    atm = p3_atm.AtmosphereNC(nc_f)
+    exp=0
+    if exp==0:
+        atm = p3_atm.AtmosphereWharington(center=[-40., 0, 0], radius=40, strength=-1.5)
+        cc = (10., 15., 0.); p0 = 5, 0, -200
+    elif exp==1:
+        nc_f = '/home/poine/work/glider_experiments/data/extr_IHODC.1.RK4DI.007.nc'
+        atm = p3_atm.AtmosphereNC(nc_f)
+        cc = (50., 15., 0.); p0 = 100, 100, -200
     trim_args['va']=9.
     ctl = p3_guidsoar.GuidanceSoaring(dm, ref_traj, trim_args, dt)
     ctl.k_centering = 0.005
-    print(ctl.Xe)
-    ctl.Xe[0], ctl.Xe[1] , ctl.Xe[2] = 100, 100, -200
-    ctl.set_circle_center((50., 15., 0.))
-    #ctl.set_circle_center((0., 15., 0.))
+    ctl.Xe[0], ctl.Xe[1] , ctl.Xe[2] = p0 # aircraft start point
+    ctl.set_circle_center(cc)             # initial circle center
     ctl_logger = p3_guidsoar.Logger()
-    if compute or not os.path.exists(save_filename):
-        time, X, U = run_simulation(dm, ctl, tf=150.02, dt=dt, trim_args=trim_args, plot=True, atm=atm, cbk=lambda:ctl_logger.record(ctl))
-        ctl_logger.save(time, X, U, save_filename)
-    else:
-        time, X, U =  ctl_logger.load(save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
     ctl_logger.plot_chronograms(time, X, ctl, atm)
     ctl_logger.plot3D(time, X, ctl, atm)
+    ctl_logger.plot_slice_nu(time, X, U, ctl, atm, n0=-80, n1=60, dn=10., h0=180., h1=320., dh=10.)
     return ref_traj, (time, X, U)  
 
-    #return ref_traj, run_simulation(dm, ctl, tf=120.5, dt=dt, trim_args=trim_args, plot=True, atm=atm, cbk=lambda:ctl_logger.log(ctl))
 
-def test_ardu(dm, trim_args, dt=0.01, compute=False):
+#
+# Ardusoaring Thermal centering
+#
+def test_ardusoaring(dm, trim_args, force_recompute, dt=0.01, tf=120.5):
     ref_traj = None
     save_filename = '/tmp/pat_glider_ardu.npz'
     ctl_logger = p3_guidardu.Logger()
@@ -188,36 +174,25 @@ def test_ardu(dm, trim_args, dt=0.01, compute=False):
     #atm =  p3_atm.AtmosphereCstWind([0, 0, -1.])
     trim_args['va']=9.
     ctl = p3_guidardu.GuidanceArduSoaring(dm, ref_traj, trim_args, dt)
-
-    if compute or not os.path.exists(save_filename):
-        time, X, U = run_simulation(dm, ctl, tf=120.02, dt=dt, trim_args=trim_args, plot=True, atm=atm, cbk=lambda:ctl_logger.log(ctl))
-        ctl_logger.save(time, X, U, save_filename)
-    else:
-        time, X, U =  ctl_logger.load(save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+ 
     ctl_logger.plot_chronograms(time, X, ctl, atm)
     ctl_logger.plot2D(time, X, ctl, atm)
     ctl_logger.plot3D(time, X, ctl, atm)
-    #Xee = np.array([p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(_X) for _X in X])
-    #dm.plot_trajectory_as_ee(time, X, U)
     return ref_traj, (time, X, U)  
 
 def main(param_filename, trim_args = {'h':0, 'va':11, 'gamma':0}, force_recompute=False):
     dm = p1_fw_dyn.DynamicModel(param_filename)
     #ref_traj, (time, X, U) = test_line(dm, trim_args)
     #ref_traj, (time, X, U) = test_circle(dm, trim_args)
-    # ref_traj, (time, X, U) = test_vctl(dm, trim_args, compute=force_recompute)
-    # ref_traj, (time, X, U) = test_ridge(dm, trim_args, compute=force_recompute)
-    #ref_traj, (time, X, U) = test_climb(dm, trim_args, compute=False)
-    #ref_traj, (time, X, U) = test_ardu(dm, trim_args)
-    ref_traj, (time, X, U) = test_shearX(dm, trim_args, compute=force_recompute)
-    # if 1:
-    #     p3_pu.plot_3D_traj(ref_traj, X)
-
+    #ref_traj, (time, X, U) = test_vctl(dm, trim_args, force_recompute)
+    #ref_traj, (time, X, U) = test_slope_soaring(dm, trim_args, force_recompute)
+    ref_traj, (time, X, U) = test_dynamic_soaring(dm, trim_args, force_recompute)
+    #ref_traj, (time, X, U) = test_thermal_centering(dm, trim_args, force_recompute)
+    #ref_traj, (time, X, U) = test_ardusoaring(dm, trim_args, force_recompute)
     if 0:
-        savefile_name = '/tmp/pat_glider_circle.npz'
-        np.savez(savefile_name, time=time, X=X)
-        print('saved {}'.format(savefile_name))
-                
+        p3_pu.plot_3D_traj(ref_traj, X)
+
     plt.show()
 
 if __name__ == "__main__":

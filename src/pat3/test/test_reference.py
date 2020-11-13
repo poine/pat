@@ -7,17 +7,16 @@ import matplotlib.pyplot as plt
 import pat3.utils as p3_u
 import pat3.plot_utils as p3_pu
 
-def plot_ref(_time, Xr, _sp=None):
-    ax = plt.subplot(3,1,1)
-    plt.plot(_time, Xr[:,0])
-    if _sp is not None: plt.plot(_time, _sp)
-    p3_pu.decorate(ax, 'pos')
-    ax = plt.subplot(3,1,2)
-    plt.plot(_time, Xr[:,1])
-    p3_pu.decorate(ax, 'vel')
-    ax = plt.subplot(3,1,3)
-    plt.plot(_time, Xr[:,2])
-    p3_pu.decorate(ax, 'accel')
+def plot_ref(_time, Xr, _id="", _sp=None, fig=None, axs=None):
+    fig, axs = plt.subplots(3, 1) if fig is None else (fig, axs)
+    axs[0].plot(_time, Xr[:,0], label=_id)
+    if _sp is not None: axs[0].plot(_time, _sp, label='setpoint')
+    p3_pu.decorate(axs[0], 'pos', legend=True)
+    axs[1].plot(_time, Xr[:,1])
+    p3_pu.decorate(axs[1], 'vel')
+    axs[2].plot(_time, Xr[:,2])
+    p3_pu.decorate(axs[2], 'accel')
+    return fig, axs
 
 def run_ref(_ref, _time, _sp):
     Xr = np.zeros((len(_time), 3))
@@ -29,7 +28,8 @@ def run_ref(_ref, _time, _sp):
 def test_scalar_ref():
     _time = np.arange(0, 10, 0.01)
 
-    _sats = [6., 50.]  # vel, accel
+    #_sats = [6., 50.]  # vel, accel
+    _sats = [6., 25.]  # vel, accel
     _ref1 = p3_u.SecOrdLinRef(omega=6, xi=0.9, sats=None)
     _ref2 = p3_u.SecOrdLinRef(omega=6, xi=0.9, sats=_sats)
 
@@ -38,8 +38,8 @@ def test_scalar_ref():
     Xr1 = run_ref(_ref1, _time, _sp)
     Xr2 = run_ref(_ref2, _time, _sp)
 
-    plot_ref(_time, Xr1)
-    plot_ref(_time, Xr2, _sp)
+    fig, axs = plot_ref(_time, Xr1, _id="linear")
+    plot_ref(_time, Xr2, _id="saturated", _sp=_sp, fig=fig, axs=axs)
     plt.show()
         
 def main(args):

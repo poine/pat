@@ -45,7 +45,7 @@ class GuidancePurePursuit:
             _zd = 1.#; zd = va*sin(gamma)
             gamma = np.arcsin(_zd/trim_args['va'])
             trim_args['gamma'] = gamma;print(gamma)
-            self.Xe1, self.Ue1 = dm.trim(trim_args, report=True)
+            self.Xe1, self.Ue1 = dm.trim(trim_args, report=False)
             #_thr, _ail, _ele = 0, 1, 2
             self.ff_d_thr_of_zd = -(self.Ue1[0]-self.Ue[0])
             print('ff_d_thr_of_zd {}'.format(self.ff_d_thr_of_zd))
@@ -101,7 +101,10 @@ class GuidancePurePursuit:
         self.theta_sp = self.Xe[p3_fr.SixDOFAeroEuler.sv_theta] + 2.5e-5*self.sum_err_v + dtheta
         # piloting
         U = self.att_ctl.get(t, X, self.phi_sp, self.theta_sp)
-        U[0] += dthrottle
+        if  self.v_mode == self.v_mode_throttle:
+            U[0] = self.throttle_sp
+        else:
+            U[0] += dthrottle
         U[0] = np.clip(U[0], 0., 1.)             # throttle
         U[1] = np.clip(U[1], -np.pi/4, np.pi/4)  # ailerons
         U[3] = np.clip(U[3], -np.pi/4, np.pi/4)  # rudder
@@ -142,35 +145,76 @@ class GuidancePurePursuitLogger:
         self.carrot = []
         self.zd_sp = []
         self.zd_sp_traj = []
+        self.att_sp = []
         
     def record(self, _ctl):
+        self.att_sp.append(np.array([_ctl.phi_sp, _ctl.theta_sp]))
         self.carrot.append(np.array(_ctl.carrot))
         self.zd_sp.append(_ctl.zd_sp)
         self.zd_sp_traj.append(_ctl.zd_sp_traj)
 
     def save(self, time, X, U, filename):
-        np.savez(filename, time=time, X=X, U=U, carrot=self.carrot, zd_sp=self.zd_sp, zd_sp_traj=self.zd_sp_traj)
+        np.savez(filename, time=time, X=X, U=U, carrot=self.carrot, zd_sp=self.zd_sp, zd_sp_traj=self.zd_sp_traj, att_sp=self.att_sp)
         print('saved {}'.format(filename))
 
     def load(self, filename):
         _data =  np.load(filename)
-        labels = ['time', 'X', 'U', 'carrot', 'zd_sp', 'zd_sp_traj']
-        time, X, U, self.carrot, self.zd_sp, self.zd_sp_traj = [_data[k] for k in labels]
+        labels = ['time', 'X', 'U', 'carrot', 'zd_sp', 'zd_sp_traj', 'att_sp']
+        time, X, U, self.carrot, self.zd_sp, self.zd_sp_traj, self.att_sp = [_data[k] for k in labels]
         print('loaded {}'.format(filename))
         return time, X, U
 
-    def plot3D(self, time, X, _ctl, atm):
+    def plot3D(self, time, X, _ctl, atm, ref_traj=None):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         _val = np.asarray(X[:,2])#self.meas_vz)
-        p3_pu.plot_3D_traj(ref_traj=None, X=X, fig=fig, ax=ax)#, val=_val)
-        p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=-40, dh=-30., figure=fig, ax=ax) 
+        p3_pu.plot_3D_traj(ref_traj=ref_traj, X=X, fig=fig, ax=ax)#, val=_val)
+        #p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=-40, dh=-30., figure=fig, ax=ax) 
         carrot = np.array(self.carrot)
         #ax.plot(carrot[:,0], carrot[:,1], carrot[:,2], color='r', label='center')
         p3_pu.set_3D_axes_equal()
 
 
-    
+    def plot_slice_nu(self, time, X, U, _ctl, atm, ref_traj=None, n0=-40, n1=100, dn=5., h0=0., h1=60., dh=2.):
+        p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=0., h0=h0, h1=h1, dh=dh, zdir=-1.,
+                                 show_quiver=True, show_color_bar=True, title="North Up slice",
+                                 figure=None, ax=None)
+        plt.plot(X[:,0],-X[:,2], color='r')
+        if ref_traj is not None:
+            pts = ref_traj.get_points()
+            xs, ys, zs = pts[:,0], pts[:,1], pts[:,2] 
+            #ax = plt.gca()
+            #ax.plot(xs, ys, zs, color='g', label='ref trajectory')
+            plt.plot(xs, -zs, color='g', label='reference')
+        
+        
+        
+    def plot_chronograms(self, time, X, U, _ctl, atm):
+        ''' FIXME... X is Xae, is that mandatory? '''
+        _s = p3_fr.SixDOFEuclidianEuler
+        p1_fw_dyn.plot_trajectory_ae(time, X, U, figure=None, window_title='chronogram', legend=None, label='', filename=None, atm=atm)
+        Xee = np.array([p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(_X, atm, _t) for _X, _t in zip(X, time)])
+
+        # x,y carrot
+        ax = plt.subplot(5,3,1); plt.plot(time, np.asarray(self.carrot)[:,0], label='carrot')
+        ax = plt.subplot(5,3,2); plt.plot(time, np.asarray(self.carrot)[:,1], label='carrot')
+        # h(up) instead of z(down)
+        ax=plt.subplot(5,3,3); plt.cla()
+        plt.plot(time, -Xee[:,_s.sv_z], label='plant')
+        plt.plot(time, -np.asarray(self.carrot)[:,_s.sv_z], label='setpoint')
+        p3_pu.decorate(ax, title="$h$", ylab="m", min_yspan=1., legend=True)
+        # hdot (instead of beta)
+        ax=plt.subplot(5,3,6);plt.cla()
+        plt.plot(time, -Xee[:,_s.sv_zd], label="plant")
+        plt.plot(time, -np.asarray(self.zd_sp), label="setpoint")
+        plt.plot(time, -np.asarray(self.zd_sp_traj), label="setpoint_ff")
+        p3_pu.decorate(ax, title="$\dot{h}$", ylab="m/s", min_yspan=1., legend=True)
+        # attitude setpoint
+        phi_sp, theta_sp = np.asarray(self.att_sp)[:,0], np.asarray(self.att_sp)[:,1] 
+        ax=plt.subplot(5,3,7)
+        plt.plot(time, np.rad2deg(phi_sp), label="setpoint")
+        ax=plt.subplot(5,3,8)
+        plt.plot(time, np.rad2deg(theta_sp), label="setpoint")
 
 class GuidanceCircle(GuidancePurePursuit):
     def __init__(self, dm, trim_args = {'h':0, 'va':12, 'gamma':0}, dt=0.01):

@@ -190,7 +190,7 @@ class Logger:
         self.Xs, self.Ps, self.inovs = [], [], []
         self.vs_reading, self.vs_flt, self.vs_disp = [], [], []
 
-    def log(self, _ctl):
+    def record(self, _ctl):
         self.Xs.append(np.array(_ctl.ekf.X))
         self.Ps.append(_ctl.ekf.P)
         self.inovs.append(_ctl.ekf.inov)
@@ -230,7 +230,7 @@ class Logger:
         lc = mpl_toolkits.mplot3d.art3d.Line3DCollection(segments_ned, cmap=plt.get_cmap('viridis'), norm=norm)
         lc.set_array(_val) 
         lc.set_linewidth(2)
-        pdb.set_trace()
+        #pdb.set_trace()
         ax.add_collection3d(lc)#, zs=z, zdir='z')
         p3_pu.set_3D_axes_equal()
         
@@ -249,7 +249,7 @@ class Logger:
 
     def plot2D(self, time, X, _ctl, atm):
         # 2D
-        fig, ax = p3_pu.plot_slice_wind_n(atm, n0=-80, n1=80, dn=5., e0=0, h0=-10, h1=25, dh=2.)
+        fig, ax = p3_pu.plot_slice_wind_nu(atm, n0=-80, n1=80, dn=5., e0=0, h0=-10, h1=25, dh=2.)
         ac_ned = X[:,p3_fr.SixDOFEuclidianEuler.sv_slice_pos]
         ac_enu = p3_fr.ned_to_enu(ac_ned).reshape(-1, 1, 3)
         #plt.plot(ac_ned[:,0], -ac_ned[:,2])

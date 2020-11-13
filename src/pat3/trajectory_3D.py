@@ -49,7 +49,7 @@ class CircleRefTraj():
     def get_point_ahead(self, p0, lookahead_dist):
         alpha0 = self.get_alpha(p0)
         alpha1 = alpha0 + lookahead_dist/self.r
-        p1 = self._pt(alpha1) #self.c+[self.r*np.cos(alpha1), self.r*np.sin(alpha1), self._zfun(alpha1)]
+        p1 = self._pt(alpha1)
         return p1
 
     def get_proj_and_carrot(self, p0, lookahead_dist, _v=17.):
@@ -61,10 +61,12 @@ class CircleRefTraj():
         
 
 class BankedCircleRefTraj(CircleRefTraj):
-    def __init__(self, c=(0, 0, 0), r=40.):
+    def __init__(self, c=(0, 0, 0), r=40., slope=np.deg2rad(15)):
         CircleRefTraj.__init__(self, c, r)
-
-    def _zfun(self, alpha): return  20*np.sin(alpha+3*np.pi/2) 
+        self.slope=slope
+        self.a = self.r*np.sin(self.slope)
+        
+    def _zfun(self, alpha): return  self.a*np.sin(alpha+3*np.pi/2) 
 
 class ZStepCircleRefTraj(CircleRefTraj):
     def __init__(self, c=(0, 0, 0), r=40.):
@@ -116,6 +118,10 @@ class LineRefTraj():
         if np.dot(self.n, p1p) > self.dist: p0 = self.p2 + self.n*lookahead_dist
         return p0
 
+    def get_proj_and_carrot(self, p0, lookahead_dist, _v=17.):
+        c =  self.get_point_ahead(p0, lookahead_dist)
+        return None, c, 0 # FIXME
+     
     def finished(self, p, lookahead_dist):
         p1p = p-self.p1
         return  np.dot(self.n, p1p) > self.dist
