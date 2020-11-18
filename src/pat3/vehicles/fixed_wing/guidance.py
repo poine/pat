@@ -34,17 +34,21 @@ class GuidanceAuto1:
         return U
 
     def enter(self, X, t): pass
+
+
     
         
 class GuidancePurePursuit:
     v_mode_throttle, v_mode_vz, v_mode_alt = range(3)
 
-    def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01):
+    def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01, lookahead_dist=15., max_phi=np.deg2rad(45)):
+        self.lookahead_dist = lookahead_dist
+        self.max_phi = max_phi
         self.Xe, self.Ue = dm.trim(trim_args, report=True)
         if 1:
             _zd = 1.#; zd = va*sin(gamma)
             gamma = np.arcsin(_zd/trim_args['va'])
-            trim_args['gamma'] = gamma;print(gamma)
+            trim_args['gamma'] = gamma
             self.Xe1, self.Ue1 = dm.trim(trim_args, report=False)
             #_thr, _ail, _ele = 0, 1, 2
             self.ff_d_thr_of_zd = -(self.Ue1[0]-self.Ue[0])
@@ -65,7 +69,7 @@ class GuidancePurePursuit:
 
     def enter(self, X, t): pass
      
-    def _compute_roll_setpoint(self, t, X, traj, max_phi=np.deg2rad(45)):
+    def _compute_roll_setpoint(self, t, X, traj):
         self.b2c_ned = self.carrot-self.pos
         R_w2b = p3_alg.rmat_of_euler(X[p3_fr.SixDOFAeroEuler.sv_slice_eul])
         self.b2c_b = np.dot(R_w2b, self.b2c_ned)
@@ -79,16 +83,21 @@ class GuidancePurePursuit:
             err_psi = X[p3_fr.SixDOFAeroEuler.sv_psi] - np.arctan2(self.b2c_ned[1], self.b2c_ned[0])
             err_psi = p3_u.norm_mpi_pi(err_psi)
             phi_sp = -0.75*err_psi
-        self.phi_sp = np.clip(phi_sp, -max_phi, max_phi)
+        self.phi_sp = np.clip(phi_sp, -self.max_phi, self.max_phi)
         return phi_sp
         
     def get(self, t, X, Xee=None, Yc=None, debug=False, traj=None):
         if traj is None: traj = self.traj
         if Xee is None: print('No Xee')
         self.pos = X[p3_fr.SixDOFAeroEuler.sv_slice_pos]
-        self.proj, self.carrot, self.zd_sp_traj = traj.get_proj_and_carrot(self.pos, lookahead_dist=15.)
-        self._compute_roll_setpoint(t, X, traj)
         z, v = X[p3_fr.SixDOFAeroEuler.sv_z], X[p3_fr.SixDOFAeroEuler.sv_va]
+        try:
+            self.proj, self.carrot, self.zd_sp_traj = traj.get_point_and_slope_ahead(self.pos, self.lookahead_dist, v)
+        except AttributeError:
+            self.proj, self.carrot = traj.get_point_ahead(self.pos, self.lookahead_dist)
+            self.zd_sp_traj = 0. # FIXME
+            
+        self._compute_roll_setpoint(t, X, traj)
         self.z_sp = self.carrot[2]
         v_sp, z_sp = self.v_sp, self.carrot[2]#Xe[p3_fr.SixDOFAeroEuler.sv_z]
         self.sum_err_v += (v-v_sp); self.sum_err_z += (z-z_sp)
@@ -110,10 +119,9 @@ class GuidancePurePursuit:
         U[3] = np.clip(U[3], -np.pi/4, np.pi/4)  # rudder
         return U
 
-    def _inner_loop(self,zd, zd_sp, Kp=0.2, Ki=1e-4, Kff=0):#1e-2):
+    def _inner_loop(self,zd, zd_sp, Kp=0.2, Ki=1e-4):
         zd_err = zd - zd_sp
         d_throttle =  Kp*zd_err + Ki*self.sum_err_zd + self.ff_d_thr_of_zd*zd_sp
-        #d_throttle =  Kp*zd_err + Ki*self.sum_err_zd + Kff*zd_sp
         d_theta = self.ff_d_theta_of_zd * zd_sp
         return d_throttle, d_theta
     
@@ -226,6 +234,8 @@ class GuidanceCircle(GuidancePurePursuit):
         self.traj.r = _r
 
 
+class GuidanceDS(GuidancePurePursuit):
+    pass
 
 
     

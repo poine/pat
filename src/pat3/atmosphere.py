@@ -32,7 +32,7 @@ import scipy.interpolate
 try:
     import netCDF4
 except ImportError:
-    print('pat3.atmosphere: netcfd4 not available on your system')
+    print('pat3.atmosphere: netcfd4 not available on your system. You won\'t be able to load grids')
 
 def mach_of_va(va, T, k=1.4, Rs=287.05): return va/math.sqrt(k*Rs*T)
 
@@ -130,38 +130,39 @@ class Atmosphere:
                     wx[ix, iy, iz], wy[ix, iy, iz], wz[ix, iy, iz] = self.get_wind(pos, t)
         return x, y, z, wx, wy, wz
 
-    
-    def get_wind(self, pos_ned, t):
-        return [0, 0, 0]
-        #return [0., 0, 0.5] if pos[0] > 0 else [0, 0, -0.5]
-        #d = np.linalg.norm(pos-[10, 10, 0])
-        #return [0, 0, np.sin(0.1*d)]
-        #return [0., 0, 0.5] if pos[0] > 0 else [0, 0, -0.5]
-    
+    ## FIXME: remove this function, call get_wind_ned instead
+    def get_wind(self, pos_ned, t): return self.get_wind_ned(pos_ned, t)
+
+    def get_wind_ned(self, pos_ned, t): return [0, 0, 0]
+    def get_wind_enu(self, pos_enu, t):
+        pos_ned = [pos_enu[1], pos_enu[0], -pos_enu[2]]
+        wind_ned = self.get_wind_ned(self, pos_ned, t)
+        wind_enu = [wind_ned[1], wind_ned[0], -wind_ned[2]]
+        return wind_enu
 
 
 class AtmosphereCalm(Atmosphere):
-    def get_wind(self, pos_ned, t):
+    def get_wind_ned(self, pos_ned, t):
         return [0, 0, 0] 
 
 class AtmosphereCstWind(Atmosphere):
     def __init__(self, v=[0, 0, 0]):
         self.v = np.asarray(v)
-    def get_wind(self, pos, t):
+    def get_wind_ned(self, pos, t):
         #p = 120.
         #return self.v if math.fmod(t, p) > p/3 else [0, 0, 0]
         return self.v
 
 class AtmosphereSinetWind(AtmosphereCstWind):
-    def get_wind(self, pos, t, omega=1.):
+    def get_wind_ned(self, pos, t, omega=1.):
         return np.sin(omega*t)*self.v
 
 class AtmosphereSinedWind(AtmosphereSinetWind):
-    def get_wind(self, pos, t, omega=0.1):
+    def get_wind_ned(self, pos, t, omega=0.1):
         return np.sin(omega*np.linalg.norm(pos))*self.v
 
 class AtmosphereVgradient(Atmosphere):
-    def get_wind(self, pos, t):
+    def get_wind_ned(self, pos, t):
         wmin, wmax, hmax = 0., 5., 10. # 
         return [max(wmin, min(wmax/hmax*pos[2], wmax)), 0, 0]
 
@@ -247,29 +248,9 @@ class AtmosphereThermalMulti(Atmosphere):
 
 
 
-class AtmosphereRidge(Atmosphere):
-    # wind over a cylinder obstacle.
-    # see: Langellan, long distance/duration trajectory optimization for small uavs
-    def __init__(self):
-        self.R = 50            # cylinder radius (was 30)
-        self.winf = 2.         # 
-        self.R2 = self.R**2
-        self.c = np.array([40, 0, 15])
-        
-    def set_params(self, *args): pass
-
-
-    def get_wind(self, pos_ned, t): 
-        dpos = pos_ned - self.c
-        dpos[1]=0  # cylinder axis is y
-        r = np.linalg.norm(dpos)
-        eta = -np.arctan2(dpos[2], dpos[0])
-        ceta, seta = np.cos(eta), np.sin(eta)
-        R2ovr2 = self.R2/r**2
-        wx = self.winf*(1-R2ovr2*(ceta**2-seta**2))
-        wz = 2*self.winf*R2ovr2*ceta*seta
-        return [wx, 0, wz] if r >= self.R else [0, 0, 0]
-
+#
+# Shear Model
+#
 class AtmosphereShearX(Atmosphere):
     # Wind shear, only in X.
     # Adapted from Drela's DSOpt
@@ -316,25 +297,63 @@ class AtmosphereWharington(Atmosphere):
         
     def set_params(self, *args): pass
 
-    def get_wind(self, pos_ned, t): 
+    def get_wind_ned(self, pos_ned, t): 
         dpos = pos_ned - self.center
         r2 = dpos[0]**2+dpos[1]**2
         wz = self.strength*np.exp(-r2/self.r2)
         return np.array([0, 0, wz])
 
+class AtmosphereWharingtonArray(Atmosphere):
+    def __init__(self, centers, radiuses, strengths):
+        if 0:
+            self.thermals = [AtmosphereWharington(radius=30, strength=-1) for i in range(2)]
+            self.thermals[0].center[0] -= 20
+            self.thermals[1].center[0] += 20
+        else:
+            self.thermals = [AtmosphereWharington(_c, _r, _s) for _c, _r, _s in zip(centers, radiuses, strengths)]
+
+    def get_wind_ned(self, pos_ned, t): 
+        winds = [_t.get_wind_ned(pos_ned, t) for _t in self.thermals]
+        return np.sum(winds, axis=0)
 
 #
 # Improved Gaussian model (with downdraft)
 #
 class AtmosphereGedeon(AtmosphereWharington):
 
-    def get_wind(self, pos_ned, t): 
+    def get_wind_ned(self, pos_ned, t): 
         dpos = pos_ned - self.center
         r2 = dpos[0]**2+dpos[1]**2
         top = r2/self.r2
         wz =  self.strength*np.exp(-top)*(1-top)
         return np.array([0, 0, wz])
 
+
+# Wind over a cylinder obstacle.
+# see: Langellan, long distance/duration trajectory optimization for small uavs
+class AtmosphereRidge(Atmosphere):
+    def __init__(self):
+        self.R = 50            # cylinder radius (was 30)
+        self.winf = 2.         # 
+        self.R2 = self.R**2
+        self.c = np.array([40, 0, 15])
+        
+    def set_params(self, *args): pass
+
+    def get_wind_ned(self, pos_ned, t): 
+        dpos = pos_ned - self.c
+        dpos[1]=0  # cylinder axis is y
+        r = np.linalg.norm(dpos)
+        if r < self.R: return [0.,0.,0.]
+        eta = -np.arctan2(dpos[2], dpos[0])
+        ceta, seta = np.cos(eta), np.sin(eta)
+        R2ovr2 = self.R2/r**2
+        wx = self.winf*(1-R2ovr2*(ceta**2-seta**2))
+        wz = 2*self.winf*R2ovr2*ceta*seta
+        return [wx, 0, wz]
+
+
+    
 #
 # Allen model
 #
@@ -377,21 +396,9 @@ class AtmosphereAllen(Atmosphere):
         return [0, 0, -w]
 
     
-class AtmosphereWharingtonArray(Atmosphere):
-    def __init__(self, centers, radiuses, strengths):
-        if 0:
-            self.thermals = [AtmosphereWharington(radius=30, strength=-1) for i in range(2)]
-            self.thermals[0].center[0] -= 20
-            self.thermals[1].center[0] += 20
-        else:
-            self.thermals = [AtmosphereWharington(_c, _r, _s) for _c, _r, _s in zip(centers, radiuses, strengths)]
-
-    def get_wind(self, pos_ned, t): 
-        winds = [_t.get_wind(pos_ned, t) for _t in self.thermals]
-        return np.sum(winds, axis=0)
 
 
-    
+# NetCFD4 grid
 class AtmosphereNC(Atmosphere):
     def __init__(self, filename, center=None):
         self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])

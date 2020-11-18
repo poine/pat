@@ -151,7 +151,7 @@ class SixDOFEuclidianEuler():
     def to_six_dof_aero_euler(cls, Xee, atm=None, t=0):
         Xae = np.zeros(SixDOFAeroEuler.sv_size)
         Xae[SixDOFAeroEuler.sv_slice_pos]   = Xee[cls.sv_slice_pos]
-        wind_ned = (atm.get_wind(Xee[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
+        wind_ned = (atm.get_wind_ned(Xee[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xae[SixDOFAeroEuler.sv_slice_vaero] = vel_world_to_aero_eul(Xee[cls.sv_slice_vel], Xee[cls.sv_slice_eul], wind_ned)
         Xae[SixDOFAeroEuler.sv_slice_eul]   = Xee[cls.sv_slice_eul]
         Xae[SixDOFAeroEuler.sv_slice_rvel]  = Xee[cls.sv_slice_rvel]
@@ -245,7 +245,7 @@ class SixDOFAeroEuler():
         Xee[SixDOFEuclidianEuler.sv_slice_pos] = X[cls.sv_slice_pos]
         Xee[SixDOFEuclidianEuler.sv_slice_eul] = X[cls.sv_slice_eul]
         Xee[SixDOFEuclidianEuler.sv_slice_rvel] = X[cls.sv_slice_rvel]
-        wind_ned = (atm.get_wind(X[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
+        wind_ned = (atm.get_wind_ned(X[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xee[SixDOFEuclidianEuler.sv_slice_vel] = vel_aero_to_world_euler(X[cls.sv_slice_vaero], X[cls.sv_slice_eul], wind_ned)
         return Xee
 
@@ -253,7 +253,7 @@ class SixDOFAeroEuler():
     def to_six_dof_euclidian_quat(cls, Xae, atm=None, t=0):
         Xeq = np.zeros(SixDOFEuclidianQuat.sv_size)
         Xeq[SixDOFEuclidianQuat.sv_slice_pos] = Xae[cls.sv_slice_pos]
-        wind_ned = (atm.get_wind(Xae[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
+        wind_ned = (atm.get_wind_ned(Xae[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xeq[SixDOFEuclidianEuler.sv_slice_vel] = vel_aero_to_world_euler(Xae[cls.sv_slice_vaero], Xae[cls.sv_slice_eul], wind_ned)
         Xeq[SixDOFEuclidianQuat.sv_slice_quat] = p3_alg.quat_of_euler(Xae[cls.sv_slice_eul])
         Xeq[SixDOFEuclidianEuler.sv_slice_rvel] = Xae[cls.sv_slice_rvel]
@@ -284,7 +284,7 @@ class SixDOFAeroEuler():
 
         earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
         p_w, v_aero, e_w2b, om_b = X[cls.sv_slice_pos], X[cls.sv_slice_vaero], X[cls.sv_slice_eul], X[cls.sv_slice_rvel]
-        wind_ned = atm.get_wind(X_pos, t) if atm is not None else [0, 0, 0]
+        wind_ned = atm.get_wind_ned(X_pos, t) if atm is not None else [0, 0, 0]
         waccel_body = [0, 0, 0]  # np.dot(earth_to_body, waccel_earth)
         ivel_world = vel_aero_to_world_euler(X_avel, X_euler, wind_ned)
         ivel_body = np.dot(earth_to_body_R, ivel_world)
@@ -468,7 +468,7 @@ class SixDOFEuclidianQuat():
     def to_six_dof_aero_euler(cls, Xeq, atm=None, t=0):
         Xae = np.zeros(SixDOFAeroEuler.sv_size)
         Xae[SixDOFAeroEuler.sv_slice_pos]   = Xeq[cls.sv_slice_pos]
-        wind_ned = (atm.get_wind(Xeq[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
+        wind_ned = (atm.get_wind_ned(Xeq[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xae[SixDOFAeroEuler.sv_slice_vaero] = vel_world_to_aero(Xeq[cls.sv_slice_vel],  Xae[SixDOFAeroEuler.sv_slice_eul], wind_ned)
         Xae[SixDOFAeroEuler.sv_slice_eul]   = p3_alg.euler_of_quat(Xeq[cls.sv_slice_quat])
         Xae[SixDOFAeroEuler.sv_slice_rvel]  = Xeq[cls.sv_slice_rvel]

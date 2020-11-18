@@ -362,7 +362,7 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
         earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
         if 0:
             R_aero_to_body = p3_fr.R_aero_to_body(alpha, beta)
-            wind_ned = atm.get_wind(X_pos, t) if atm is not None else [0, 0, 0]
+            wind_ned = atm.get_wind_ned(X_pos, t) if atm is not None else [0, 0, 0]
             waccel_body = [0, 0, 0]  # np.dot(earth_to_body, waccel_earth)
             avel_aero = [X[sv_v], 0., 0.]
             avel_body = np.dot(R_aero_to_body, avel_aero)
@@ -518,7 +518,7 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
         X_rvel_body = X[self.sv_slice_rvel]               # body rotational velocities
 
         earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
-        wind_ned = atm.get_wind(X_pos, t) if atm is not None else [0, 0, 0]
+        wind_ned = atm.get_wind_ned(X_pos, t) if atm is not None else [0, 0, 0]
         va, alpha, beta = p3_fr.vel_world_to_aero_eul(X_vel, X_euler, wind_ned)
         h = -X[self.sv_z]
         rho = p3_atm.get_rho(h)
@@ -563,7 +563,7 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
             print("  va     {:.2f} m/s".format(va))
             print("  gamma  {:.2f} deg".format(np.rad2deg(gamma)))
 
-        wvel_world = (atm.get_wind([0, 0, -h], t=0) if atm is not None else [0, 0, 0])
+        wvel_world = (atm.get_wind_ned([0, 0, -h], t=0) if atm is not None else [0, 0, 0])
         def err_func(args):
             throttle, elevator, alpha = args
             xd, yd, zd = va*math.cos(gamma), 0., -va*math.sin(gamma)
@@ -592,7 +592,7 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
             print("  h      {:.1f} m".format(h))
             print("  va     {:.2f} m/s".format(va))
             print("  throttle  {:.2f} %".format(100.*throttle))
-        wvel_world = (atm.get_wind([0, 0, -h], t=0) if atm is not None else [0, 0, 0])
+        wvel_world = (atm.get_wind_ned([0, 0, -h], t=0) if atm is not None else [0, 0, 0])
         def err_func(args):
             gamma, elevator, alpha = args
             xd, yd, zd = va*math.cos(gamma), 0., -va*math.sin(gamma)
@@ -670,7 +670,7 @@ class DynamicModel_eq(p3_fr.SixDOFEuclidianQuat, FWDynamicModel):
         X_rvel_body = X[self.sv_slice_rvel]               # body rotational velocities
 
         earth_to_body_R = p3_alg.rmat_of_quat(X_quat)
-        wind_ned = atm.get_wind(X_pos, t) if atm is not None else [0, 0, 0]
+        wind_ned = atm.get_wind_ned(X_pos, t) if atm is not None else [0, 0, 0]
         va, alpha, beta = p3_fr.vel_world_to_aero_quat(X_vel, X_quat, wind_ned)
         h = -X[self.sv_z]; rho = p3_atm.get_rho(h); Pdyn = 0.5*rho*va**2
 

@@ -21,9 +21,9 @@ class CircleRefTraj():
         self.alpha0, self.dalpha = 0, 2*np.pi
 
     def _zfun(self, alpha): return  np.zeros_like(alpha)
-    #def _zdfun(self, alpha): return  np.zeros_like(alpha)
-    def _zdfun(self, alpha, eps=1e-2, zdm=10.):
-        return np.clip((self._zfun(alpha+eps)-self._zfun(alpha-eps))/(2*eps), -zdm, zdm)
+    #def _dz_ov_da_fun(self, alpha): return np.zeros_like(alpha)
+    def _dz_ov_da_fun(self, alpha, eps=1e-2, vmax=10.):
+        return np.clip((self._zfun(alpha+eps)-self._zfun(alpha-eps))/(2*eps), -vmax, vmax)
 
     def offset(self, delta_center):
         self.c += delta_center
@@ -49,14 +49,14 @@ class CircleRefTraj():
     def get_point_ahead(self, p0, lookahead_dist):
         alpha0 = self.get_alpha(p0)
         alpha1 = alpha0 + lookahead_dist/self.r
-        p1 = self._pt(alpha1)
-        return p1
+        p0, p1 = self._pt(alpha0), self._pt(alpha1)
+        return p0, p1
 
-    def get_proj_and_carrot(self, p0, lookahead_dist, _v=17.):
+    def get_point_and_slope_ahead(self, p0, lookahead_dist, _v=17.):
         alpha0 = self.get_alpha(p0)
         alpha1 = alpha0 + lookahead_dist/self.r
         p1, p2 = self._pt(alpha0), self._pt(alpha1)
-        zd = self._zdfun(alpha0)*_v/self.r  #
+        zd = self._dz_ov_da_fun(alpha0)*_v/self.r  #
         return p1, p2, zd
         
 
@@ -107,20 +107,21 @@ class LineRefTraj():
         self.n = self.p1p2/self.dist
         
     def get_points(self, res=0.1):
-        n_pts = self.dist/res
+        n_pts = int(self.dist/res)
         return np.stack([np.linspace(self.p1[i], self.p2[i], n_pts) for i in range(3)], axis=-1)
     
     def get_point_ahead(self, p, lookahead_dist):
         p1p = p-self.p1
         _np1p = np.linalg.norm(p1p)
         foo = max(0, np.dot(self.n, p1p)) # don't aim before starting point
-        p0 = self.p1 + self.n*(foo + lookahead_dist)
-        if np.dot(self.n, p1p) > self.dist: p0 = self.p2 + self.n*lookahead_dist
-        return p0
+        _p0 = self.p1 + self.n*foo
+        _p1 = _p0 + self.n*lookahead_dist
+        if np.dot(self.n, p1p) > self.dist: _p1 = self.p2 + self.n*lookahead_dist
+        return _p0, _p1
 
-    def get_proj_and_carrot(self, p0, lookahead_dist, _v=17.):
-        c =  self.get_point_ahead(p0, lookahead_dist)
-        return None, c, 0 # FIXME
+    def get_point_and_slope_ahead(self, p0, lookahead_dist, _v=17.):
+        _p0, _p1 = self.get_point_ahead(p, lookahead_dist)
+        return _p0, _p1, 0 # FIXME
      
     def finished(self, p, lookahead_dist):
         p1p = p-self.p1
@@ -148,7 +149,7 @@ class CompositeRefTraj:
         dte = self.sub_trajs[self.cur_traj_id].dist_to_end(p)
         if dte < lookahead_dist:
             next_traj_id = (self.cur_traj_id+1) % len(self.sub_trajs)
-            print(self.cur_traj_id, next_traj_id)
+            #print(self.cur_traj_id, next_traj_id)
             if dte <= 0:
                 self.cur_traj_id = next_traj_id
                 
@@ -158,11 +159,11 @@ class CompositeRefTraj:
 
 
 class SquareRefTraj(CompositeRefTraj):
-    def __init__(self):
-        CompositeRefTraj.__init__(self, [LineRefTraj(p1=( 50,  50, 0), p2=( 50, -50, 0)),
-                                         LineRefTraj(p1=( 50, -50, 0), p2=(-50, -50, 0)),
-                                         LineRefTraj(p1=(-50, -50, 0), p2=(-50,  50, 0)),
-                                         LineRefTraj(p1=(-50,  50, 0), p2=( 50,  50, 0))])
+    def __init__(self, _c=100, _z=-25):
+        CompositeRefTraj.__init__(self, [LineRefTraj(p1=( _c,  _c, _z), p2=( _c, -_c, _z)),
+                                         LineRefTraj(p1=( _c, -_c, _z), p2=(-_c, -_c, _z)),
+                                         LineRefTraj(p1=(-_c, -_c, _z), p2=(-_c,  _c, _z)),
+                                         LineRefTraj(p1=(-_c,  _c, _z), p2=( _c,  _c, _z))])
 
 class OctogonRefTraj(CompositeRefTraj):
     def __init__(self, a=50):
@@ -174,3 +175,17 @@ class OctogonRefTraj(CompositeRefTraj):
         CompositeRefTraj.__init__(self, lines)        
 
 
+class OvalRefTraj(CompositeRefTraj):
+    def __init__(self, _r=40., _l=200, _c=np.array([0, 0, -25])):
+        p1=( _r,  -_l/2, 0)+_c
+        p2=( _r,   _l/2, 0)+_c
+        L1 = LineRefTraj(p1, p2)
+        #c1 = (0, _l/2, 0)+_c
+        #C1 = CircleRefTraj(c1, _r)
+        p3 = (-_r,   _l/2, 0)+_c
+        C1 = LineRefTraj(p2, p3)
+        p4 = (-_r,  -_l/2, 0)+_c
+        L2 = LineRefTraj(p3, p4)
+        c2 = (0, -_l/2, 0)+_c
+        C2 = CircleRefTraj(c2, _r)
+        CompositeRefTraj.__init__(self, [L1, C1, L2])# FIXME[L1, C1, L2, C2])       

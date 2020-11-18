@@ -21,7 +21,7 @@ import pat3.algebra as p3_alg
 
 import control.matlab
 
-def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, plot=False, atm=None, cbk=None):
+def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, atm=None, cbk=None):
     time = np.arange(0, tf, dt)
     X = np.zeros((len(time), dm.sv_size))
     U = np.zeros((len(time),  dm.input_nb()))
@@ -37,26 +37,19 @@ def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma'
     Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X[-1], atm, time[-1])
     U[-1] = ctl.get(time[-1], X[-1], Xee); carrots[-1] = ctl.carrot; att_sp[-1] = ctl.phi_sp, ctl.theta_sp
     if cbk is not None: cbk()
-    if plot:
-        dm.plot_trajectory(time, X, U)
-        plt.subplot(5,3,1); plt.plot(time, carrots[:,0])
-        plt.subplot(5,3,2); plt.plot(time, carrots[:,1])
-        plt.subplot(5,3,3); plt.plot(time, carrots[:,2])
-        plt.subplot(5,3,7); plt.plot(time, np.rad2deg(att_sp[:,0]), label='setpoint')
-        plt.subplot(5,3,8); plt.plot(time, np.rad2deg(att_sp[:,1]), label='setpoint')
     return time, X, U
 
 def test_line(dm, trim_args, dt=0.01):
     ref_traj = p3_traj3d.LineRefTraj(p1=[0, 10, 0], p2=[400, 10, 0])
     ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
     ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = ctl.Ue[0]
-    return ref_traj, run_simulation(dm, ctl, tf=30.5, dt=dt, trim_args=trim_args, plot=True)
+    return ref_traj, run_simulation(dm, ctl, tf=30.5, dt=dt, trim_args=trim_args)
 
 def test_circle(dm, trim_args, dt=0.01):
     ref_traj = p3_traj3d.CircleRefTraj(c=[0, 0, 0], r=20)
     ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
     ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = ctl.Ue[0]
-    return ref_traj, run_simulation(dm, ctl, tf=30.5, trim_args=trim_args, plot=True)
+    return ref_traj, run_simulation(dm, ctl, tf=30.5, trim_args=trim_args)
 
 # load and save simulations
 def _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_compute, save_filename):
@@ -70,20 +63,24 @@ def _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_compute,
 #
 # test vertical control on a few trajectories
 #
-def test_vctl(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
+def test_vctl(dm, trim_args, force_recompute=False, dt=0.01, tf=30.5):
     save_filename = '/tmp/pat_glider_vctl.npz'
     atm = p3_atm.AtmosphereCalm()
     trim_args={'h':26, 'va':17, 'gamma':0}
     #ref_traj = p3_traj3d.CircleRefTraj(c=[70, 0, -25], r=80)
     #ref_traj = p3_traj3d.ZStepCircleRefTraj(c=[70, 0, -30], r=250)
     #ref_traj = p3_traj3d.ZdStepCircleRefTraj(c=[70, 0, -30], r=300)
-    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[70, 0, -30], r=150)
+    #ref_traj = p3_traj3d.BankedCircleRefTraj(c=[70, 0, -30], r=150)
+    #ref_traj = p3_traj3d.SquareRefTraj()
+    #ref_traj = p3_traj3d.OctogonRefTraj() # kindof broken
+    ref_traj = p3_traj3d.OvalRefTraj() #
     ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
     ctl.v_mode = ctl.v_mode_alt#vz#alt
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
 
     time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
- 
+
+    ctl_logger.plot3D(time, X, ctl, atm, ref_traj)
     ctl_logger.plot_slice_nu(time, X, U, ctl, atm)
     ctl_logger.plot_chronograms(time, X, U, ctl, atm)
         
@@ -92,17 +89,19 @@ def test_vctl(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
 #
 # Slope soaring, gliding with throttle off
 #
-def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=60.5):
+def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
     save_filename = '/tmp/pat_glider_slope_soaring.npz'
     atm = p3_atm.AtmosphereRidge()
     trim_args={'h':30, 'va':12, 'gamma':0}
-    ref_traj = p3_traj3d.CircleRefTraj(c=[-10, 0, -50], r=25)
+    #ref_traj = p3_traj3d.CircleRefTraj(c=[-10, 0, -50], r=25)
+    ref_traj = p3_traj3d.OvalRefTraj( _r=25., _l=200, _c=np.array([-10, 0, -50])) #
     ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
     ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0. # we glide
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
 
-    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, compute, save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
 
+    ctl_logger.plot3D(time, X, ctl, atm, ref_traj)
     ctl_logger.plot_slice_nu(time, X, U, ctl, atm, n0=-50, n1=40)
     ctl_logger.plot_chronograms(time, X, U, ctl, atm)
 
@@ -111,7 +110,7 @@ def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=60.5):
 #
 # Dynamic soaring
 #
-def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=120.):
+def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=150.):
     save_filename = '/tmp/pat_glider_ds.npz'
     #atm = p3_atm.AtmosphereShearX(wind1=15.0, wind2=-2.0, xlayer=60.0, zlayer=40.0)
     atm = p3_atm.AtmosphereShearX(wind1=7.0, wind2=-1.0, xlayer=60.0, zlayer=40.0)
@@ -119,15 +118,14 @@ def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=120.
     trim_args={'h':30, 'va':17, 'gamma':0}
 
     #ref_traj = p3_traj3d.CircleRefTraj(c=[0, 0, -20], r=20)
-    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[100, 0, -40], r=60, slope=np.deg2rad(15))
-    ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
-    #ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0.4
+    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[100, 0, -40], r=60, slope=np.deg2rad(10))
+    #ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt, lookahead_dist=15., max_phi=np.deg2rad(45))
+    ctl = p3_guid.GuidanceDS(dm, ref_traj, trim_args, dt, lookahead_dist=15., max_phi=np.deg2rad(60))
     ctl.v_mode = ctl.v_mode_alt
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
     time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
 
     ctl_logger.plot3D(time, X, ctl, atm)
-    n0, n1, dn, h0, h1, dh = -80, 80., 5., -20, 90, 2.
     ctl_logger.plot_slice_nu(time, X, U, ctl, atm, ref_traj, n0=0, n1=210, dn=10, h0=0, h1=80, dh=10)
     ctl_logger.plot_chronograms(time, X, U, ctl, atm)
     return ref_traj, (time, X, U)  

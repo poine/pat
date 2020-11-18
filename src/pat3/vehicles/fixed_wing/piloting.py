@@ -184,16 +184,16 @@ class RollCtl:
         self.Xe, self.Ue = np.asarray(Xe), Ue
         self.dt = dt
         self.k_phi, self.k_p = -3.5, -0.75
-        self.ref = p3_u.SecOrdLinRef(omega=6, xi=0.9, sats=[6., 50.])  # vel, accel
+        #self.ref = p3_u.SecOrdLinRef(omega=6, xi=0.9, sats=[6., 50.])  # vel, accel
         self.h_p, self.h_pd = -0.15, -0.01
         
     def reset(self, phi, phi_d=0):
         self.ref.reset(np.array([phi, phi_d, 0]))
         
     def get(self, X, t, phi_sp, euler_ref):
-        phi_ref, p_ref, pd_ref = self.ref.run(self.dt, phi_sp)
-        phi_e, p_e = X[p3_fr.SixDOFAeroEuler.sv_phi]-euler_ref.phi, X[p3_fr.SixDOFAeroEuler.sv_p]-euler_ref.p
+        #phi_ref, p_ref, pd_ref = self.ref.run(self.dt, phi_sp)
         #phi_e, p_e = X[p3_fr.SixDOFAeroEuler.sv_phi]-phi_ref, X[p3_fr.SixDOFAeroEuler.sv_p]-p_ref
+        phi_e, p_e = X[p3_fr.SixDOFAeroEuler.sv_phi]-euler_ref.phi, X[p3_fr.SixDOFAeroEuler.sv_p]-euler_ref.p
         phi_e, p_e = np.clip([phi_e, p_e], np.deg2rad([-30, -150]), np.deg2rad([30, 150]))
         d_aile = -self.k_phi*phi_e -self.k_p*p_e
         # feedforward

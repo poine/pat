@@ -95,7 +95,7 @@ def plot_3D_traj(ref_traj=None, X=None, fig=None, ax=None, val=None):
     fig = fig if fig is not None else plt.figure()
     ax = ax if ax is not None else fig.add_subplot(111, projection='3d')
     if ref_traj is not None:
-        pts = ref_traj.get_points()
+        pts = np.asarray(ref_traj.get_points())
         xs, ys, zs = pts[:,0], pts[:,1], pts[:,2] 
         ax.plot(xs, ys, zs, color='g', label='ref trajectory')
         ax.plot(xs, ys, np.zeros(len(xs)), linestyle='--', color='k', linewidth=0.5, label='ground track')
@@ -193,7 +193,7 @@ def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., 
     for ix in range(wx.shape[0]):
         for iz in range(wx.shape[1]):
             pos_ned = [x[ix, iz], e0, zdir*z[ix, iz]]  # we plot with z axis up
-            wx[ix, iz], _, wz[ix, iz] = atm.get_wind(pos_ned, t=0)
+            wx[ix, iz], _, wz[ix, iz] = atm.get_wind_ned(pos_ned, t=0)
     cp = ax.contourf(x, z, zdir*wz, alpha=0.4)
     if use_wx: cp = ax.contourf(x, z, zdir*wx, alpha=0.4) # FIX ME : this can be made more generic for x-y-z
     if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
@@ -205,6 +205,32 @@ def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., 
     ax.axis('equal')
     return fig, ax
 
+
+def plot_slice_wind_eu(atm, n0=0, e0=0, e1=100, de=5., h0=-10, h1=150, dh=2., zdir=-1.,
+                       show_quiver=True, show_color_bar=True,
+                       title=None,
+                       figure=None, ax=None, use_wx=False):
+    fig = figure if figure is not None else plt.figure()
+    ax = ax if ax is not None else fig.add_subplot(111)
+    xlist, zlist = np.arange(e0, e1, de), np.arange(h0, h1, dh)
+    x, z = np.meshgrid(xlist, zlist)
+    wx, wz = np.meshgrid(xlist, zlist)
+    for ix in range(wx.shape[0]):
+        for iz in range(wx.shape[1]):
+            pos_ned = [n0, x[ix, iz], zdir*z[ix, iz]]  # we plot with z axis up
+            _, wx[ix, iz], wz[ix, iz] = atm.get_wind_ned(pos_ned, t=0)
+    cp = ax.contourf(x, z, zdir*wz, alpha=0.4)
+    if use_wx: cp = ax.contourf(x, z, zdir*wx, alpha=0.4) # FIX ME : this can be made more generic for x-y-z
+    if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
+    if show_color_bar:
+        cbar = fig.colorbar(cp)
+        cbar.ax.set_ylabel('wz in m/s (>0 up)', rotation=270); cbar.ax.set_xlabel('thermal')
+    title = 'Atmosphere vert slice' if title is None else title 
+    decorate(ax, title=title, xlab='east in m', ylab='h in m (positive up)', legend=None, xlim=None, ylim=None, min_yspan=None)
+    ax.axis('equal')
+    return fig, ax
+
+
 #
 # horizontal wind slice
 #
@@ -214,15 +240,15 @@ def plot_slice_wind_ne(atm, n0=-100, n1=100, dn=5., e0=-100., e1=100, de=5, h0=0
                        figure=None, ax=None):
     fig = figure if figure is not None else plt.figure()
     ax = ax if ax is not None else fig.add_subplot(111)
-    xlist, ylist = np.arange(n0, n1, dn), np.arange(e0, e1, de)
-    x, y = np.meshgrid(xlist, ylist)
-    wz = np.zeros_like(x)
-    for ix in range(wz.shape[0]):
-        for iy in range(wz.shape[1]):
-            pos_ned = [x[ix, iy], y[ix, iy], -h0]  # FIXME ned/enu
-            wz[ix, iy] = -atm.get_wind([x[ix, iy], y[ix, iy], -h0], t=0)[2]
+    _nlist, _elist = np.arange(n0, n1, dn), np.arange(e0, e1, de)
+    _n, _e = np.meshgrid(_nlist, _elist)
+    _wd = np.zeros_like(_n)
+    for _in in range(_wd.shape[0]):
+        for _ie in range(_wd.shape[1]):
+            pos_ned = [_n[_in, _ie], _e[_in, _ie], -h0]
+            _wd[_in, _ie] = atm.get_wind_ned(pos_ned, t=0)[2]
             
-    cp = ax.contourf(x, y, -wz, alpha=0.4)
+    cp = ax.contourf(_n, _e, -_wd, alpha=0.4)
     if show_color_bar:
         cbar = fig.colorbar(cp)
         cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
