@@ -266,7 +266,7 @@ class AtmosphereShearX(Atmosphere):
     def set_params(self, *args): pass
 
 
-    def get_wind(self, pos_ned, t):
+    def get_wind_ned(self, pos_ned, t):
         ''' Outputs wind vector : wind = [windx,windy,windz]'''
         xdel = pos_ned[0] - self.xlayer
         zdel = -pos_ned[2] - self.zlayer
