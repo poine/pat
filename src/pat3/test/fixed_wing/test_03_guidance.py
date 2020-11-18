@@ -113,7 +113,8 @@ def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
 def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=150.):
     save_filename = '/tmp/pat_glider_ds.npz'
     #atm = p3_atm.AtmosphereShearX(wind1=15.0, wind2=-2.0, xlayer=60.0, zlayer=40.0)
-    atm = p3_atm.AtmosphereShearX(wind1=7.0, wind2=-1.0, xlayer=60.0, zlayer=40.0)
+    #atm = p3_atm.AtmosphereShearX(wind1=7.0, wind2=-1.0, xlayer=60.0, zlayer=40.0)
+    atm = p3_atm.AtmosphereShearX(wind1=3.0, wind2=-1.0, xlayer=60.0, zlayer=40.0)
     #atm = p3_atm.AtmosphereCalm()
     trim_args={'h':30, 'va':17, 'gamma':0}
 
