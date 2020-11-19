@@ -288,10 +288,11 @@ class AtmosphereShearX(Atmosphere):
 #
 class AtmosphereWharington(Atmosphere):
     
-    def __init__(self, center=None, radius=50, strength=-2):
+    def __init__(self, center=None, radius=50, strength=-2, cst=[0, 0, 0]):
         self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])
         self.radius = radius
         self.strength = strength
+        self.cst = cst
         self.r2 = self.radius**2
         self.x0, self.x1, self.y0, self.y1, self.z0, self.z1 = -100, 100, -100, 100, 0, 100
         
@@ -301,7 +302,7 @@ class AtmosphereWharington(Atmosphere):
         dpos = pos_ned - self.center
         r2 = dpos[0]**2+dpos[1]**2
         wz = self.strength*np.exp(-r2/self.r2)
-        return np.array([0, 0, wz])
+        return np.array([0, 0, wz])+self.cst
 
 class AtmosphereWharingtonArray(Atmosphere):
     def __init__(self, centers, radiuses, strengths):
@@ -332,9 +333,9 @@ class AtmosphereGedeon(AtmosphereWharington):
 # Wind over a cylinder obstacle.
 # see: Langellan, long distance/duration trajectory optimization for small uavs
 class AtmosphereRidge(Atmosphere):
-    def __init__(self):
+    def __init__(self, winf=2.):
         self.R = 50            # cylinder radius (was 30)
-        self.winf = 2.         # 
+        self.winf = winf       # 
         self.R2 = self.R**2
         self.c = np.array([40, 0, 15])
         
