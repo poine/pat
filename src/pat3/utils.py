@@ -15,10 +15,13 @@ def norm_mpi_pi(v): return ( v + np.pi) % (2 * np.pi ) - np.pi
 def norm_0_2pi(v): return ( v + np.pi) % (2 * np.pi )
 
 
+    
+
 # we assume this file is pat_dir/src/pat3/utils.py
 def pat_dir():
     dirname, filename = os.path.split(os.path.abspath(__file__))
     return os.path.abspath(os.path.join(dirname, '../..'))
+def pat_ressource(_r): return os.path.join(pat_dir(), _r)
     
 def step(t, a=-1., p=10., dt=0.): return a if math.fmod(t+dt, p) > p/2 else -a
 def step_vec(t, a=-1., p=10., dt=0.): return np.array([step(_t, a, p, dt) for _t in t])

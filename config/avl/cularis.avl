@@ -1,0 +1,197 @@
+#
+# Multiplex Cularis Model
+#
+Cularis
+0.0                      Mach
+0     0     0.0          iYsym  iZsym  Zsym
+#
+0.55    0.185  2.6     Sref   Cref   Bref    reference area, chord, span
+0.074   0.0    0.0     Xref   Yref   Zref    moment reference location
+0.015                  CDo
+#
+#
+#
+#==============================================================
+#BODY
+#Fuse pod
+#28   2.0
+
+#TRANSLATE
+#0.0  0.0  0.0
+
+#BFIL
+#fuse_airplane.dat
+#==============================================================
+SURFACE
+Wing
+ 7  1.0   30  -2.9   ! Nchord  Cspace   Nspan  Sspace
+
+INDEX
+1
+
+ANGLE
+     0.0     twist angle bias for whole surface
+
+YDUPLICATE
+0.0
+
+SCALE
+1.0  1.0  1.0        !  deg dihedral
+
+TRANSLATE
+0.0  0.0  0.0
+
+#---------------------------------------------1
+#  Xle    Yle       Zle        chord    angle   Nspan  Sspace
+SECTION
+ 0.0      0.0       0.0        0.200      0      2      0
+
+XFOIL     ! To activate XFOIL
+
+AFIL 0.0 1.0
+MH32.dat
+
+#---------------------------------------------2
+SECTION
+ 0.0      0.110      0.002        0.200      0      1      0
+
+AFIL 0.0 1.0
+MH32.dat
+
+CONTROL
+flap     0.75  0.75    0. 0. 0.    1.
+
+CONTROL
+aileron  0.75  0.75    0. 0. 0.   -1.
+
+#---------------------------------------------3
+SECTION
+ 0.01      0.630      0.023        0.180      0      1      0
+
+AFIL 0.0 1.0
+MH32.dat
+
+CONTROL
+flap     0.75  0.75    0. 0. 0.    1.
+
+CONTROL
+aileron  0.75  0.75    0. 0. 0.   -1.
+
+#---------------------------------------------4
+SECTION
+ 0.02      1.02      0.038        0.150      0      1      0
+
+AFIL 0.0 1.0
+MH32.dat
+
+CONTROL
+flap     0.75  0.75    0. 0. 0.    1.
+
+CONTROL
+aileron  0.75  0.75    0. 0. 0.   -1.
+
+#---------------------------------------------5
+SECTION
+ 0.027     1.16      0.040        0.130      0      1      0
+
+AFIL 0.0 1.0
+MH32.dat
+
+CONTROL
+flap     0.75  0.75    0. 0. 0.    1.
+
+CONTROL
+aileron  0.75  0.75    0. 0. 0.   -1.
+
+#---------------------------------------------6 Tip
+SECTION
+ 0.080     1.30      0.105        0.070      0      1      0
+
+AFIL 0.0 1.0
+MH32.dat
+
+#==============================================================
+#==============================================================
+SURFACE
+Stab
+ 5  1.0  12 -1.0   ! Nchord  Cspace   Nspan  Sspace
+
+ANGLE
+     0.0     twist angle bias for whole surface
+
+YDUPLICATE
+0.0
+
+SCALE
+1.0 1.0 1.0  !Original values
+
+TRANSLATE
+0.730 0.0  0.045
+
+#---------------------------------------------1
+SECTION
+ 0.0      0.0        0.0          0.13    0.000000
+CONTROL
+elevator 0.75   0.0    0. 0. 0.     1.
+#-------------
+AFIL 0.0 1.0
+ht12.dat
+# Re=90k
+CDCL
+-0.45  0.02  0.0  0.01  0.45  0.02
+
+#---------------------2
+SECTION
+ 0.03  0.29        0.0          0.075  0.00000
+CONTROL
+elevator 0.75   0.0    0. 0. 0.     1.
+#-------------
+AFIL 0.0 1.0
+ht12.dat
+# Re=90k
+CDCL
+-0.45  0.02  0.0  0.01  0.45  0.02
+
+
+#==============================================================
+SURFACE
+Fin
+10  1.0  12 -1.0   ! Nchord  Cspace   Nspan  Sspace
+
+ANGLE
+     0.0     twist angle bias for whole surface
+
+SCALE
+1.0 1.0 1.0  !Original values
+
+TRANSLATE
+0.66 0.0  -0.035
+
+#---------------------------------------------1
+SECTION
+ 0.0      0.0        0.0         0.23   0.000000
+#-------------
+AFIL 0.0 1.0
+ht12.dat
+# Re=90k
+CDCL
+-0.45  0.02  0.0  0.01  0.45  0.02
+
+CONTROL
+rudder   0.75  0.70    0. 0. 0.    1.
+
+#---------------------2
+SECTION
+ 0.17   0.0       0.30        0.085 0.000000
+#-------------
+AFIL 0.0 1.0
+ht12.dat
+# Re=90k
+CDCL
+-0.45  0.02  0.0  0.01  0.45  0.02
+
+CONTROL
+rudder   0.75  0.50    0. 0. 0.    1.
+
+
+#==============================================================

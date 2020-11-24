@@ -1,0 +1,352 @@
+
+ ---------------------------------------------
+ Run case  1:  CL0                                     
+
+ alpha        ->  alpha       =   0.00000    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  elevator    =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     =   0.00000     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =  0.330084E-02                                 
+ rb/2V     =   0.00000                                     
+ CL        =  0.203325                                     
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   15.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   28.0232     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   1.00000     kg-m^2                          
+ Iyy       =   1.00000     kg-m^2                          
+ Izz       =   1.00000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  2:  CD0                                     
+
+ alpha        ->  CL          =   0.00000    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  elevator    =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     =  -2.19117     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.558370E-08                                 
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   15.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   1.00000     kg-m^2                          
+ Iyy       =   1.00000     kg-m^2                          
+ Izz       =   1.00000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  3:  15ms                                    
+
+ alpha        ->  CL          =  0.220022    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     =  0.531359     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.220022                                     
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =  0.531359     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   15.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   0.40000     kg-m^2                          
+ Iyy       =   0.10000     kg-m^2                          
+ Izz       =   0.50000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  4:  10ms                                    
+
+ alpha        ->  CL          =  0.495050    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     =   4.08303     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.495050                                     
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   10.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   1.00000     kg-m^2                          
+ Iyy       =   1.00000     kg-m^2                          
+ Izz       =   1.00000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  5:  20ms                                    
+
+ alpha        ->  CL          =  0.123763    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     = -0.705474     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.123763                                     
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   20.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   1.00000     kg-m^2                          
+ Iyy       =   1.00000     kg-m^2                          
+ Izz       =   1.00000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  6:  7ms                                     
+
+ alpha        ->  CL          =   1.01031    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     =   10.8805     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =   1.01031                                     
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   7.00000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   1.00000     kg-m^2                          
+ Iyy       =   1.00000     kg-m^2                          
+ Izz       =   1.00000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  7:  25ms                                    
+
+ alpha        ->  CL          =  0.792080E-01
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     =  -1.27734     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.792080E-01                                 
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   25.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   1.00000     kg-m^2                          
+ Iyy       =   1.00000     kg-m^2                          
+ Izz       =   1.00000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  8:  30ms                                    
+
+ alpha        ->  CL          =  0.550056E-01
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ flap         ->  flap        =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ rudder       ->  rudder      =   0.00000    
+
+ alpha     =  -1.27734     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.550056E-01                                 
+ CDo       =  0.100000E-01                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   30.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.740000E-01 m                               
+ Y_cg      =   0.00000     m                               
+ Z_cg      =   0.00000     m                               
+ mass      =   1.70000     kg                              
+ Ixx       =   1.00000     kg-m^2                          
+ Iyy       =   1.00000     kg-m^2                          
+ Izz       =   1.00000     kg-m^2                          
+ Ixy       =   0.00000     kg-m^2                          
+ Iyz       =   0.00000     kg-m^2                          
+ Izx       =   0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
