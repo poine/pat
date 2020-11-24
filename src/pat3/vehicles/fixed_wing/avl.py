@@ -80,8 +80,8 @@ def chat_with_avl(cfg_file, dialog, debug=False):
     child = pexpect.spawn ('avl '+cfg_file)
     if debug: child.logfile = sys.stdout
     for expect, reply in dialog:
-        child.expect (expect)
-        if reply != None: child.sendline (reply)
+        child.expect(expect)
+        if reply is not None: child.sendline (reply)
     if debug: print(str(child))
 
 def run_st(infile, outfile, case, debug=False):

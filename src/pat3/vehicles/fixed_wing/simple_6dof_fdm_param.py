@@ -152,51 +152,52 @@ class Param:
         """
         Quick and dirty xml printing
         """
-        f = open(filename, 'w')
-        f.write('''<?xml version="1.0"?>
+        LOG.info(" saving fdm configuration to {}".format(filename))
+        with open(filename, 'w') as f:
+            f.write('''<?xml version="1.0"?>
 <fdm_config name="{:s}">\n'''.format(self.name))
-        f.write('''
+            f.write('''
   <masses>
     <mass unit="kg"> {:f} </mass>
     <inertia unit="kg.m2">
 '''.format(self.m))
-        np.savetxt(f, self.I, '%.4f', delimiter=', ')
-        f.write('''    </inertia>
+            np.savetxt(f, self.I, '%.4f', delimiter=', ')
+            f.write('''    </inertia>
   </masses>\n\n''')
-        f.write('  <propulsion>\n')
-        for i in range(0, self.eng_nb):
-            pos_str = StringIO(); np.savetxt(pos_str, self.eng_pos[i][np.newaxis], '%.2f', delimiter=', ')
-            align_str = StringIO(); np.savetxt(align_str, self.eng_align[i][np.newaxis], '%.2f', delimiter=', ')
-            fmt = '    <engine name="{:s}" pos="{:s}" align="{:s}" fmax="{:f}" rhoi="{:f}" nrho="{:f}" Vi="{:f}" nV="{:f}" tau="{:f}"/>\n'
-            f.write(fmt.format(self.eng_name[i], pos_str.getvalue().strip(), align_str.getvalue().strip(), self.fmaxs[i],
-                               self.rhois[i], self.nrhos[i], self.Vis[i], self.nVs[i], self.taus[i]))
-        f.write('  </propulsion>\n\n')
-        f.write('  <aerodynamics>\n')
-        f.write('    <Sref unit="m2" comment="Reference surface">{:f}</Sref>\n'.format(self.Sref))
-        f.write('    <Cref unit="m"  comment="Reference chord">  {:f}</Cref>\n'.format(self.Cref))
-        f.write('    <Bref unit="m"  comment="Reference length"> {:f}</Bref>\n'.format(self.Bref))
-        f.write('    <stability>\n')
-        fmt = '       <misc Vref="{:f}" CL0="{:f}" alpha0="{:f}" CD0="{:f}" CD_k1="{:f}" CD_k2="{:f}" Cm0="{:f}"/>\n'
-        f.write(fmt.format(self.Vref, self.CL0, self.alpha0, self.CD0, self.CD_k1, self.CD_k2, self.Cm0))
-        fmt = '       <alpha                   CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
-        f.write(fmt.format(self.CL_alpha, self.CY_alpha, self.Cl_alpha, self.Cm_alpha, self.Cn_alpha))
-        fmt = '       <beta                    CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
-        f.write(fmt.format(self.CL_beta, self.CY_beta, self.Cl_beta, self.Cm_beta, self.Cn_beta))
-        fmt = '       <p                       CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
-        f.write(fmt.format(self.CL_p, self.CY_p, self.Cl_p, self.Cm_p, self.Cn_p))
-        fmt = '       <q                       CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
-        f.write(fmt.format(self.CL_q, self.CY_q, self.Cl_q, self.Cm_q, self.Cn_q))
-        fmt = '       <r                       CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
-        f.write(fmt.format(self.CL_r, self.CY_r, self.Cl_r, self.Cm_r, self.Cn_r))
-        fmt = '       <surface name="{:s}"{:s} CL="{: f}" CY="{: f}" CD="{: f}" Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
-        for i in range(0,self.sfc_nb):
-            f.write(fmt.format(self.sfc_name[i], "".ljust(8-len(self.sfc_name[i])),
-                               self.CL_sfc[i], self.CY_sfc[i], self.CD_sfc[i],
-                               self.Cl_sfc[i], self.Cm_sfc[i], self.Cn_sfc[i]))
-        f.write('    </stability>\n')
-        f.write('  </aerodynamics>\n')
-        f.write('</fdm_config>\n')
-        f.close()
+            f.write('  <propulsion>\n')
+            for i in range(0, self.eng_nb):
+                pos_str = StringIO(); np.savetxt(pos_str, self.eng_pos[i][np.newaxis], '%.2f', delimiter=', ')
+                align_str = StringIO(); np.savetxt(align_str, self.eng_align[i][np.newaxis], '%.2f', delimiter=', ')
+                fmt = '    <engine name="{:s}" pos="{:s}" align="{:s}" fmax="{:f}" rhoi="{:f}" nrho="{:f}" Vi="{:f}" nV="{:f}" tau="{:f}"/>\n'
+                f.write(fmt.format(self.eng_name[i], pos_str.getvalue().strip(), align_str.getvalue().strip(), self.fmaxs[i],
+                                   self.rhois[i], self.nrhos[i], self.Vis[i], self.nVs[i], self.taus[i]))
+            f.write('  </propulsion>\n\n')
+            f.write('  <aerodynamics>\n')
+            f.write('    <Sref unit="m2" comment="Reference surface">{:f}</Sref>\n'.format(self.Sref))
+            f.write('    <Cref unit="m"  comment="Reference chord">  {:f}</Cref>\n'.format(self.Cref))
+            f.write('    <Bref unit="m"  comment="Reference length"> {:f}</Bref>\n'.format(self.Bref))
+            f.write('    <stability>\n')
+            fmt = '       <misc Vref="{:f}" CL0="{:f}" alpha0="{:f}" CD0="{:f}" CD_k1="{:f}" CD_k2="{:f}" Cm0="{:f}"/>\n'
+            f.write(fmt.format(self.Vref, self.CL0, self.alpha0, self.CD0, self.CD_k1, self.CD_k2, self.Cm0))
+            fmt = '       <alpha                   CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
+            f.write(fmt.format(self.CL_alpha, self.CY_alpha, self.Cl_alpha, self.Cm_alpha, self.Cn_alpha))
+            fmt = '       <beta                    CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
+            f.write(fmt.format(self.CL_beta, self.CY_beta, self.Cl_beta, self.Cm_beta, self.Cn_beta))
+            fmt = '       <p                       CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
+            f.write(fmt.format(self.CL_p, self.CY_p, self.Cl_p, self.Cm_p, self.Cn_p))
+            fmt = '       <q                       CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
+            f.write(fmt.format(self.CL_q, self.CY_q, self.Cl_q, self.Cm_q, self.Cn_q))
+            fmt = '       <r                       CL="{: f}" CY="{: f}"                Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
+            f.write(fmt.format(self.CL_r, self.CY_r, self.Cl_r, self.Cm_r, self.Cn_r))
+            fmt = '       <surface name="{:s}"{:s} CL="{: f}" CY="{: f}" CD="{: f}" Cl="{: f}" Cm="{: f}" Cn="{: f}"/>\n'
+            for i in range(0,self.sfc_nb):
+                f.write(fmt.format(self.sfc_name[i], "".ljust(8-len(self.sfc_name[i])),
+                                   self.CL_sfc[i], self.CY_sfc[i], self.CD_sfc[i],
+                                   self.Cl_sfc[i], self.Cm_sfc[i], self.Cn_sfc[i]))
+            f.write('    </stability>\n')
+            f.write('  </aerodynamics>\n')
+            f.write('</fdm_config>\n')
+
 
         
     def __str__(self):
