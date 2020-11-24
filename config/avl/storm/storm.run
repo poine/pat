@@ -1,0 +1,462 @@
+
+ ---------------------------------------------
+ Run case  1:  CL0                                     
+
+ alpha        ->  alpha       =   0.00000    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  elevator    =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =   0.00000     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.316611                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   15.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  2:  CD0                                     
+
+ alpha        ->  CL          =   0.00000    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  elevator    =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =  -5.68412     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        = -0.743916E-11                                 
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   15.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  3:  15ms Level-Flight                       
+
+ alpha        ->  CL          =  0.378734    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =   1.04971     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.378734                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   15.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  4:  10ms Level-Flight                       
+
+ alpha        ->  CL          =  0.852151    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =   12.5014     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.852151                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   10.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  5:  12ms Level-Flight                       
+
+ alpha        ->  CL          =  0.591771    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =   6.05153     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.591771                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   12.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  6:  14ms Level-Flight                       
+
+ alpha        ->  CL          =  0.434771    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =   2.34943     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.434771                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   14.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  7:  16ms Level-Flight                       
+
+ alpha        ->  CL          =  0.332871    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     = -0.780315E-02 deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.332871                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   16.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  8:  18ms Level-Flight                       
+
+ alpha        ->  CL          =  0.263009    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =  -1.61027     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.263009                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   18.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  9:  20ms Level-Flight                       
+
+ alpha        ->  CL          =  0.213038    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =  -2.75188     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.213038                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   20.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case 10:  25ms Level-Flight                       
+
+ alpha        ->  CL          =  0.136344    
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =  -4.49957     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.136344                                     
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   25.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     
+
+ ---------------------------------------------
+ Run case 11:  30ms Level-Flight                       
+
+ alpha        ->  CL          =  0.946834E-01
+ beta         ->  beta        =   0.00000    
+ pb/2V        ->  pb/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =   0.00000    
+ rb/2V        ->  rb/2V       =   0.00000    
+ elevator     ->  Cm pitchmom =   0.00000    
+ aileron      ->  aileron     =   0.00000    
+
+ alpha     =  -5.44798     deg                             
+ beta      =   0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =   0.00000                                     
+ rb/2V     =   0.00000                                     
+ CL        =  0.946834E-01                                 
+ CDo       =  0.500000E-02                                 
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   30.0000     m/s                             
+ density   =   1.22500     kg/m^3                          
+ grav.acc. =   9.81000     m/s^2                           
+ turn_rad. =   0.00000     m                               
+ load_fac. =   1.00000                                     
+ X_cg      =  0.540000E-01 Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =  0.420000     kg                              
+ Ixx       =  0.498000E-02 kg-m^2                          
+ Iyy       =  0.426500E-02 kg-m^2                          
+ Izz       =  0.916500E-02 kg-m^2                          
+ Ixy       =  -0.00000     kg-m^2                          
+ Iyz       =  -0.00000     kg-m^2                          
+ Izx       =  -0.00000     kg-m^2                          
+ visc CL_a =   0.00000                                     
+ visc CL_u =   0.00000                                     
+ visc CM_a =   0.00000                                     
+ visc CM_u =   0.00000                                     

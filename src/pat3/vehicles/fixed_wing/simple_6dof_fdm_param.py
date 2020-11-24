@@ -126,14 +126,17 @@ class Param:
             for coef in ['CL', 'CY', 'Cl', 'Cm', 'Cn']:
                 setattr(self, '{:s}_{:s}'.format(coef, ax), float(v_ref['{:s}{:s}'.format(coef, ax[0])]))
 
-        # reordering... we want aileron, elevator, rudder, flaps, (others...... later)
+        # reordering... we want aileron, elevator, rudder, flaps, then the rest
         pat_sfc = ['aileron','elevator', 'rudder', 'flap']
-        my_sfc = list(sfc);idxs = []
+        my_sfc = list(sfc); self.sfc_nb = len(my_sfc)
+        idxs = []
         for s in pat_sfc:
             try: idxs.append(my_sfc.index(s))
             except: pass
-
-        self.sfc_nb = len(my_sfc)
+        for _i in range(self.sfc_nb):
+            if _i not in idxs:
+                idxs.append(_i)
+                pat_sfc.append(my_sfc[_i])
         self.sfc_name = pat_sfc[0:self.sfc_nb]
         for coef, coef_avl in [('CL', 'CL'), ('CY','CY'), ('CD','CDff'), ('Cl','Cl'), ('Cm','Cm'), ('Cn', 'Cn')]:
             val = [np.rad2deg(float(v_ref['{:s}d{:d}'.format(coef_avl, idxs[i]+1)])) for i in range(0,self.sfc_nb)]

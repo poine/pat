@@ -99,9 +99,9 @@ def test_step_phi(ampl=np.deg2rad(20.), _dur=10., _p=5.):
     phi_sp = np.array([p3_u.step(_t, a=ampl, p=_p, dt=0) for _t in time])
     return run_simulation(dm, time, Xe, Ue, Xe, phi_sp, theta_sp, plot=True)
 
-def test_step_theta(ampl=np.deg2rad(1.)):
-    dm, time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults(tf=10.)
-    theta_sp = Xe[p3_fr.SixDOFAeroEuler.sv_theta]+np.array([p3_u.step(_t, a=ampl, p=10., dt=2.5) for _t in time])
+def test_step_theta(ampl=np.deg2rad(1.), _dur=10., _p=10.):
+    dm, time, Xe, Ue, phi_sp, theta_sp = get_sim_defaults(tf=_dur)
+    theta_sp = Xe[p3_fr.SixDOFAeroEuler.sv_theta]+np.array([p3_u.step(_t, a=ampl, p=_p, dt=_p/4.) for _t in time])
     return run_simulation(dm, time, Xe, Ue, Xe, phi_sp, theta_sp, plot=True)
 
 def test_step_phi_theta(phi_ampl=np.deg2rad(20.), theta_ampl=np.deg2rad(1), _dur=10., _p=5.):
@@ -113,13 +113,14 @@ def test_step_phi_theta(phi_ampl=np.deg2rad(20.), theta_ampl=np.deg2rad(1), _dur
     
 def main(param_filename):
     #test_pert_theta()
-    test_step_phi(ampl=np.deg2rad(45.), _dur=20., _p=10)
-    #test_step_theta()
-    #test_step_phi_theta(phi_ampl=np.deg2rad(20.), _dur=10., _p=5.)
+    #test_step_phi(ampl=np.deg2rad(45.), _dur=20., _p=10)
+    test_step_theta(ampl=np.deg2rad(5.), _dur=90., _p=70. )
+    #test_step_phi_theta(phi_ampl=np.deg2rad(20.), theta_ampl=np.deg2rad(5.), _dur=10., _p=5.)
     plt.show()  
     
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     np.set_printoptions(linewidth=500)
-    param_filename = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml') # FIXME global :( 
+    param_filename = p3_u.pat_ressource('data/vehicles/cularis.xml')
+    #param_filename = p3_u.pat_ressource('data/vehicles/funjet_avl.xml') # not yet :(
     main(param_filename)

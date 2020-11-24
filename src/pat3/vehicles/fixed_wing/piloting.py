@@ -188,7 +188,8 @@ class RollCtl:
         self.h_p, self.h_pd = -0.15, -0.01
         
     def reset(self, phi, phi_d=0):
-        self.ref.reset(np.array([phi, phi_d, 0]))
+        #self.ref.reset(np.array([phi, phi_d, 0]))
+        pass # FIXME
         
     def get(self, X, t, phi_sp, euler_ref):
         #phi_ref, p_ref, pd_ref = self.ref.run(self.dt, phi_sp)
