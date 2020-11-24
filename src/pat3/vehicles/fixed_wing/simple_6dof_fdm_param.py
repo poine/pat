@@ -148,7 +148,7 @@ class Param:
         self.taus = prop['tau']
         self.Vref = 15. # FIXME
 
-    def print_xml(self, filename):
+    def save_xml(self, filename):
         """
         Quick and dirty xml printing
         """
@@ -239,7 +239,9 @@ class Param:
         for param in ["pos", "align"]:
             res+="    {:8s}".format(param)
             for i in range(0, self.eng_nb):
-                res += "{:>16s}".format(getattr(self, "eng_"+param)[i])
+                #pdb.set_trace()
+                #res += "{:>16s}".format(getattr(self, "eng_"+param)[i])
+                res += "{:>16s}".format(str(getattr(self, "eng_"+param)[i]))
             res+="\n"
 
         for param in ["fmax", "rhoi", "nrho", "Vi", "nV", "tau"]:

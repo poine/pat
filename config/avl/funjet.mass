@@ -1,0 +1,28 @@
+#
+#  Fun-Jet
+#  Mass & Inertia breakdown
+#
+#  xyz is location of item's own CG
+#  Ixx.. are item's inertias about item's own CG
+#
+#   x back
+#   y right
+#   z up
+#
+#  x,y,z system here must have origin
+#  at same location as AVL input file
+#
+
+Lunit = 1.0 m
+Munit = 1.0 kg
+Tunit = 1.0 s
+
+g   = 9.81
+rho = 1.225
+
+#
+#  mass   x     y     z       Ixx     Iyy    Izz    [ Ixy  Ixz  Iyz ]
++   0.   0.     0.    0.
+    0.6  0.19  0.0   0.0    0.010   0.022   0.025      !Measured with 2 wire strings...
+
+
