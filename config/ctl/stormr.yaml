@@ -1,0 +1,28 @@
+H_pitch:
+  rows: 1
+  cols: 4
+  data: [-0.213128149509, -0.932570278645, -0.237238794565, 0.869498789310]
+K_pitch:
+  rows: 1
+  cols: 3
+  data: [-0.4495, -0.0507, -0.01]
+
+
+H_roll:
+  rows: 1
+  cols: 2
+  data: [-0., -0.0]
+K_roll:
+  rows: 1
+  cols: 3
+  data: [0.5, 0.5]
+
+
+H_yaw:
+  rows: 1
+  cols: 2
+  data: [0.1, 0.1]
+K_yaw:
+  rows: 1
+  cols: 3
+  data: [-0.2, -0.5]

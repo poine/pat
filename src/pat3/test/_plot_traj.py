@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 #
 
-import numpy as np, matplotlib.pyplot as plt
+import numpy as np, matplotlib, matplotlib.pyplot as plt
 import pdb
 
 import pat3.utils as p3_u, pat3.atmosphere as p3_atm, pat3.trajectory_3D as p3_traj3d, pat3.frames as p3_fr
@@ -30,8 +30,8 @@ def main(dt=0.005):
         atm = p3_atm.AtmosphereVgradient()
         save_filename = '/tmp/pat_glider_ds_wvg.npz'
 
-    ref_traj = p3_traj3d.BankedCircleRefTraj(c=[100, 0, -40], r=60, slope=np.deg2rad(10))
-    ctl = p3_guid.GuidanceDS(dm, ref_traj, trim_args, dt, lookahead_dist=15., max_phi=np.deg2rad(60))
+    #ref_traj = p3_traj3d.BankedCircleRefTraj(c=[100, 0, -40], r=60, slope=np.deg2rad(10))
+    #ctl = p3_guid.GuidanceDS(dm, ref_traj, trim_args, dt, lookahead_dist=15., max_phi=np.deg2rad(60))
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
     time, Xae, U =  ctl_logger.load(save_filename)
 
@@ -44,13 +44,13 @@ def main(dt=0.005):
     _eul  = Xae[:,p3_fr.SixDOFAeroEuler.sv_slice_eul]
     _phi, _theta, _psi = [_eul[:,_i] for _i in range(3)]
     _gamma = _theta - _alpha
-    groundspeed_3d = np.linalg.norm(_vi, axis=1) # I hate this variable name
     # aliasing input variables
     _throttle = U[:,dm.iv_dth()]
 
     # compute state variable in euclidian/euler format
     Xee = np.array([dm.to_six_dof_euclidian_euler(_X, atm, 0.) for _X in Xae])
     _vi = Xee[:, p3_fr.SixDOFEuclidianEuler.sv_slice_vel]
+    groundspeed_3d = np.linalg.norm(_vi, axis=1) # I hate this variable name
     
     #ctl_logger.plot_chronograms(time, X, U, ctl, atm2)
 
@@ -99,16 +99,18 @@ def main(dt=0.005):
     P_dwx = -dWx*(-_va * np.sign(_gamma) * np.cos(_gamma) )
     P_dwz =  dWz*(_va * np.sin(_gamma) )
      
-    fig = plt.figure(figsize=(10,14.5))
+    #matplotlib.rcParams['text.usetex'] = True
+    plt.rcParams["font.family"] = "Times New Roman"  
+    plt.rcParams["font.size"] = 11
+    fig = plt.figure(figsize=(10,14.5)) 
     axes = fig.subplots(6, 1, sharex=True)
+    fig.subplots_adjust(top=0.975, bottom=0.035, left=0.125, right=0.97, hspace=0.165, wspace=0.205)
     ax = axes[0]#fig.add_subplot(611)
     ax.set_title('Energy in Air-Path Frame')
     ax.plot(time,e_tot_air, label='$E_{Total}$')
     ax.plot(time,e_kin_air, label='$E_{Kinetic}$')
     ax.plot(time,e_pot, label='$E_{Potential}$')
-    ax.grid();ax.legend();ax.set_ylabel('Energy [J]')#plt.ylabel('Energy/(mg) [m]')
-    #ax.set_xlim([xlim1,xlim2]);#;plt.xlim([0,1])#;plt.ylim([0,70])
-    ax.set_xticklabels([])
+    ax.grid();ax.legend();ax.set_ylabel('Energy [J]')
 
     
     ax = axes[1]#fig.add_subplot(612)
@@ -116,47 +118,39 @@ def main(dt=0.005):
     ax.plot(time, _va, label='$V_a$');
     ax.plot(time, groundspeed_3d, label='$V_{i}$')
     ax.grid();
-    #ax.set_ylabel('Height AGL [m] $\&$ \\\ Speed [m/s]')
-    ax.set_ylabel('Height AGL [m] \\\ Speed [m/s]')
+    ax.set_ylabel('Height AGL [$m$] \nSpeed [$m/s$]')
     ax.legend();
-    #ax.set_xlim([xlim1,xlim2]); #plt.ylim([0,35]) #plt.xlim([0,1]);
-
 
     ax = axes[2]#fig.add_subplot(613)
-    ax.plot(time, np.rad2deg(_gamma), label='$\gamma$ [deg]');
-    ax.plot(time, Wx, label='$W_x$');
-    ax.plot(time,dWx, label='$\dot{W_x}$');
-    ax.plot(time,Wz, label='$W_z$');
-    ax.plot(time,-_vi[:,2], label='$Vi_z$');
-
-    ax.grid();ax.legend();ax.set_ylabel('  Flight Path ($\gamma$) [deg] \\\  Wind Speed [$m/s$] \\\  Gradient [$m/s^2$]');#plt.ylim([-12,12]);
-    #ax.set_xlim([xlim1,xlim2]);ax.set_xticklabels([])
-
+    ax.plot(time, np.rad2deg(_gamma), label='$\gamma$ [deg]')
+    ax.plot(time, Wx, label='$W_x$')
+    ax.plot(time,dWx, label='$\dot{W_x}$')
+    ax.plot(time,Wz, label='$W_z$')
+    ax.plot(time,-_vi[:,2], label='$Vi_z$')
+    ax.grid();ax.legend();ax.set_ylabel('Flight Path ($\gamma$) [deg] \n  Wind Speed [$m/s$] \n  Gradient [$m/s^2$]')
 
     ax = axes[3]#fig.add_subplot(614)
-    #ax.plot(time, dWx, label='dwx'); ax.plot(time, dWz, label='dwz')
     ax.plot(time, P_drag, color='red', label='$P_D$  [W], $\sum{P_D}$ = %0.2f [Ws]' % (np.nansum(P_drag)/100) ) 
-    ax.plot(time,P_dwx, color='black', alpha=0.6, label='$P_{\dot{W}_X}$ [W], $\sum{P_{\dot{W}_X}}$ = %0.2f [Ws]' % (np.nansum(P_dwx)/100) );
+    ax.plot(time,P_dwx, color='black', alpha=0.6, label='$P_{\dot{W}_X}$ [W], $\sum{P_{\dot{W}_X}}$ = %0.2f [Ws]' % (np.nansum(P_dwx)/100) )
     ax.fill_between(time,0,P_dwx, where=(P_dwx >= 0), alpha=0.50, color='green', interpolate=True)
     ax.fill_between(time,0,P_dwx, where=(P_dwx < 0), alpha=0.50, color='red', interpolate=True)
-    ax.grid();ax.legend()#;ax.set_ylabel('Power ($P_{\dot{W}_X}\, \& \, P_D$)  [W]')#;ax.set_xlim([xlim1,xlim2]);plt.ylim([-100,120])
-    ax.set_xticklabels([])
+    ax.grid();ax.legend();ax.set_ylabel('Power ($P_{\dot{W}_X}\, & \, P_D$)  [W]')
 
     ax = axes[4]#fig.add_subplot(615)
     ax.plot(time,P_dwz, color='black', alpha=0.3, label='$P_{\dot{W_Z}}$, $\sum{P_{\dot{W_Z}}}$ = %0.2f [Ws]' % (np.nansum(P_dwz)/100) );
     ax.fill_between(time,0,P_dwz, where=(P_dwz >= 0), alpha=0.50, color='green', interpolate=True)#, label='P$_{\dot{w}}$');
     ax.fill_between(time,0,P_dwz, where=(P_dwz < 0), alpha=0.50, color='red', interpolate=True)#, label='P$_{\dot{w}}$');
-    ax.grid();plt.legend();plt.ylabel('Power ($P_{\dot{W}_Z}$)  [W]')#;ax.set_xlim([xlim1,xlim2]);ax.set_ylim([-100,120])#;plt.xlim([0,1])#;plt.ylim([-10,10])
+    ax.grid();plt.legend();ax.set_ylabel('Power ($P_{\dot{W}_Z}$)  [W]')
     ax.set_xticklabels([])
 
     ax = axes[5]#fig.add_subplot(616);
     ax.plot(time, _throttle, label='Throttle,  Averaged = %0.2f' % (np.nanmean(_throttle)) );
     #ax.fill_between(time,0,electrical_power, where=(_throttle >= throttle_limit), alpha=0.20, color='grey', interpolate=True)
     #ax.plot(time,electrical_power, label='$P_{Elec.}$ [W] , $\sum{P_{Elec.}}$ = %0.2f [Ws]' % (np.nansum(electrical_power[throttle>=throttle_limit])/100.* propulsion_eff) ); #np.nanmean(electrical_power),
-    ax.grid();plt.legend();ax.set_ylabel('Throttle [\%] \& \\\ Elec. Power ($P_{Elec.}$) [W]')#;ax.set_xlim([xlim1,xlim2]);#;plt.xlim([xlim1,xlim2]);plt.ylim([0,100])
+    ax.grid();plt.legend();ax.set_ylabel('Throttle [\%] \n Elec. Power ($P_{Elec.}$) [W]')
     ax.set_xlabel('Time [s]')
-    ax.set_xlim([20, 30])
-    
+
+    #ax.set_xlim([20, 30])
     plt.savefig('/tmp/traj_murat_ds.png', dpi=120, bbox_inches='tight')
 
 def plot_atm():
