@@ -2,6 +2,10 @@
 
 Some stuff related to aerospace simulation, documentation over [there](https://poine.github.io/pat).
 
+<p align="center">
+  <img src="docs/images/cularis_thermaling_lowres.png" width="800" title="hover text">
+</p>
+
 ## Quickstart
 
 ### Installing
