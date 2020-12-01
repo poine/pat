@@ -194,7 +194,9 @@ class FWDynamicModel:
             print('trim not possible. Specify h, and either va and gamma, or va and throttle')
             
         Ue = np.zeros(self.input_nb())
-        Ue[self.iv_dth()] = thr_e; Ue[self.iv_de()] = ele_e; Ue[self.iv_df()] = flaps
+        Ue[self.iv_dth()] = thr_e; Ue[self.iv_de()] = ele_e
+        #pdb.set_trace()
+        if self.P.sfc_nb >= 4: Ue[self.iv_df()] = flaps
         Ue[self.iv_da()] = ail_e; Ue[self.iv_dr()] = rud_e; 
         theta_e = gamma_e+alpha_e
         psid = self.P.g*np.tan(phi)/va
@@ -277,7 +279,9 @@ class FWDynamicModel:
         psi, psid = 0., self.P.g*np.tan(phi)/va
         def err_func(args):
             theta, elevator, aileron, rudder, alpha = args
-            Ueng, Usfc = [throttle], [aileron, elevator, rudder, flaps]
+            Ueng, Usfc = [throttle], [aileron, elevator, rudder]
+            if self.P.sfc_nb >= 4:
+                Usfc.append(flaps)
             X_rvel_body = p, q, r = 0., np.sin(phi)*np.cos(theta)*psid, np.cos(phi)*np.cos(theta)*psid
             #X_rvel_body = p, q, r = 0, np.sin(phi)*np.cos(theta)*va/R, np.cos(phi)*np.cos(theta)*va/R
             wind_ned = [0, 0, 0]
@@ -327,7 +331,7 @@ class FWDynamicModel:
             print("  flap  {:.1f} deg".format(np.rad2deg(flaps)))
         gamma, elevator, aileron, rudder, alpha = self.trim_aero_banked_cst_throttle(h, va, throttle, flaps, phi, report, debug, atm)
         Ue = np.zeros(self.input_nb())
-        Ue[self.iv_dth()] = throttle; Ue[self.iv_de()] = elevator; Ue[self.iv_df()] = flaps
+        Ue[self.iv_dth()] = throttle; Ue[self.iv_de()] = elevator
         Ue[self.iv_dr()] = rudder; Ue[self.iv_da()] = aileron
         psid = self.P.g*np.tan(phi)/va
         theta = gamma+alpha
@@ -438,7 +442,8 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
             throttle, elevator, alpha = args
             X=[0., 0., -h, va, alpha, 0., 0.,  gamma+alpha, 0., 0., 0., 0.]
             U = np.zeros(self.input_nb())
-            U[self.iv_dth()] = throttle; U[self.iv_de()] = elevator; U[self.iv_df()] = flaps
+            U[self.iv_dth()] = throttle; U[self.iv_de()] = elevator
+            if self.P.sfc_nb >= 4: U[self.iv_df()] = flaps
             Xdot = self.dyn(X, 0., U, atm)
             Xdot_ref = [va*math.cos(gamma), 0., -va*math.sin(gamma), 0., 0., 0., 0., 0., 0., 0., 0., 0.]
             return np.linalg.norm(Xdot - Xdot_ref)
@@ -736,7 +741,7 @@ def plot_trajectory_ae(time, X, U=None, figure=None, window_title="Trajectory",
         p3_pu.decorate(ax, title="$d_a/d_r$", ylab="deg", min_yspan=1., legend=True)
         ax = figure.add_subplot(5, 3, 15)
         ax.plot(time, np.rad2deg(U[:, iv_de]), label="elevator")
-        ax.plot(time, np.rad2deg(U[:, iv_df]), label="flap")
+        if U.shape[1] > iv_df: ax.plot(time, np.rad2deg(U[:, iv_df]), label="flap")
         p3_pu.decorate(ax, title="$d_e/d_f$", ylab="deg", min_yspan=1., legend=True)
         
     return figure

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<fdm_config name="stormr">
+
+  <masses>
+    <mass unit="kg"> 0.420000 </mass>
+    <inertia unit="kg.m2">
+0.0050, -0.0000, -0.0000
+-0.0000, 0.0043, -0.0000
+-0.0000, -0.0000, 0.0092
+    </inertia>
+  </masses>
+
+  <propulsion>
+    <engine name="motor" pos="0.14, 0.00, 0.00" align="0.00, 0.00" fmax="0.400000" rhoi="1.225000" nrho="0.000000" Vi="15.000000" nV="0.000000" tau="0.100000"/>
+  </propulsion>
+
+  <aerodynamics>
+    <Sref unit="m2" comment="Reference surface">0.078000</Sref>
+    <Cref unit="m"  comment="Reference chord">  0.156000</Cref>
+    <Bref unit="m"  comment="Reference length"> 0.500000</Bref>
+    <stability>
+       <misc Vref="15.000000" CL0="0.316610" alpha0="0.000000" CD0="0.005080" CD_k1="0.000000" CD_k2="0.107853" Cm0="0.007130"/>
+       <alpha                   CL=" 3.157496" CY=" 0.000001"                Cl=" 0.000002" Cm="-0.292177" Cn="-0.000000"/>
+       <beta                    CL="-0.000000" CY="-0.181948"                Cl="-0.107041" Cm=" 0.000000" Cn=" 0.065958"/>
+       <p                       CL=" 0.000000" CY=" 0.190188"                Cl="-0.239694" Cm="-0.000001" Cn="-0.045408"/>
+       <q                       CL=" 4.202716" CY=" 0.000003"                Cl=" 0.000001" Cm="-1.268519" Cn="-0.000002"/>
+       <r                       CL=" 0.000000" CY=" 0.159157"                Cl=" 0.102472" Cm="-0.000000" Cn="-0.085523"/>
+       <surface name="aileron"  CL=" 0.000000" CY=" 0.006245" CD="-0.000000" Cl=" 0.212682" Cm="-0.000000" Cn="-0.022116"/>
+       <surface name="elevator" CL=" 1.288410" CY="-0.000000" CD=" 0.106169" Cl=" 0.000000" Cm="-0.554910" Cn=" 0.000000"/>
+       <surface name="rudder"   CL="-0.000000" CY="-0.102445" CD=" 0.000000" Cl=" 0.000286" Cm=" 0.000000" Cn=" 0.049962"/>
+    </stability>
+  </aerodynamics>
+</fdm_config>

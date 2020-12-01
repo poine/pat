@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<fdm_config name="cularis">
+
+  <masses>
+    <mass unit="kg"> 1.700000 </mass>
+    <inertia unit="kg.m2">
+0.4000, -0.0000, -0.0000
+-0.0000, 0.1000, -0.0000
+-0.0000, -0.0000, 0.5000
+    </inertia>
+  </masses>
+
+  <propulsion>
+    <engine name="motor" pos="0.00, 0.00, 0.00" align="0.00, 0.00" fmax="1.800000" rhoi="1.225000" nrho="0.000000" Vi="15.000000" nV="0.000000" tau="0.100000"/>
+  </propulsion>
+
+  <aerodynamics>
+    <Sref unit="m2" comment="Reference surface">0.550000</Sref>
+    <Cref unit="m"  comment="Reference chord">  0.185000</Cref>
+    <Bref unit="m"  comment="Reference length"> 2.600000</Bref>
+    <stability>
+       <misc Vref="15.000000" CL0="0.180080" alpha0="0.000000" CD0="0.012260" CD_k1="0.000000" CD_k2="0.019625" Cm0="-0.004830"/>
+       <alpha                   CL=" 4.707602" CY="-0.000000"                Cl=" 0.000001" Cm="-0.877458" Cn=" 0.000000"/>
+       <beta                    CL="-0.000000" CY="-0.245941"                Cl="-0.080676" Cm=" 0.000001" Cn=" 0.052240"/>
+       <p                       CL=" 0.000000" CY="-0.119447"                Cl="-0.522896" Cm="-0.000000" Cn="-0.023296"/>
+       <q                       CL=" 7.043585" CY=" 0.000004"                Cl=" 0.000001" Cm="-13.816118" Cn="-0.000001"/>
+       <r                       CL=" 0.000000" CY=" 0.142025"                Cl=" 0.065634" Cm="-0.000001" Cn="-0.034785"/>
+       <surface name="aileron"  CL=" 0.000000" CY="-0.030023" CD=" 0.000000" Cl="-0.310257" Cm="-0.000000" Cn="-0.008881"/>
+       <surface name="elevator" CL=" 0.368011" CY="-0.000000" CD=" 0.001948" Cl=" 0.000000" Cm="-1.278212" Cn=" 0.000000"/>
+       <surface name="rudder"   CL="-0.000000" CY="-0.113216" CD=" 0.000000" Cl="-0.004354" Cm=" 0.000000" Cn=" 0.032830"/>
+       <surface name="flap"     CL=" 1.514327" CY="-0.000000" CD=" 0.017189" Cl=" 0.000000" Cm="-0.123301" Cn=" 0.000000"/>
+    </stability>
+  </aerodynamics>
+</fdm_config>

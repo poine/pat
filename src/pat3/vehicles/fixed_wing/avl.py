@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 #
-# Copyright 2013-2015 Antoine Drouin (poinix@gmail.com)
+# Copyright 2013-2020 Antoine Drouin (poinix@gmail.com)
 #
 # This file is part of PAT.
 #
@@ -22,6 +22,27 @@
 """
 Support for Avl (Athena Vortex Lattice)
 See: http://web.mit.edu/drela/Public/web/avl/
+
+This program is used to compute aerodynamic coefficients (and incidentally inertias)  
+for our fixed wing flight dynamic model by using Avl (digital windtunnel...).
+
+1: How does it work
+This version works by running avl binary interactive text interface (i.e., the regular avl program) in a child subprocess.
+It means, if you are able to run 'avl' and interract with it from your terminal, this
+program should work.
+
+I have cython based version that allows to call internal avl (fortran) routines from python,
+but this requires avl sources for building the interface, which makes it less convenient,
+albeit more flexible, robust and performant. Feel free to contact me if interested.
+
+2: How does it work
+We run 3 experiments on Avl, two for finding zero lift and zero drag conditions, and one at a 'reference speed'
+
+3: Does it work?
+Kindoff... I am partly convinced that what we do here is not completely incorrect.
+Extracting the correct coefficients from Avl requires an exact understanding of Avl assumptions and internals.
+I have a bunch of (broken) unit test from long ago. Again, feel free to contact me if interested.
+
 """
 import os, sys, logging, pexpect, re, math, numpy as np, ast
 import pdb

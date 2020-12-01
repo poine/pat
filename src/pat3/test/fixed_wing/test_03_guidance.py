@@ -63,17 +63,18 @@ def _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_compute,
 #
 # test vertical control on a few trajectories
 #
-def test_vctl(dm, trim_args, force_recompute=False, dt=0.01, tf=30.5):
-    save_filename = '/tmp/pat_glider_vctl.npz'
-    atm = p3_atm.AtmosphereCalm()
+def test_vctl(dm, trim_args, force_recompute=False, dt=0.01, tf=40.5):
+    save_filename = '/tmp/pat_glider_vctl_w.npz'
+    #atm = p3_atm.AtmosphereCalm()
+    atm = p3_atm.AtmosphereCstWind([1, 0, 0])
     trim_args={'h':26, 'va':17, 'gamma':0}
-    #ref_traj = p3_traj3d.CircleRefTraj(c=[70, 0, -25], r=80)
+    ref_traj = p3_traj3d.CircleRefTraj(c=[70, 0, -25], r=80)
     #ref_traj = p3_traj3d.ZStepCircleRefTraj(c=[70, 0, -30], r=250)
     #ref_traj = p3_traj3d.ZdStepCircleRefTraj(c=[70, 0, -30], r=300)
     #ref_traj = p3_traj3d.BankedCircleRefTraj(c=[70, 0, -30], r=150)
     #ref_traj = p3_traj3d.SquareRefTraj()
     #ref_traj = p3_traj3d.OctogonRefTraj() # kindof broken
-    ref_traj = p3_traj3d.OvalRefTraj() #
+    #ref_traj = p3_traj3d.OvalRefTraj() #
     ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt)
     ctl.v_mode = ctl.v_mode_alt#vz#alt
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
@@ -111,13 +112,26 @@ def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
 # Dynamic soaring
 #
 def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=150.):
-    save_filename = '/tmp/pat_glider_ds.npz'
     #atm = p3_atm.AtmosphereShearX(wind1=15.0, wind2=-2.0, xlayer=60.0, zlayer=40.0)
     #atm = p3_atm.AtmosphereShearX(wind1=7.0, wind2=-1.0, xlayer=60.0, zlayer=40.0)
-    atm = p3_atm.AtmosphereShearX(wind1=5.0, wind2=0.0, xlayer=60.0, zlayer=40.0)
-    #atm = p3_atm.AtmosphereCalm()
-    trim_args={'h':30, 'va':17, 'gamma':0}
+    #atm = p3_atm.AtmosphereShearX(wind1=5.0, wind2=0.0, xlayer=60.0, zlayer=40.0)
+    if 0:
+        atm = p3_atm.AtmosphereCalm()
+        save_filename = '/tmp/pat_glider_ds_nw.npz'
+    if 0:
+        atm = p3_atm.AtmosphereCstWind([1, 0, 0])
+        save_filename = '/tmp/pat_glider_ds_wc100.npz'
+    if 0:
+        atm = p3_atm.AtmosphereRidge()
+        save_filename = '/tmp/pat_glider_ds_wr.npz'
+    if 0:
+        atm = p3_atm.AtmosphereShearX(wind1=5.0, wind2=0.0, xlayer=60.0, zlayer=40.0)
+        save_filename = '/tmp/pat_glider_ds_ws50.npz'
+    if 1:
+        atm = p3_atm.AtmosphereVgradient()
+        save_filename = '/tmp/pat_glider_ds_wvg.npz'
 
+    trim_args={'h':30, 'va':17, 'gamma':0}
     #ref_traj = p3_traj3d.CircleRefTraj(c=[0, 0, -20], r=20)
     ref_traj = p3_traj3d.BankedCircleRefTraj(c=[100, 0, -40], r=60, slope=np.deg2rad(10))
     #ctl = p3_guid.GuidancePurePursuit(dm, ref_traj, trim_args, dt, lookahead_dist=15., max_phi=np.deg2rad(45))

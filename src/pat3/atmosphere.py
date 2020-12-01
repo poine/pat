@@ -162,9 +162,16 @@ class AtmosphereSinedWind(AtmosphereSinetWind):
         return np.sin(omega*np.linalg.norm(pos))*self.v
 
 class AtmosphereVgradient(Atmosphere):
+    def __init__(self, w0=-2, w1=5, h0=20, h1=60):
+        self.w0, self.w1, self.h0, self.h1 = w0, w1, h0, h1
+        self.dw, self.dh = w1-w0, h1-h0
+        
     def get_wind_ned(self, pos, t):
-        wmin, wmax, hmax = 0., 5., 10. # 
-        return [max(wmin, min(wmax/hmax*pos[2], wmax)), 0, 0]
+        #wmin, wmax, hmin, hmax = 0., 5., 20., 60. #
+        #dh, wspan, hspan = -pos[2]-hmin, wmax-wmin, hmax-hmin
+        dh = -pos[2]-self.h0
+        wx = np.clip(self.w0+dh/self.dh*self.dw, self.w0, self.w1)
+        return [-wx, 0, 0]
 
 
 def thermal_model_gedeon(x, y, z, R_t=10, W_max=1):
@@ -399,7 +406,7 @@ class AtmosphereAllen(Atmosphere):
     
 
 
-# NetCFD4 grid
+# NetCDF4 grid
 class AtmosphereNC(Atmosphere):
     def __init__(self, filename, center=None):
         self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])
@@ -419,7 +426,7 @@ class AtmosphereNC(Atmosphere):
             plt.plot(_id, _z)
             plt.plot(id_new, z_new)
     
-    def get_wind(self, pos_ned, t):
+    def get_wind_ned(self, pos_ned, t):
         ni, nj, level = 0, 0, 0
         ni = int((pos_ned[0]-self.x0)/self.dx*len(self.ni))
         nj = int((pos_ned[1]-self.y0)/self.dy*len(self.nj))
@@ -433,10 +440,3 @@ class AtmosphereNC(Atmosphere):
 
 
 
-    def get_wind_ned(self, pos_ned, t):
-        pass
-
-
-    def get_wind_enu(self, pos_enu, t):
-        pass
-    

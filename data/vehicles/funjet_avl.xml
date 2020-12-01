@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<fdm_config name="funjet">
+
+  <masses>
+    <mass unit="kg"> 0.600000 </mass>
+    <inertia unit="kg.m2">
+0.0100, -0.0000, -0.0000
+-0.0000, 0.0220, -0.0000
+-0.0000, -0.0000, 0.0250
+    </inertia>
+  </masses>
+
+  <propulsion>
+    <engine name="one" pos="0.00, 0.00, 0.00" align="0.00, 0.00" fmax="1.800000" rhoi="1.225000" nrho="0.000000" Vi="15.000000" nV="0.000000" tau="0.100000"/>
+  </propulsion>
+
+  <aerodynamics>
+    <Sref unit="m2" comment="Reference surface">0.184000</Sref>
+    <Cref unit="m"  comment="Reference chord">  0.230000</Cref>
+    <Bref unit="m"  comment="Reference length"> 0.800000</Bref>
+    <stability>
+       <misc Vref="15.000000" CL0="0.000210" alpha0="0.000000" CD0="0.014010" CD_k1="0.000000" CD_k2="0.033408" Cm0="0.000410"/>
+       <alpha                   CL=" 4.029551" CY="-0.000000"                Cl="-0.000000" Cm="-0.206400" Cn="-0.000000"/>
+       <beta                    CL="-0.000000" CY="-0.324159"                Cl="-0.057348" Cm="-0.000000" Cn=" 0.050474"/>
+       <p                       CL="-0.000000" CY=" 0.078770"                Cl="-0.284743" Cm=" 0.000000" Cn="-0.020837"/>
+       <q                       CL=" 5.105336" CY="-0.000000"                Cl=" 0.000000" Cm="-1.859368" Cn=" 0.000000"/>
+       <r                       CL=" 0.000000" CY=" 0.126985"                Cl=" 0.052216" Cm="-0.000000" Cn="-0.062588"/>
+       <surface name="aileron"  CL="-0.000000" CY=" 0.024179" CD="-0.000000" Cl="-0.200421" Cm=" 0.000000" Cn="-0.009855"/>
+       <surface name="elevator" CL=" 0.953402" CY="-0.000000" CD=" 0.032945" Cl=" 0.000000" Cm="-0.373568" Cn=" 0.000000"/>
+    </stability>
+  </aerodynamics>
+</fdm_config>

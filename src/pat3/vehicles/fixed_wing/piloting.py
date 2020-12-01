@@ -1,5 +1,5 @@
 import os, sys, math, numpy as np, matplotlib.pyplot as plt
-import logging
+import logging, yaml
 import pdb
 
 import control.matlab
@@ -21,6 +21,7 @@ class EulerRef:
         self.phi_ref =   p3_u.SecOrdLinRef(omega=9., xi=0.9, sats=[np.deg2rad(100.), np.deg2rad(400.)]) # rvel, raccel
         self.theta_ref = p3_u.SecOrdLinRef(omega=5., xi=0.9, sats=[np.deg2rad(45.), np.deg2rad(100.)])  # rvel, raccel
         self.p, self.q, self.r = 0, 0, 0
+        self.phi, self.theta, self.psi = 0., 0., 0.
         
     def reset(self, phi, theta, phi_d=0., theta_d=0., phi_dd=0, theta_dd=0, va=12.):
         psid = self.GRAVITY_MSS*np.tan(phi)/va
@@ -29,17 +30,20 @@ class EulerRef:
         #phi_dot, theta_dot, psi_dot = p3_alg.euler_derivatives([phi, theta, 0.], [p, q, r_coord])
         self.phi_ref.reset(np.array([phi, phi_d, phi_dd]))
         self.theta_ref.reset(np.array([theta, theta_d, theta_dd]))
-        self.euler = np.array([phi, theta, 0])
+        self.phi, self.theta, self.psi = self.euler = np.array([phi, theta, 0])
         
         self.euler_d = np.array([phi_d, theta_d, psid])
         self.euler_dd = np.array([phi_dd, theta_dd, psidd])
 
-        self.rvel_body = p3_alg.rvel_of_eulerd(self.euler, self.euler_d)
-        self.raccel_body = p3_alg.raccel_of_eulerdd(self.euler, self.euler_d, self.euler_dd)
+        self.p, self.q, self.r = self.rvel_body = p3_alg.rvel_of_eulerd(self.euler, self.euler_d)
+        self.pd, self.qd, self.rd = self.raccel_body = p3_alg.raccel_of_eulerdd(self.euler, self.euler_d, self.euler_dd)
         #self.rvel_body = np.array([0, 0, 0]) # FIXME
+        self.theta_prev, self.q_prev = self.theta, self.q
         #self.raccel_body = np.array([0, 0, 0]) # FIXME
         
     def run(self, dt, phi_sp, theta_sp, va):
+        self.phi_prev, self.p_prev = self.phi, self.p
+        self.theta_prev, self.q_prev = self.theta, self.q
         phi_ref, phid_ref, phidd_ref = self.phi_ref.run(dt, phi_sp)
         theta_ref, thetad_ref, thetadd_ref = self.theta_ref.run(dt, theta_sp)
         psid = self.GRAVITY_MSS*np.tan(phi_ref)/va
@@ -130,7 +134,6 @@ class PitchCtl:
         self.compute_gain(dm, Xe, Ue, dt)
         
     def compute_gain(self, dm, Xe, Ue, dt):
-        self.h_q, self.h_qd = -0.1, -0.01
         if 0: # empirical
             self.htkp1, self.hqkp1, self.htk, self.hqk = 0, 0, 0, 0
             #self.h_theta, self.h_q, self.h_qd = 0., -5.1, -2.
@@ -139,10 +142,20 @@ class PitchCtl:
             self.htkp1, self.hqkp1, self.htk, self.hqk = -0.4237, -0.9071, -0.4234, 0.7884
             #self.k_theta, self.k_q, self.k_itheta  = -0.848, -0.053, -0.005
             self.k_theta, self.k_q, self.k_itheta  = -0.848, -0.053, -0.005
-        print('theta loop gains')
+        self.report()
+        
+    def report(self):
+        print('Pitch loop gains')
         print('  feedback p:{} d:{} (i:{})'.format(self.k_theta, self.k_q, self.k_itheta))
         print('  feedforward {} {} {} {}'.format(self.htkp1, self.hqkp1, self.htk, self.hqk))
- 
+
+    def load_yaml(self, _data):
+        H = np.array(_data.get('H_pitch')['data']).reshape(1, 4)[0]
+        K = np.array(_data.get('K_pitch')['data']).reshape(1, 3)[0]
+        #pdb.set_trace()
+        self.htkp1, self.hqkp1, self.htk, self.hqk = H
+        self.k_theta, self.k_q, self.k_itheta = K
+        self.report()
 
     def reset(self, theta, q):
         self.ref.reset(np.array([theta-self.theta_e, q-self.q_e, 0]))
@@ -175,18 +188,38 @@ class PitchCtl:
         # feedback
         d_ele = -(self.k_theta*theta_err + self.k_q*q_err  + self.k_itheta*self.sum_theta_err)
         # feedforward
-        d_ele += self.h_q*euler_ref.rvel_body[1] + self.h_qd*euler_ref.raccel_body[1]
+        if 0:
+            self.h_q, self.h_qd = -0.1, -0.01
+            #d_ele += self.h_q*euler_ref.rvel_body[1] + self.h_qd*euler_ref.raccel_body[1]
+            d_ele += self.h_q*euler_ref.q + self.h_qd*euler_ref.qd
+        else:
+            theta_refkp1, q_refkp1, theta_refk, q_refk = euler_ref.theta-self.theta_e, euler_ref.q, euler_ref.theta_prev-self.theta_e, euler_ref.q_prev
+            d_ele += self.htkp1*theta_refkp1 + self.hqkp1*q_refkp1 + self.htk*theta_refk + self.hqk*q_refk
         return d_ele
     
 
 class RollCtl:
     def __init__(self, Xe, Ue, dm, dt):
         self.Xe, self.Ue = np.asarray(Xe), Ue
-        self.dt = dt
+        #self.dt = dt
         self.k_phi, self.k_p = -3.5, -0.75
         #self.ref = p3_u.SecOrdLinRef(omega=6, xi=0.9, sats=[6., 50.])  # vel, accel
         self.h_p, self.h_pd = -0.15, -0.01
-        
+        self.report()
+
+    def load_yaml(self, _data):
+        H = np.array(_data.get('H_roll')['data']).reshape(1, 2)
+        K = np.array(_data.get('K_roll')['data']).reshape(1, 2)
+        #pdb.set_trace()
+        self.h_p, self.h_pd = H[0]
+        self.k_phi, self.k_p = K[0]
+        self.report()
+
+    def report(self):
+        print('Roll loop gains')
+        print('  feedback p:{} d:{}'.format(self.k_phi, self.k_p))
+        print('  feedforward {} {}'.format(self.h_p, self.h_pd))
+      
     def reset(self, phi, phi_d=0):
         #self.ref.reset(np.array([phi, phi_d, 0]))
         pass # FIXME
@@ -213,7 +246,24 @@ class AttCtl:
         self.sat_ele = np.array([np.deg2rad(-20), np.deg2rad(20)])
         self.k_beta, self.k_r = -0.2, -0.5
         self.h_r, self.h_rd = 0.1, 0.1
+
+    def load_yaml(self, filename):
+        with open(filename, 'r') as stream:
+            _data = yaml.load(stream)
+        self.pitch_ctl.load_yaml(_data)
+        self.roll_ctl.load_yaml(_data)
+        self._load_yaml(_data)
+
+    def _load_yaml(self, _data):
+        self.k_beta, self.k_r = np.array(_data.get('K_yaw')['data']).reshape(1, 2)[0]
+        self.h_r, self.h_rd = np.array(_data.get('H_yaw')['data']).reshape(1, 2)[0]
+        self._report()
         
+    def _report(self):
+        print('Yaw loop gains')
+        print('  feedback p:{} d:{}'.format(self.k_beta, self.k_r))
+        print('  feedforward {} {}'.format(self.h_r, self.h_rd))
+    
     def reset(self, t, X):
         sv = p3_fr.SixDOFAeroEuler
         phi, theta = X[sv.sv_phi], X[sv.sv_theta]
