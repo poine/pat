@@ -11,8 +11,22 @@ $$
 
 ## Flight Dynamic Model
 
+### Solid Dynamics
+PAT provides support for different mathematical representations of a solid's state, allowing a tradeoff between numerical properties and ease of use.
+
 * State Vector
- 
+
+| Syntax              | Velocity                                                            | Orientation                                                      |
+| -----------         | -----------                                                         | -----------                                                      |
+| Euclidian/Euler     | $$\transp{\begin{pmatrix}\dot{x} & \dot{y} & \dot{z}\end{pmatrix}}$$| $$\transp{\begin{pmatrix}  \phi & \theta & \psi\end{pmatrix}}$$  |
+| Euclidian/Quaternion| $$\transp{\begin{pmatrix}\dot{x} & \dot{y} & \dot{z}\end{pmatrix}}$$| $$\transp{\begin{pmatrix}  q_i& q_x& q_y& q_z\end{pmatrix}}$$    |
+| Body/Euler          | $$\transp{\begin{pmatrix}u & v & w \end{pmatrix}}$$                 | $$\transp{\begin{pmatrix}  \phi & \theta & \psi\end{pmatrix}}$$  |
+| Body/Quaternion     | $$\transp{\begin{pmatrix}u & v & w \end{pmatrix}}$$                 | $$\transp{\begin{pmatrix}  q_i& q_x& q_y& q_z\end{pmatrix}}$$    |
+| Aero/Euler          | $$\transp{\begin{pmatrix}v & \alpha & \beta\end{pmatrix}}$$         | $$\transp{\begin{pmatrix}  \phi & \theta & \psi\end{pmatrix}}$$  |
+| Aero/Quaternion     | $$\transp{\begin{pmatrix}v & \alpha & \beta\end{pmatrix}}$$         | $$\transp{\begin{pmatrix}  q_i& q_x& q_y& q_z\end{pmatrix}}$$    |
+
+
+
    $$
 \begin{align}
 \vect{X} &= \transp{\begin{pmatrix} x & y & z & v & \alpha & \beta & \phi & \theta & \psi & p & q & r \end{pmatrix}} \\
