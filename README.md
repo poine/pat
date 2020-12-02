@@ -1,10 +1,12 @@
+<p align="left">
+  <img src="docs/images/pat_logo.png" width="800" height="240" title="pat logo">
+</p>
+
 # PAT (Python Aerospace Toolbox)
 
 Some stuff mostly related to aerospace simulation, documentation over [there](https://poine.github.io/pat).
 
-<p align="center">
-  <img src="docs/images/pat_logo.png" width="800" title="pat logo">
-</p>
+
 
 ## Quickstart
 
