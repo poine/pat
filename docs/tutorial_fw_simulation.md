@@ -17,7 +17,7 @@ $$
 
 ## Quick start:
 
-```python
+```
 import numpy as np, pat3.utils as p3_u, pat3.vehicles.fixed_wing.legacy_6dof as p3_fw
 dm = p3_fw.DynamicModel_ee(p3_u.pat_ressource('data/vehicles/cularis.xml'))
 Xe, Ue = dm.trim({'h':0, 'va':10, 'gamma':0}, report=True)

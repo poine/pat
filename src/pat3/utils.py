@@ -154,3 +154,11 @@ def num_jacobian(X, U, P, dyn):
         B[:,i] = delta_f
 
     return A,B
+
+
+def sorted_eigs(A):
+    '''returns eigen structures of A matrix sorted by real part of eigen values'''
+    eig_vals, eig_vecs = np.linalg.eig(A)
+    eig_vals_sorted = np.sort(eig_vals)[::-1]
+    eig_vecs_sorted = eig_vecs[:,eig_vals.argsort()[::-1]]
+    return  eig_vals_sorted, eig_vecs_sorted

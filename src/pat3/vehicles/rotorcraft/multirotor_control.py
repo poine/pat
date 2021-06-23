@@ -253,7 +253,7 @@ class PosController:
         return out  # delta_ut delta_phi delta_theta
 
         
-    def get(self, t, X, Yc):
+    def get(self, t, X, Xee, Yc):
         Xref, Uref, Xrefq, Xrefdq = self.setpoint.get(t)
         self.Xref = Xref  # store that here for now
         pos_ref, euler_ref = Xref[r_slice_pos], Xref[r_slice_euler]

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 import logging, os, math, numpy as np
 import pdb
 #
@@ -19,8 +19,8 @@ def test0(avl_infile, avl_outdir, force_run_st=False, force_run_eig=False):
     
 def main():
     logging.basicConfig(level=logging.INFO); np.set_printoptions(linewidth=500)
-    #for _ac in ['b737', 'storm', 'stormr', 'cularis', 'funjet']:
-    for _ac in ['b737']:
+    for _ac in ['b737', 'storm', 'stormr', 'cularis', 'funjet']:
+    #for _ac in ['b737']:
         avl_infile, out_dir = p3_u.pat_ressource('config/avl/{}/{}.avl'.format(_ac, _ac)), '/tmp'
         test0(avl_infile, out_dir, force_run_st=False, force_run_eig=False)
 

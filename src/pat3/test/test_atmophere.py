@@ -47,15 +47,35 @@ def display_all_models(h0=0.):
                                   title=name,
                                   figure=None, ax=None)
 
+def test_ridge():
+    atm = p3_atm.AtmosphereRidge()
+    p3_plu.plot_slice_wind_nu(atm, n0=-60, n1=100, dn=10., e0=0., h0=0, h1=100, dh=10., zdir=-1.,
+                              show_quiver=True, show_color_bar=True,
+                              figure=None, ax=None)
+    p3_plu.plot_slice_wind_eu(atm, n0=0, e0=-50, e1=50, de=10., h0=0, h1=100, dh=10., zdir=-1.,
+                              show_quiver=True, show_color_bar=True,
+                              figure=None, ax=None)
+
+def test_wharington():
+    atm = p3_atm.AtmosphereWharington()
+    p3_plu.plot_slice_wind_nu(atm, n0=-60, n1=100, dn=10., e0=0., h0=0, h1=100, dh=10., zdir=-1.,
+                              show_quiver=True, show_color_bar=True,
+                              figure=None, ax=None)
+    # p3_plu.plot_slice_wind_eu(atm, n0=0, e0=-50, e1=50, de=10., h0=0, h1=100, dh=10., zdir=-1.,
+    #                           show_quiver=True, show_color_bar=True,
+    #                           figure=None, ax=None)
+    
 def main():
     #atm =  p3_atm.AtmosphereWharington()
     #atm =  p3_atm.AtmosphereWharingtonArray()
     #atm =  p3_atm.AtmosphereAllen()
     #plot_vslice(atm, h0=-2000, h1=250)
-    atm = p3_atm.AtmosphereRidge()
-    plot_vslice(atm, h0=-10, h1=100, n0=-50, n1=150, show_quiver=True)
+    #atm = p3_atm.AtmosphereRidge()
+    #plot_vslice(atm, h0=-10, h1=100, n0=-50, n1=150, show_quiver=True)
     #plot_hslice(atm)
     #display_all_models()
+    #test_ridge()
+    test_wharington()
     plt.show()
 
 

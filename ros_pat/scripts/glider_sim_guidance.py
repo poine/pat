@@ -4,6 +4,11 @@ import rospy, tf2_ros, tf, geometry_msgs.msg, sensor_msgs.msg
 import dynamic_reconfigure.server as dyn_rec_srv
 import dynamic_reconfigure.client
 
+
+#
+# This is a real time glider simulator using ROS
+#
+
 import pdb
 
 import pat3.algebra as pal
@@ -35,6 +40,8 @@ class Agent:
         #_atm = p3_atm.AtmosphereCstWind([0, 0, -1])
         #_atm = p3_atm.AtmosphereThermal1()
         _atm = p3_atm.AtmosphereThermalMulti()
+        #_atm = p3_atm.AtmosphereWharington()#center=None, radius=50, strength=-2, cst=[0, 0, 0])
+        #_atm = p3_atm.AtmosphereGedeon(center=[55, 0, 0], radius=50, strength=-2, cst=[0, 0, 0])
         #_atm = p3_atm.AtmosphereRidge()
 
         

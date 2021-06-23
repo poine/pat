@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 import pat3.algebra as pal
 import pat3.plot_utils as ppu
+import pat3.frames as p3_fr
 import pdb
 
 '''
@@ -79,12 +80,12 @@ class FDM:
     #def trim(self): # must be implemented by child classes
     #    return trim(self.P)
     
-    def reset(self, X0, t0):
+    def reset(self, X0, t0, U0):
         self.X, self.t = X0, t0
         self.update_byproducts()
         return self.X
     
-    def run(self, dt, tf, U):
+    def run(self, dt, tf, U, atm=None):
         remaining_to_tf = tf - self.t
         while remaining_to_tf > 0:
             dt = min(self.dt, remaining_to_tf)
@@ -118,6 +119,9 @@ class FDM:
     def plot(self, time, X, U=None, figure=None, window_title="Trajectory"):
         return plot(time, X, U, figure, window_title)
 
+
+    # def state_as_six_dof_euclidian_euler(X, atm=None, t=0.):
+    #     return p3_fr.SixDOFEuclidianQuat.to_six_dof_euclidian_euler(X, atm, t)
 
 class SolidFDM(FDM):
     def __init__(self):
@@ -198,6 +202,8 @@ class MR_FDM(SolidFDM):
         Mb[2] += np.sum(self.P.k*(self.P.rotor_dir*U))
         return SolidFDM.cont_dyn(self, X, t, np.concatenate((Fb+Db, Mb)))
         
+    def state_as_six_dof_euclidian_euler(self, X, atm=None, t=0.):
+        return p3_fr.SixDOFEuclidianQuat.to_six_dof_euclidian_euler(X)
 
 
 # copied in object

@@ -80,15 +80,10 @@ def isa(h):
 def decorate(ax, title=None, xlab=None, ylab=None, legend=None):
     ax.xaxis.grid(color='k', linestyle='-', linewidth=0.2)
     ax.yaxis.grid(color='k', linestyle='-', linewidth=0.2)
-    if xlab:
-        ax.xaxis.set_label_text(xlab)
-    if ylab:
-        ax.yaxis.set_label_text(ylab)
-    if title:
-        ax.set_title(title, {'color'    : 'k', 'fontsize'   : 20 })
-    if legend != None:
-        ax.legend(legend, loc='best')
-
+    if xlab: ax.xaxis.set_label_text(xlab)
+    if ylab: ax.yaxis.set_label_text(ylab)
+    if title: ax.set_title(title, {'color'    : 'k', 'fontsize'   : 20 })
+    if legend is not None: ax.legend(legend, loc='best')
 
 def plot(h0=1, h1=84000):
     h = np.linspace(h0, h1, 1000)
@@ -234,24 +229,24 @@ class AtmosphereThermalMoving(AtmosphereThermal1):
         self.c = np.array([0, 50*np.sin(0.2*t), 0])
         return AtmosphereThermal1.get_wind(self, pos_ned, t)
 
-class AtmosphereThermalMulti(Atmosphere):
-    def __init__(self):
-        self.thermals = [AtmosphereThermal1() for i in range(2)]
-        zi, wstar =850., 256.
-        self.thermals[0].set_params(0,  55, zi, wstar)
-        self.thermals[1].set_params(0, -55, zi, wstar)
+# class AtmosphereThermalMulti(Atmosphere):
+#     def __init__(self):
+#         self.thermals = [AtmosphereThermal1() for i in range(2)]
+#         zi, wstar =850., 256.
+#         self.thermals[0].set_params(0,  55, zi, wstar)
+#         self.thermals[1].set_params(0, -55, zi, wstar)
         
-    def set_params(self, xc, yc, zi, wstar, idx=0):
-        print('set params:', xc, yc, zi, wstar, idx)
-        self.thermals[idx].set_params(xc, yc, zi, wstar)
+#     def set_params(self, xc, yc, zi, wstar, idx=0):
+#         print('set params:', xc, yc, zi, wstar, idx)
+#         self.thermals[idx].set_params(xc, yc, zi, wstar)
 
-    def get_params(self, idx=0):
-        return self.thermals[idx].get_params()
+#     def get_params(self, idx=0):
+#         return self.thermals[idx].get_params()
     
-    def get_wind(self, pos_ned, t): 
-        #self.thermals[0].c = np.array([0, 55+10*np.sin(0.02*t), 0])
-        winds = [_t.get_wind(pos_ned, t) for _t in self.thermals]
-        return np.sum(winds, axis=0)
+#     def get_wind(self, pos_ned, t): 
+#         #self.thermals[0].c = np.array([0, 55+10*np.sin(0.02*t), 0])
+#         winds = [_t.get_wind(pos_ned, t) for _t in self.thermals]
+#         return np.sum(winds, axis=0)
 
 
 
@@ -313,16 +308,19 @@ class AtmosphereWharington(Atmosphere):
 
 class AtmosphereWharingtonArray(Atmosphere):
     def __init__(self, centers, radiuses, strengths):
-        if 0:
-            self.thermals = [AtmosphereWharington(radius=30, strength=-1) for i in range(2)]
-            self.thermals[0].center[0] -= 20
-            self.thermals[1].center[0] += 20
-        else:
-            self.thermals = [AtmosphereWharington(_c, _r, _s) for _c, _r, _s in zip(centers, radiuses, strengths)]
+        self.thermals = [AtmosphereWharington(_c, _r, _s) for _c, _r, _s in zip(centers, radiuses, strengths)]
 
     def get_wind_ned(self, pos_ned, t): 
         winds = [_t.get_wind_ned(pos_ned, t) for _t in self.thermals]
         return np.sum(winds, axis=0)
+
+    def set_params(self, *args): pass
+
+# class AtmosphereThermalMulti(AtmosphereWharingtonArray):
+#     def __init__(self):
+#         Cs, Rs, Ss = [[75, -20, 0], [-75, 20, 0]], [75, 50], [-0.5, -1.2]
+#         #Cs, Rs, Ss = [[0, 0, 0]], [50], [-2]
+#         AtmosphereWharingtonArray.__init__(self, Cs, Rs, Ss)
 
 #
 # Improved Gaussian model (with downdraft)
@@ -336,6 +334,21 @@ class AtmosphereGedeon(AtmosphereWharington):
         wz =  self.strength*np.exp(-top)*(1-top)
         return np.array([0, 0, wz])
 
+class AtmosphereGedeonArray(Atmosphere):
+    def __init__(self, centers, radiuses, strengths):
+        self.thermals = [AtmosphereGedeon(_c, _r, _s) for _c, _r, _s in zip(centers, radiuses, strengths)]
+
+    def get_wind_ned(self, pos_ned, t): 
+        winds = [_t.get_wind_ned(pos_ned, t) for _t in self.thermals]
+        return np.sum(winds, axis=0)
+
+    def set_params(self, *args): pass
+
+class AtmosphereThermalMulti(AtmosphereGedeonArray):
+     def __init__(self):
+         Cs, Rs, Ss = [[75, -20, 0], [-75, 20, 0]], [75, 50], [-0.5, -1.2]
+         AtmosphereGedeonArray.__init__(self, Cs, Rs, Ss)
+    
 
 # Wind over a cylinder obstacle.
 # see: Langellan, long distance/duration trajectory optimization for small uavs

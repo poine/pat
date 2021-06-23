@@ -91,14 +91,14 @@ def set_3D_axes_equal(ax=None):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     
-def plot_3D_traj(ref_traj=None, X=None, fig=None, ax=None, val=None):
+def plot_3D_traj(ref_traj=None, X=None, fig=None, ax=None, val=None, tc='b', rtc='g', rgtc='k', tlab='aircraft trajectory'):
     fig = fig if fig is not None else plt.figure()
     ax = ax if ax is not None else fig.add_subplot(111, projection='3d')
     if ref_traj is not None:
         pts = np.asarray(ref_traj.get_points())
         xs, ys, zs = pts[:,0], pts[:,1], pts[:,2] 
-        ax.plot(xs, ys, zs, color='g', label='ref trajectory')
-        ax.plot(xs, ys, np.zeros(len(xs)), linestyle='--', color='k', linewidth=0.5, label='ground track')
+        ax.plot(xs, ys, zs, color=rtc, label='ref trajectory')
+        ax.plot(xs, ys, np.zeros(len(xs)), linestyle='--', color=rgtc, linewidth=0.5, label='ground track')
         # https://stackoverflow.com/questions/36013063/what-is-the-purpose-of-meshgrid-in-python-numpy
         if 1:
             verts = []
@@ -110,7 +110,7 @@ def plot_3D_traj(ref_traj=None, X=None, fig=None, ax=None, val=None):
 
     if X is not None:
         if val is None:
-            ax.plot(X[:,0], X[:,1], X[:,2], color='b', label='aircraft trajectory')
+            ax.plot(X[:,0], X[:,1], X[:,2], color=tc, label=tlab)
         else:
             #pdb.set_trace()
             _skip=5
@@ -128,7 +128,7 @@ def plot_3D_traj(ref_traj=None, X=None, fig=None, ax=None, val=None):
     ax.set_ylabel('East')
     ax.set_zlabel('Down')        
     set_3D_axes_equal()
-    plt.legend(loc='best')
+    plt.legend(loc='lower left')#'best')
 
 def plot_3D_wind(atm, x0=0, xspan=50, dx=5., h0=-10, hspan=150, dh=10., figure=None, ax=None):
     fig = figure if figure is not None else plt.figure()
@@ -201,7 +201,7 @@ def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., 
         cbar = fig.colorbar(cp)
         cbar.ax.set_ylabel('wz in m/s (>0 up)', rotation=270); cbar.ax.set_xlabel('thermal')
     title = 'Atmosphere vert slice' if title is None else title 
-    decorate(ax, title=title, xlab='north in m', ylab='h in m (positive up)', legend=None, xlim=None, ylim=None, min_yspan=None)
+    decorate(ax, title=title, xlab='North [$m$]', ylab='Altitude [m] (positive up)', legend=None, xlim=None, ylim=None, min_yspan=None)
     ax.axis('equal')
     return fig, ax
 

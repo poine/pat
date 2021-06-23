@@ -23,8 +23,7 @@ import control.matlab
 
 def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, atm=None, cbk=None):
     time = np.arange(0, tf, dt)
-    X = np.zeros((len(time), dm.sv_size))
-    U = np.zeros((len(time),  dm.input_nb()))
+    X, U = np.zeros((len(time), dm.sv_size)), np.zeros((len(time),  dm.input_nb()))
     carrots, att_sp = np.zeros((len(time),  3)), np.zeros((len(time), 2))
     X[0] = dm.reset(ctl.Xe, t0=time[0], X_act0=None)#ctl.Ue)
     ctl.enter(X[0], time[0]) # FIXME
@@ -111,26 +110,22 @@ def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
 #
 # Dynamic soaring
 #
+
+def _ds_exp(i):
+    _exp = [(p3_atm.AtmosphereCalm(), '/tmp/pat_glider_ds_nw.npz'),
+            (p3_atm.AtmosphereCstWind([1, 0, 0]), '/tmp/pat_glider_ds_wc100.npz'),
+            (p3_atm.AtmosphereRidge(), '/tmp/pat_glider_ds_wr.npz'),
+            (p3_atm.AtmosphereShearX(wind1=5.0, wind2=0.0, xlayer=60.0, zlayer=40.0), '/tmp/pat_glider_ds_ws50.npz'),
+            (p3_atm.AtmosphereVgradient(w0=-2, w1=5, h0=20, h1=60), '/tmp/pat_glider_ds_wvg.npz'),
+            (p3_atm.AtmosphereVgradient(w0=-7.5, w1=7.5, h0=20, h1=60), '/tmp/pat_glider_ds_wvg2.npz')]
+    atm, save_filename = _exp[i]
+    return atm, save_filename
+        
 def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=150.):
     #atm = p3_atm.AtmosphereShearX(wind1=15.0, wind2=-2.0, xlayer=60.0, zlayer=40.0)
     #atm = p3_atm.AtmosphereShearX(wind1=7.0, wind2=-1.0, xlayer=60.0, zlayer=40.0)
     #atm = p3_atm.AtmosphereShearX(wind1=5.0, wind2=0.0, xlayer=60.0, zlayer=40.0)
-    if 0:
-        atm = p3_atm.AtmosphereCalm()
-        save_filename = '/tmp/pat_glider_ds_nw.npz'
-    if 0:
-        atm = p3_atm.AtmosphereCstWind([1, 0, 0])
-        save_filename = '/tmp/pat_glider_ds_wc100.npz'
-    if 0:
-        atm = p3_atm.AtmosphereRidge()
-        save_filename = '/tmp/pat_glider_ds_wr.npz'
-    if 0:
-        atm = p3_atm.AtmosphereShearX(wind1=5.0, wind2=0.0, xlayer=60.0, zlayer=40.0)
-        save_filename = '/tmp/pat_glider_ds_ws50.npz'
-    if 1:
-        atm = p3_atm.AtmosphereVgradient()
-        save_filename = '/tmp/pat_glider_ds_wvg.npz'
-
+    atm, save_filename = _ds_exp(4)
     trim_args={'h':30, 'va':17, 'gamma':0}
     #ref_traj = p3_traj3d.CircleRefTraj(c=[0, 0, -20], r=20)
     ref_traj = p3_traj3d.BankedCircleRefTraj(c=[100, 0, -40], r=60, slope=np.deg2rad(10))
@@ -200,11 +195,10 @@ def main(param_filename, trim_args = {'h':0, 'va':11, 'gamma':0}, force_recomput
     #ref_traj, (time, X, U) = test_circle(dm, trim_args)
     #ref_traj, (time, X, U) = test_vctl(dm, trim_args, force_recompute)
     #ref_traj, (time, X, U) = test_slope_soaring(dm, trim_args, force_recompute)
-    ref_traj, (time, X, U) = test_dynamic_soaring(dm, trim_args, force_recompute)
-    #ref_traj, (time, X, U) = test_thermal_centering(dm, trim_args, force_recompute)
+    #ref_traj, (time, X, U) = test_dynamic_soaring(dm, trim_args, force_recompute)
+    ref_traj, (time, X, U) = test_thermal_centering(dm, trim_args, force_recompute)
     #ref_traj, (time, X, U) = test_ardusoaring(dm, trim_args, force_recompute)
-    if 0:
-        p3_pu.plot_3D_traj(ref_traj, X)
+    if 0: p3_pu.plot_3D_traj(ref_traj, X)
 
     plt.show()
 
