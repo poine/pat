@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 import matplotlib
 import mpl_toolkits
 
+'''
+This a test re implementation of ardusoaring
+'''
+
+
 import pat3.vehicles.fixed_wing.guidance as p3_guid
 import pat3.trajectory_3D as p3_traj3d
 import pat3.frames as p3_fr

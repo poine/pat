@@ -21,7 +21,7 @@ import pat3.algebra as p3_alg
 
 import control.matlab
 
-def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, atm=None, cbk=None):
+def run_simulation(dm, ctl, sensors=None, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, atm=None, cbk=None):
     time = np.arange(0, tf, dt)
     X, U = np.zeros((len(time), dm.sv_size)), np.zeros((len(time),  dm.input_nb()))
     carrots, att_sp = np.zeros((len(time),  3)), np.zeros((len(time), 2))
@@ -29,7 +29,11 @@ def run_simulation(dm, ctl, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma'
     ctl.enter(X[0], time[0]) # FIXME
     for i in range(1, len(time)):
         Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X[i-1], atm, time[i])
-        U[i-1] = ctl.get(time[i-1], X[i-1], Xee)
+        if sensors is None: # we're adding sensors...
+            Xaes, Xees = X[i-1], Xee
+        else:
+            Xaes, Xees = sensors.get_measurements(X[i-1], Xee)
+        U[i-1] = ctl.get(time[i-1], Xaes, Xees)
         carrots[i-1] = ctl.carrot; att_sp[i-1] = ctl.phi_sp, ctl.theta_sp 
         X[i] = dm.run(time[i] - time[i-1], time[i], U[i-1], atm)
         if cbk is not None: cbk()  # used for recording ctl variables
@@ -51,9 +55,9 @@ def test_circle(dm, trim_args, dt=0.01):
     return ref_traj, run_simulation(dm, ctl, tf=30.5, trim_args=trim_args)
 
 # load and save simulations
-def _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_compute, save_filename):
+def _run_or_load_sim(dm, ctl, sensors, tf, dt, trim_args, atm, ctl_logger, force_compute, save_filename):
     if force_compute or not os.path.exists(save_filename):
-        time, X, U =  run_simulation(dm, ctl, tf=tf, dt=dt, trim_args=trim_args, atm=atm, cbk=lambda:ctl_logger.record(ctl))
+        time, X, U =  run_simulation(dm, ctl, sensors, tf=tf, dt=dt, trim_args=trim_args, atm=atm, cbk=lambda:ctl_logger.record(ctl))
         ctl_logger.save(time, X, U, save_filename)
     else:
         time, X, U =  ctl_logger.load(save_filename)
@@ -78,7 +82,7 @@ def test_vctl(dm, trim_args, force_recompute=False, dt=0.01, tf=40.5):
     ctl.v_mode = ctl.v_mode_alt#vz#alt
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
 
-    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, None, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
 
     ctl_logger.plot3D(time, X, ctl, atm, ref_traj)
     ctl_logger.plot_slice_nu(time, X, U, ctl, atm)
@@ -99,7 +103,7 @@ def test_slope_soaring(dm, trim_args, force_recompute=False, dt=0.01, tf=120.5):
     ctl.v_mode = ctl.v_mode_throttle; ctl.throttle_sp = 0. # we glide
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
 
-    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, None, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
 
     ctl_logger.plot3D(time, X, ctl, atm, ref_traj)
     ctl_logger.plot_slice_nu(time, X, U, ctl, atm, n0=-50, n1=40)
@@ -133,7 +137,7 @@ def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=150.
     ctl = p3_guid.GuidanceDS(dm, ref_traj, trim_args, dt, lookahead_dist=15., max_phi=np.deg2rad(60))
     ctl.v_mode = ctl.v_mode_alt
     ctl_logger = p3_guid.GuidancePurePursuitLogger()
-    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, None, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
 
     ctl_logger.plot3D(time, X, ctl, atm)
     ctl_logger.plot_slice_nu(time, X, U, ctl, atm, ref_traj, n0=0, n1=210, dn=10, h0=0, h1=80, dh=10)
@@ -160,7 +164,7 @@ def test_thermal_centering(dm, trim_args, force_recompute, dt=0.01, tf=170.2):
     ctl.Xe[0], ctl.Xe[1] , ctl.Xe[2] = p0 # aircraft start point
     ctl.set_circle_center(cc)             # initial circle center
     ctl_logger = p3_guidsoar.Logger()
-    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, None, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
     ctl_logger.plot_chronograms(time, X, ctl, atm)
     ctl_logger.plot3D(time, X, ctl, atm)
     ctl_logger.plot_slice_nu(time, X, U, ctl, atm, n0=-80, n1=60, dn=10., h0=180., h1=320., dh=10.)
@@ -182,7 +186,7 @@ def test_ardusoaring(dm, trim_args, force_recompute, dt=0.01, tf=120.5):
     #atm =  p3_atm.AtmosphereCstWind([0, 0, -1.])
     trim_args['va']=9.
     ctl = p3_guidardu.GuidanceArduSoaring(dm, ref_traj, trim_args, dt)
-    time, X, U = _run_or_load_sim(dm, ctl, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+    time, X, U = _run_or_load_sim(dm, ctl, None, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
  
     ctl_logger.plot_chronograms(time, X, ctl, atm)
     ctl_logger.plot2D(time, X, ctl, atm)

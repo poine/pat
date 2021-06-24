@@ -41,8 +41,7 @@ class GuidanceSoaring(p3_guid.GuidancePurePursuit):
     
     def enter(self, Xae, t):
         _s = p3_fr.SixDOFAeroEuler
-        alt, va, phi, psi = -Xae[_s.sv_z], Xae[_s.sv_va], Xae[_s.sv_phi], Xae[_s.sv_psi]
-        self.vario.reset(t=t, alt=alt, va=va, phi=phi)
+        self.vario.reset(t=t, alt=-Xae[_s.sv_z], va=Xae[_s.sv_va], phi=Xae[_s.sv_phi])
         
     def _thermal_centering(self, t, X, Xee):
         _s = p3_fr.SixDOFAeroEuler
