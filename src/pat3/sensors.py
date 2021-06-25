@@ -26,20 +26,26 @@ import pdb
 """
 
 import math, numpy as np, matplotlib.pyplot as plt
-from numpy.random import default_rng
 import scipy.interpolate
 
 import pat3.frames as p3_fr
 
+
+#
+# Let's suppose we measure full state corrupted by white noise
+# (silly, I know)
+#
 class Sensors:
-    def __init__(self, std_va=0.1):
+    def __init__(self, std_va=0., std_vz=0.):
         self.va_std = std_va
-        self.rng = default_rng()
+        self.vz_std = std_vz
+        self.rng = np.random.default_rng()
 
     def get_measurements(self, Xae, Xee):
-        Xae2 = np.array(Xae)
-        Xae2[p3_fr.SixDOFAeroEuler.sv_va] +=  self.va_std * self.rng.standard_normal(1)
-        return Xae2, Xee
+        Xae2, Xee2 = np.array(Xae), np.array(Xee)
+        #Xae2[p3_fr.SixDOFAeroEuler.sv_va] +=  self.va_std * self.rng.standard_normal(1)
+        Xee2[p3_fr.SixDOFEuclidianEuler.sv_zd] +=  self.vz_std * self.rng.standard_normal(1)
+        return Xae2, Xee2
 
 
 

@@ -13,7 +13,7 @@ import pat3.frames as p3_fr
 import pat3.trajectory_3D as p3_traj3d
 import pat3.plot_utils as p3_pu
 
-
+LOG = logging.getLogger(__name__)
 
 class GuidanceAuto1:
     def __init__(self, Xe, Ue, dm, dt):
@@ -41,20 +41,30 @@ class GuidanceAuto1:
 class GuidancePurePursuit:
     v_mode_throttle, v_mode_vz, v_mode_alt = range(3)
 
-    def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01, lookahead_dist=15., max_phi=np.deg2rad(45)):
+    def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01, lookahead_dist=15., max_phi=np.deg2rad(45),
+                 debug=False):
         self.lookahead_dist = lookahead_dist
         self.max_phi = max_phi
-        self.Xe, self.Ue = dm.trim(trim_args, report=True)
-        if 1:
+        self.Xe, self.Ue = dm.trim(trim_args, report=False)
+        
+        report = f'\n  GuidancePurePursuit: trimed at {trim_args["h"]}m,  {trim_args["va"]}m/s\n'+\
+                 f'    throttle {self.Ue[0]*100.:.1f}%, elevator {np.rad2deg(self.Ue[2]):.1f}deg\n'+\
+                 f'    pitch    {np.rad2deg(self.Xe[p3_fr.SixDOFAeroEuler.sv_theta]):.1f}deg,'+\
+                 f'aoa {np.rad2deg(self.Xe[p3_fr.SixDOFAeroEuler.sv_alpha]):.1f}deg\n'
+
+        if 1: # compute feedforward gains by triming with zdot=1m/s
             _zd = 1.#; zd = va*sin(gamma)
             gamma = np.arcsin(_zd/trim_args['va'])
             trim_args['gamma'] = gamma
             self.Xe1, self.Ue1 = dm.trim(trim_args, report=False)
             #_thr, _ail, _ele = 0, 1, 2
             self.ff_d_thr_of_zd = -(self.Ue1[0]-self.Ue[0])
-            print('ff_d_thr_of_zd {}'.format(self.ff_d_thr_of_zd))
             self.ff_d_theta_of_zd = -gamma
-            print('ff_d_theta_of_zd {}'.format(self.ff_d_theta_of_zd))
+            if debug:
+                report += f'    ff_d_thr_of_zd {self.ff_d_thr_of_zd}\n'
+                report += f'    ff_d_theta_of_zd {self.ff_d_theta_of_zd}'
+
+        LOG.info(report)
         
         self.traj = traj
         self.carrot = np.zeros(3)
@@ -64,7 +74,7 @@ class GuidancePurePursuit:
         self.sum_err_z, self.sum_err_zd, self.sum_err_v = 0, 0, 0
         self.v_mode = self.v_mode_throttle#self.v_mode_alt
         self.v_sp = trim_args['va']
-        self.z_sp, self.zd_sp = 0., 0.
+        self.z_sp, self.zd_sp = -trim_args['h'], 0.
         self.throttle_sp = 0.
 
     def enter(self, X, t): pass

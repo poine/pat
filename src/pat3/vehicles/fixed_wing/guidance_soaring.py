@@ -39,7 +39,7 @@ class GuidanceSoaring(p3_guid.GuidancePurePursuit):
     def set_radius(self, _v): self.traj.r = _v
     def set_circle_center(self, _c): self.traj.c = np.asarray(_c)
     
-    def enter(self, Xae, t):
+    def enter(self, Xae, t): # FIXME, we need the initial circle center
         _s = p3_fr.SixDOFAeroEuler
         self.vario.reset(t=t, alt=-Xae[_s.sv_z], va=Xae[_s.sv_va], phi=Xae[_s.sv_phi])
         
@@ -47,7 +47,7 @@ class GuidanceSoaring(p3_guid.GuidancePurePursuit):
         _s = p3_fr.SixDOFAeroEuler
         X_pos = X[_s.sv_slice_pos]
         # climb rate
-        self.meas_vz = Xee[p3_fr.SixDOFEuclidianEuler.sv_slice_vel]
+        self.meas_vz = Xee[p3_fr.SixDOFEuclidianEuler.sv_slice_vel][2]
         # specific energy rate
         alt, va, phi = -X[_s.sv_z], X[_s.sv_va], X[_s.sv_phi] 
         self.vario.update(t, alt, va, phi)
@@ -100,7 +100,7 @@ class Logger:
 
     
     def plot3D(self, time, X, _ctl, atm):
-        fig = plt.figure()
+        fig = plt.figure(tight_layout=True, figsize=[6., 4.8])
         ax = fig.add_subplot(111, projection='3d')
         _val = np.asarray(self.meas_vz)
         p3_pu.plot_3D_traj(ref_traj=None, X=X, fig=fig, ax=ax)#, val=_val)
@@ -108,28 +108,35 @@ class Logger:
         center = np.array(self.center)
         ax.plot(center[:,0], center[:,1], center[:,2], color='r', label='center')
         p3_pu.set_3D_axes_equal()
+        ax.view_init(-166., -106.)
+        return fig, ax
 
 
-    def plot_chronograms(self, time, X, _ctl, atm):
+    def plot_chronograms(self, time, X, _ctl, atm, title=None, window_title=None, fig=None, axes=None):
         _s = p3_fr.SixDOFEuclidianEuler
-        plt.figure()
+        fig = plt.figure(tight_layout=True, figsize=[6., 4.8]) if fig is None else fig
+        if window_title is not None: fig.canvas.set_window_title(window_title)
+        axes = fig.subplots(3, 1) if axes is None else axes
         center = np.array(self.center)
-        meas_vz, meas_netto = np.array(self.meas_vz), np.array(self.meas_netto)
-        plots = [("cx", "m", center[:,0]),
-                 ("cy", "m", center[:,1])]
-        for i, (title, ylab, data) in enumerate(plots):
-            ax = plt.subplot(3,1,i+1)
-            plt.plot(time, data)
-            p3_pu.decorate(ax, title=title, ylab=ylab)#, legend=True)
-        ax = plt.subplot(3,1,1); plt.plot(time,  np.ones(len(time))*atm.center[0], label='truth')
-        ax = plt.subplot(3,1,2); plt.plot(time,  np.ones(len(time))*atm.center[1], label='truth')
-        ax = plt.subplot(3,1,3)
-        plt.plot(time,  meas_netto, label='netto')
-        plt.plot(time, meas_vz, label='vz')
-        p3_pu.decorate(ax, title='measurement', ylab='m/s', legend=True)
+        axes[0].plot(time,  center[:,0], label='cx')
+        axes[0].plot(time,  np.ones(len(time))*atm.center[0], label='truth')
+        p3_pu.decorate(axes[0], title='cx', ylab='m')
 
-    def plot_slice_nu(self, time, X, U, _ctl, atm, n0=-40, n1=100, dn=5., h0=0., h1=60., dh=2.):
-        p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=0., h0=h0, h1=h1, dh=dh, zdir=-1.,
-                                 show_quiver=True, show_color_bar=True, title="North Up slice",
-                                 figure=None, ax=None)
-        plt.plot(X[:,0],-X[:,2])
+        axes[1].plot(time,  center[:,1], label='cy')
+        axes[1].plot(time,  np.ones(len(time))*atm.center[1], label='truth')
+        p3_pu.decorate(axes[1], title='cy', ylab='m')
+
+        axes[2].plot(time, self.meas_netto, label='netto')
+        axes[2].plot(time, self.meas_vz, label='vz')
+        p3_pu.decorate(axes[2], title='measurement (vz)', ylab='m/s', legend=True)
+        return fig, axes
+
+    def plot_slice_nu(self, time, X, U, _ctl, atm, n_spec, e0, h_spec,
+                      title="North Up slice", window_title=None, fig=None, ax=None):
+        (n0, n1, dn), (h0, h1, dh) = n_spec, h_spec
+        fig, ax = p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=e0, h0=h0, h1=h1, dh=dh, zdir=-1.,
+                                           show_quiver=True, show_color_bar=True, title=title,
+                                           figure=fig, ax=ax)
+        ax.plot(X[:,0],-X[:,2])
+        center_ned = np.array(self.center)
+        ax.plot(center_ned[:,0],-center_ned[:,2], 'r')

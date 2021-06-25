@@ -1,4 +1,7 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
+'''
+Unit test for fixed wing guidance
+'''
 import sys, os, math, numpy as np
 import logging
 import pdb
@@ -13,6 +16,7 @@ import pat3.vehicles.fixed_wing.guidance_soaring as p3_guidsoar
 
 
 import pat3.atmosphere as p3_atm
+import pat3.sensors as p3_sens
 import pat3.frames as p3_fr
 import pat3.trajectory_3D as p3_traj3d
 import pat3.utils as p3_u
@@ -21,24 +25,25 @@ import pat3.algebra as p3_alg
 
 import control.matlab
 
-def run_simulation(dm, ctl, sensors=None, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, atm=None, cbk=None):
+LOG = logging.getLogger(__name__)
+
+def run_simulation(dm, ctl, sensors=None, tf=30.5, dt=0.01, trim_args={'h':0, 'va':12, 'gamma':0}, atm=None, cbk=None, desc=None):
+    report = f'\n  Running simulation for {tf}s'
+    if desc is not None: report += '\n  desc: '+desc
+    LOG.info(report)
     time = np.arange(0, tf, dt)
     X, U = np.zeros((len(time), dm.sv_size)), np.zeros((len(time),  dm.input_nb()))
-    carrots, att_sp = np.zeros((len(time),  3)), np.zeros((len(time), 2))
     X[0] = dm.reset(ctl.Xe, t0=time[0], X_act0=None)#ctl.Ue)
-    ctl.enter(X[0], time[0]) # FIXME
+    ctl.enter(X[0], time[0]) # FIXME: fix what?
     for i in range(1, len(time)):
         Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X[i-1], atm, time[i])
-        if sensors is None: # we're adding sensors...
-            Xaes, Xees = X[i-1], Xee
-        else:
-            Xaes, Xees = sensors.get_measurements(X[i-1], Xee)
+        if sensors is None: Xaes, Xees = X[i-1], Xee
+        else: Xaes, Xees = sensors.get_measurements(X[i-1], Xee)
         U[i-1] = ctl.get(time[i-1], Xaes, Xees)
-        carrots[i-1] = ctl.carrot; att_sp[i-1] = ctl.phi_sp, ctl.theta_sp 
-        X[i] = dm.run(time[i] - time[i-1], time[i], U[i-1], atm)
         if cbk is not None: cbk()  # used for recording ctl variables
+        X[i] = dm.run(time[i] - time[i-1], time[i], U[i-1], atm)
     Xee = p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X[-1], atm, time[-1])
-    U[-1] = ctl.get(time[-1], X[-1], Xee); carrots[-1] = ctl.carrot; att_sp[-1] = ctl.phi_sp, ctl.theta_sp
+    U[-1] = ctl.get(time[-1], X[-1], Xee)
     if cbk is not None: cbk()
     return time, X, U
 
@@ -55,9 +60,9 @@ def test_circle(dm, trim_args, dt=0.01):
     return ref_traj, run_simulation(dm, ctl, tf=30.5, trim_args=trim_args)
 
 # load and save simulations
-def _run_or_load_sim(dm, ctl, sensors, tf, dt, trim_args, atm, ctl_logger, force_compute, save_filename):
+def _run_or_load_sim(dm, ctl, sensors, tf, dt, trim_args, atm, ctl_logger, force_compute, save_filename, desc=None):
     if force_compute or not os.path.exists(save_filename):
-        time, X, U =  run_simulation(dm, ctl, sensors, tf=tf, dt=dt, trim_args=trim_args, atm=atm, cbk=lambda:ctl_logger.record(ctl))
+        time, X, U =  run_simulation(dm, ctl, sensors, tf=tf, dt=dt, trim_args=trim_args, atm=atm, cbk=lambda:ctl_logger.record(ctl), desc=desc)
         ctl_logger.save(time, X, U, save_filename)
     else:
         time, X, U =  ctl_logger.load(save_filename)
@@ -149,47 +154,57 @@ def test_dynamic_soaring(dm, trim_args, force_recompute=False, dt=0.005, tf=150.
 #
 def test_thermal_centering(dm, trim_args, force_recompute, dt=0.01, tf=170.2):
     ref_traj = None
-    save_filename = '/tmp/pat_glider_climb.npz'
-    exp=0
+    exp=1
+    save_filename = f'/tmp/pat_glider_climb_{exp}.npz'
     if exp==0:
         atm = p3_atm.AtmosphereWharington(center=[-40., 0, 0], radius=40, strength=-1.5)
         cc = (10., 15., 0.); p0 = 5, 0, -200
+        n_spec, e0, h_spec = (-100, 50, 10), 0., (180., 350., 20.)
     elif exp==1:
         nc_f = '/home/poine/work/glider_experiments/data/extr_IHODC.1.RK4DI.007.nc'
         atm = p3_atm.AtmosphereNC(nc_f)
-        cc = (50., 15., 0.); p0 = 100, 100, -200
+        cc = (80., 100., -100.); p0 = 70, 100, -100
+        n_spec, e0, h_spec = (0, 400, 10), 100., (100., 350., 20.)
     trim_args['va']=9.
     ctl = p3_guidsoar.GuidanceSoaring(dm, ref_traj, trim_args, dt)
-    ctl.k_centering = 0.005
+    ctl.k_centering = 0.015
     ctl.Xe[0], ctl.Xe[1] , ctl.Xe[2] = p0 # aircraft start point
     ctl.set_circle_center(cc)             # initial circle center
     ctl_logger = p3_guidsoar.Logger()
-    time, X, U = _run_or_load_sim(dm, ctl, None, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+    sensors = p3_sens.Sensors(std_va=0.1, std_vz=0.05)
+    time, X, U = _run_or_load_sim(dm, ctl, sensors, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
     ctl_logger.plot_chronograms(time, X, ctl, atm)
     ctl_logger.plot3D(time, X, ctl, atm)
-    ctl_logger.plot_slice_nu(time, X, U, ctl, atm, n0=-80, n1=60, dn=10., h0=180., h1=320., dh=10.)
+    ctl_logger.plot_slice_nu(time, X, U, ctl, atm, n_spec, e0, h_spec)
     return ref_traj, (time, X, U)  
 
 
 #
 # Ardusoaring Thermal centering
 #
-def test_ardusoaring(dm, trim_args, force_recompute, dt=0.01, tf=120.5):
+def test_ardusoaring(dm, trim_args, force_recompute, dt=0.01, tf=170.2):
     ref_traj = None
-    save_filename = '/tmp/pat_glider_ardu.npz'
-    ctl_logger = p3_guidardu.Logger()
-
-    #atm = p3_atm.AtmosphereThermal1()
-    #atm.set_params(0., 0., 2000., 300.)
-    atm = p3_atm.AtmosphereWharington(center=[-40., 0, 0], radius=40, strength=-1.5)
-    #atm =  p3_atm.AtmosphereCalm()
-    #atm =  p3_atm.AtmosphereCstWind([0, 0, -1.])
+    exp=1
+    save_filename = f'/tmp/pat_glider_ardu_{exp}.npz'
+    if exp==0:
+        atm = p3_atm.AtmosphereWharington(center=[-40., 0, 0], radius=40, strength=-1.5)
+        p0 = 5, 0, -100
+        n_spec, e0, h_spec = (-100, 50, 10), 0, (180., 350., 20.)
+    elif exp==1:
+        nc_f = '/home/poine/work/glider_experiments/data/extr_IHODC.1.RK4DI.007.nc'
+        atm = p3_atm.AtmosphereNC(nc_f)
+        p0 = 70, 100, -100
+        n_spec, e0, h_spec = (0, 400, 10), 100., (100., 350., 20.)
     trim_args['va']=9.
     ctl = p3_guidardu.GuidanceArduSoaring(dm, ref_traj, trim_args, dt)
-    time, X, U = _run_or_load_sim(dm, ctl, None, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
+    #ctl.reset(np.pi)#, xc0=None, yc0=None, s0=INITIAL_THERMAL_STRENGTH, r0=INITIAL_THERMAL_RADIUS)
+    ctl.Xe[0], ctl.Xe[1] , ctl.Xe[2] = p0 # aircraft start point
+    sensors = p3_sens.Sensors(std_va=0.1, std_vz=0.05)
+    ctl_logger = p3_guidardu.Logger()
+    time, X, U = _run_or_load_sim(dm, ctl, sensors, tf, dt, trim_args, atm, ctl_logger, force_recompute, save_filename)
  
     ctl_logger.plot_chronograms(time, X, ctl, atm)
-    ctl_logger.plot2D(time, X, ctl, atm)
+    ctl_logger.plot2D(time, X, ctl, atm, n_spec, e0, h_spec)
     ctl_logger.plot3D(time, X, ctl, atm)
     return ref_traj, (time, X, U)  
 
@@ -200,8 +215,8 @@ def main(param_filename, trim_args = {'h':0, 'va':11, 'gamma':0}, force_recomput
     #ref_traj, (time, X, U) = test_vctl(dm, trim_args, force_recompute)
     #ref_traj, (time, X, U) = test_slope_soaring(dm, trim_args, force_recompute)
     #ref_traj, (time, X, U) = test_dynamic_soaring(dm, trim_args, force_recompute)
-    ref_traj, (time, X, U) = test_thermal_centering(dm, trim_args, force_recompute)
-    #ref_traj, (time, X, U) = test_ardusoaring(dm, trim_args, force_recompute)
+    #ref_traj, (time, X, U) = test_thermal_centering(dm, trim_args, force_recompute)
+    ref_traj, (time, X, U) = test_ardusoaring(dm, trim_args, force_recompute)
     if 0: p3_pu.plot_3D_traj(ref_traj, X)
 
     plt.show()

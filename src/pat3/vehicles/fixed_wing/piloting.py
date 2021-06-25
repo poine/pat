@@ -11,6 +11,7 @@ import pat3.frames as p3_fr
 import pat3.atmosphere as p3_atm
 import pat3.algebra as p3_alg
 
+LOG = logging.getLogger(__name__)
 #
 # Composite roll/pitch reference model
 #
@@ -133,7 +134,7 @@ class PitchCtl:
         self.ref = p3_u.SecOrdLinRef(omega=5., xi=0.9, sats=[np.deg2rad(45.), np.deg2rad(100.)])  # vel, accel
         self.compute_gain(dm, Xe, Ue, dt)
         
-    def compute_gain(self, dm, Xe, Ue, dt):
+    def compute_gain(self, dm, Xe, Ue, dt, debug=False):
         if 0: # empirical
             self.htkp1, self.hqkp1, self.htk, self.hqk = 0, 0, 0, 0
             #self.h_theta, self.h_q, self.h_qd = 0., -5.1, -2.
@@ -142,12 +143,13 @@ class PitchCtl:
             self.htkp1, self.hqkp1, self.htk, self.hqk = -0.4237, -0.9071, -0.4234, 0.7884
             #self.k_theta, self.k_q, self.k_itheta  = -0.848, -0.053, -0.005
             self.k_theta, self.k_q, self.k_itheta  = -0.848, -0.053, -0.005
-        self.report()
+        if debug: self.report()
         
     def report(self):
-        print('Pitch loop gains')
-        print('  feedback p:{} d:{} (i:{})'.format(self.k_theta, self.k_q, self.k_itheta))
-        print('  feedforward {} {} {} {}'.format(self.htkp1, self.hqkp1, self.htk, self.hqk))
+        report = f'\n  Pitch loop gains\n'+\
+                 f'    feedback p:{self.k_theta} d:{self.k_q} (i:{self.k_itheta})\n'+\
+                 f'    feedforward {self.htkp1} {self.hqkp1} {self.htk} {self.hqk}'
+        LOG.info(report)
 
     def load_yaml(self, _data):
         H = np.array(_data.get('H_pitch')['data']).reshape(1, 4)[0]
@@ -205,7 +207,7 @@ class RollCtl:
         self.k_phi, self.k_p = -3.5, -0.75
         #self.ref = p3_u.SecOrdLinRef(omega=6, xi=0.9, sats=[6., 50.])  # vel, accel
         self.h_p, self.h_pd = -0.15, -0.01
-        self.report()
+        #self.report()
 
     def load_yaml(self, _data):
         H = np.array(_data.get('H_roll')['data']).reshape(1, 2)
@@ -216,9 +218,10 @@ class RollCtl:
         self.report()
 
     def report(self):
-        print('Roll loop gains')
-        print('  feedback p:{} d:{}'.format(self.k_phi, self.k_p))
-        print('  feedforward {} {}'.format(self.h_p, self.h_pd))
+        report = '\n  Roll loop gains\n'+\
+                 f'    feedback p:{self.k_phi} d:{self.k_p}\n'+\
+                 f'    feedforward {self.h_p} {self.h_pd}'
+        LOG.info(report)
       
     def reset(self, phi, phi_d=0):
         #self.ref.reset(np.array([phi, phi_d, 0]))

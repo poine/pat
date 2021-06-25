@@ -88,9 +88,6 @@ def load(type, variant, param=None):
 #     return gamma_e, ele_e, alpha_e    
 
 
-import pat3.vehicles.fixed_wing.legacy_parameter
-class ParamOld(pat3.vehicles.fixed_wing.legacy_parameter.Param):
-    pass
 import pat3.vehicles.fixed_wing.simple_6dof_fdm_param
 class Param(pat3.vehicles.fixed_wing.simple_6dof_fdm_param.Param):
     pass
@@ -102,10 +99,9 @@ class FWDynamicModel:
     def __init__(self, params=None):
         if params is None: params = os.path.join(p3_u.pat_dir(), 'data/vehicles/cularis.xml')
         self.P = Param(params)
-        #self.P = ParamOld(params)
-        self.X = np.zeros(self.get_sv_size())
-        self.X_act = np.zeros(self.input_nb())
-        self.T_w2b = np.eye(4)
+        self.X = np.zeros(self.get_sv_size())   # State Vector
+        self.X_act = np.zeros(self.input_nb())  # Actuators State Vector
+        self.T_w2b = np.eye(4)                  # 4x4 homogenous transform from world to body
         self.t, self.dt = 0., 0.01
         self.reset()
 
@@ -364,14 +360,6 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
         X_euler = X[self.sv_slice_eul]                    # euler angles                          
         X_rvel_body = X[self.sv_slice_rvel]               # body rotational velocities
         earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
-        if 0:
-            R_aero_to_body = p3_fr.R_aero_to_body(alpha, beta)
-            wind_ned = atm.get_wind_ned(X_pos, t) if atm is not None else [0, 0, 0]
-            waccel_body = [0, 0, 0]  # np.dot(earth_to_body, waccel_earth)
-            avel_aero = [X[sv_v], 0., 0.]
-            avel_body = np.dot(R_aero_to_body, avel_aero)
-            ivel_world = p3_fr.vel_aero_to_world_euler(X_avel, X_euler, wind_ned)
-            ivel_body = np.dot(earth_to_body_R, ivel_world)
         
         rho = p3_atm.get_rho(-X[self.sv_z])
         Pdyn = 0.5*rho*va**2
@@ -386,25 +374,7 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
         m_eng_body = p3_fw_aero.get_m_eng_body(f_eng_body, self.P)
         m_body = m_aero_body + m_eng_body
         
-        if 1:
-            return p3_fr.SixDOFAeroEuler.cont_dyn(X, t, np.concatenate((forces_body, m_body)), self.P, atm)
-        else:
-            Xdot = np.zeros(p3_fr.SixDOFAeroEuler.sv_size)
-            # Translational kinematics
-            Xdot[sv_x:sv_z+1] = ivel_world
-            # Translational dynamics
-            iaccel_body = 1./self.P.m*forces_body - np.cross(X_rvel_body, ivel_body)
-            aaccel_body = iaccel_body - waccel_body
-            Xdot[sv_v] = np.inner(avel_body, aaccel_body)/X[self.sv_va]
-            (avx, avy, avz), (aax, aay, aaz) = avel_body, aaccel_body
-            Xdot[sv_alpha] = (avx*aaz - avz*aax)/(avx**2+avz**2)
-            Xdot[sv_beta] = (X[self.sv_va]*aay - avy*Xdot[self.sv_va]) / X[self.sv_va] / math.sqrt(avx**2+aaz**2)
-            # Rotational kinematics
-            Xdot[self.sv_slice_eul] = p3_alg.euler_derivatives(X_euler, X_rvel_body)
-            # Rotational dynamics
-            raccel_body = np.dot(self.P.invI, m_body - np.cross(X_rvel_body, np.dot(self.P.I, X_rvel_body)))
-            Xdot[self.sv_slice_rvel] = raccel_body
-            return Xdot
+        return p3_fr.SixDOFAeroEuler.cont_dyn(X, t, np.concatenate((forces_body, m_body)), self.P, atm)
             
 
     def _update_byproducts(self):
@@ -416,12 +386,6 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
     def name(self): return "Fixed Wing, Aero/Euler ({:s})".format(self.P.name)
 
     def default_state(self): return np.array([0, 0, 0,   10, 0, 0,   0, 0, 0,   0, 0, 0])
-
-    # def thrust_of_throttle(self, throttle, i, h, v):
-    #     rho = p3_atm.get_rho(h)
-    #     return thrust_of_throttle(throttle, self.P.fmaxs[i], 
-    #                               rho, self.P.rhois[i], self.P.nrhos[i], 
-    #                               v, self.P.Vis[i], self.P.nVs[i])
 
     def state_as_six_dof_euclidian_euler(self, X, atm=None, t=0.):
         return p3_fr.SixDOFAeroEuler.to_six_dof_euclidian_euler(X, atm, t)

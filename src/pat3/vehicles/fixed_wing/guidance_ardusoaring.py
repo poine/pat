@@ -79,7 +79,7 @@ class ThermalFilter:
     _q_strength = 0.001
     _q_pos      = 0.03
 
-    _init_thermal_dist = 5.
+    _init_thermal_dist = 30.#5.
     INITIAL_THERMAL_STRENGTH = 2.0
     INITIAL_THERMAL_RADIUS = 30.0
     INITIAL_STRENGTH_COVARIANCE = 0.0049
@@ -114,7 +114,7 @@ class ThermalFilter:
         H[0,3] = -2.*(_s*_y/_r**2)*expon
         return w, H
         
-    def update(self, t, z, vx, vy, disable_correction=True):
+    def update(self, t, z, vx, vy, disable_correction=False):
         if 1: # Prediction
             self.X[self.sv_x] -= vx
             self.X[self.sv_y] -= vy
@@ -129,7 +129,9 @@ class ThermalFilter:
             S = np.dot(H, PHt) + self.R
             K = PHt/S
             self.X += (K*self.inov).squeeze()
-            self.P = (1-np.dot(K, H))*self.P
+            #pdb.set_trace()
+            #self.P = (1-np.dot(K, H))*self.P
+            self.P = (np.eye(4)-np.dot(K, H))*self.P
             # P.force_symmetry()
             #print('{} ekf:  meas({}/{})'.format(0, z, w))
         else:
@@ -156,11 +158,11 @@ class GuidanceArduSoaring(p3_guid.GuidancePurePursuit):
     def enter(self, X, t):
         self._store_state(X, t)
         _s = p3_fr.SixDOFAeroEuler
-        alt, va, phi, psi = -X[_s.sv_z], X[_s.sv_va], X[_s.sv_phi], X[p3_fr.SixDOFAeroEuler.sv_psi]
+        alt, va, phi, psi = -X[_s.sv_z], X[_s.sv_va], X[_s.sv_phi], X[_s.sv_psi]
         self.vario.reset(t=t, alt=alt, va=va, phi=phi)
         x0, y0 = None, None#-20., 5.
         s0, r0 = -1.5, 40
-        self.ekf.reset(psi, x0, y0, s0, r0)
+        self.ekf.reset(psi+np.pi, x0, y0, s0, r0)
         print('ekf reset: center_ned {}'.format(self.ekf.center_ned(X)))
 
     def get(self, t, X, Xee=None, Yc=None, debug=False, traj=None):
@@ -176,15 +178,17 @@ class GuidanceArduSoaring(p3_guid.GuidancePurePursuit):
         d_ne_corrected = d_ne - d_wind_ne
         self._store_state(X, t)
         # FIXME sign baro...
-        self.ekf.update(t, -self.vario.reading, d_ne_corrected[0], d_ne_corrected[1], disable_correction=t<3.) # netto baro is bad at first
+        if t>3.:
+            self.ekf.update(t, -self.vario.reading, d_ne_corrected[0], d_ne_corrected[1], disable_correction=False)#t<3.) # netto baro is bad at first
         #print('arduguidance update: c_ned {}'.format(self.ekf.center_ned(X)))
 
         if 1: # close the loop
-            t0 = 60
+            #t0 = 60
             #if t > t0: self.traj.r = self.r*(1+0.5*np.sin(0.1*(t-t0)))
-            dx = 10*np.sin(0.05*(t-t0)) if t > t0 else 0
-            dx =0
-            self.traj.set_center([self.ekf.X[ThermalFilter.sv_x]+dx, self.ekf.X[ThermalFilter.sv_y], -alt])
+            #dx = 10*np.sin(0.05*(t-t0)) if t > t0 else 0
+            #dx = 0
+            #self.traj.set_center([self.ekf.X[ThermalFilter.sv_x]+dx, self.ekf.X[ThermalFilter.sv_y], -alt])
+            self.traj.set_center(self.ekf.center_ned(Xee))
         return p3_guid.GuidancePurePursuit.get(self, t, X, Xee, Yc, debug)
 
 
@@ -222,39 +226,45 @@ class Logger:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.set_xlabel('North');ax.set_ylabel('East');ax.set_zlabel('Down')        
-        ax, fig = plt.gca(), plt.gcf()
-        ac_ned = X[:,p3_fr.SixDOFEuclidianEuler.sv_slice_pos]
-        ac_enu = p3_fr.ned_to_enu(ac_ned).reshape(-1, 1, 3)
-        _ac_ned = ac_ned.reshape(-1, 1, 3)
-        segments_ned = np.concatenate([_ac_ned[:-1], _ac_ned[1:]], axis=1)
+        p3_pu.plot_3D_traj(ref_traj=None, X=X, fig=fig, ax=ax)#, val=_val)
         
-        _val = np.asarray(self.vs_flt[:-1])
-        #norm = plt.Normalize(_val.min(), _val.max())
-        norm = plt.Normalize(0., 1.5)
+        #ax.plot(center[:,0], center[:,1], center[:,2], color='r', label='center')
+        # ax, fig = plt.gca(), plt.gcf()
+        # ac_ned = X[:,p3_fr.SixDOFEuclidianEuler.sv_slice_pos]
+        # ac_enu = p3_fr.ned_to_enu(ac_ned).reshape(-1, 1, 3)
+        # _ac_ned = ac_ned.reshape(-1, 1, 3)
+        # segments_ned = np.concatenate([_ac_ned[:-1], _ac_ned[1:]], axis=1)
         
-        lc = mpl_toolkits.mplot3d.art3d.Line3DCollection(segments_ned, cmap=plt.get_cmap('viridis'), norm=norm)
-        lc.set_array(_val) 
-        lc.set_linewidth(2)
-        #pdb.set_trace()
-        ax.add_collection3d(lc)#, zs=z, zdir='z')
-        p3_pu.set_3D_axes_equal()
+        # _val = np.asarray(self.vs_flt[:-1])
+        # #norm = plt.Normalize(_val.min(), _val.max())
+        # norm = plt.Normalize(0., 1.5)
         
-        if 1: # center
-            c_ned = np.array([_ctl.ekf.center_ned(Xac, Xflt) for Xac, Xflt in zip(X, self.Xs)])
-            #c_ned = np.array([_ctl.ekf.center_ned(_X) for _X in X])
-            ax.plot(c_ned[:,0], c_ned[:,1], c_ned[:,2], color='r', label='center')
-        if 1: #
-            pass
-        plt.legend()
+        # lc = mpl_toolkits.mplot3d.art3d.Line3DCollection(segments_ned, cmap=plt.get_cmap('viridis'), norm=norm)
+        # lc.set_array(_val) 
+        # lc.set_linewidth(2)
+        # #pdb.set_trace()
+        # ax.add_collection3d(lc)#, zs=z, zdir='z')
+        # p3_pu.set_3D_axes_equal()
+        
+        # if 1: # center
+        c_ned = np.array([_ctl.ekf.center_ned(Xac, Xflt) for Xac, Xflt in zip(X, self.Xs)])
+        #     #c_ned = np.array([_ctl.ekf.center_ned(_X) for _X in X])
+        ax.plot(c_ned[:,0], c_ned[:,1], c_ned[:,2], color='r', label='center')
+        # if 1: #
+        #     pass
+        # plt.legend()
 
         #atm = p3_atm.AtmosphereWharington()
         #atm = p3_atm.AtmosphereThermal()
         #atm = p3_atm.AtmosphereThermal1()
-        p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=10, dh=10., figure=fig, ax=ax)
+        #p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=10, dh=10., figure=fig, ax=ax)
+        ax.view_init(-166., -106.)
 
-    def plot2D(self, time, X, _ctl, atm):
+    def plot2D(self, time, X, _ctl, atm, n_spec=(-100, 100, 10), e0=0, h_spec=(180., 320., 10.)):
         # 2D
-        fig, ax = p3_pu.plot_slice_wind_nu(atm, n0=-80, n1=80, dn=5., e0=0, h0=-10, h1=25, dh=2.)
+        (n0, n1, dn), (h0, h1, dh) = n_spec, h_spec
+        fig, ax = p3_pu.plot_slice_wind_nu(atm, n0, n1, dn, e0, h0, h1, dh)
+        #, n0=-80, n1=60, dn=10., h0=180., h1=320., dh=10.
         ac_ned = X[:,p3_fr.SixDOFEuclidianEuler.sv_slice_pos]
         ac_enu = p3_fr.ned_to_enu(ac_ned).reshape(-1, 1, 3)
         #plt.plot(ac_ned[:,0], -ac_ned[:,2])
@@ -279,12 +289,14 @@ class Logger:
     def plot_chronograms(self, time, X, _ctl, atm):
         _s = p3_fr.SixDOFEuclidianEuler
         # compute truth
-        X_flt_truth = np.zeros((len(time), ThermalFilter.sv_size))
-        X_flt_truth[:, ThermalFilter.sv_strength] = atm.strength
-        X_flt_truth[:, ThermalFilter.sv_radius] = atm.radius
-        for i in range(len(time)):
-            X_flt_truth[i, ThermalFilter.sv_x:ThermalFilter.sv_y+1] = (atm.center - X[i,_s.sv_slice_pos])[:2] # FIXME... time?
-            
+        try:
+            X_flt_truth = np.zeros((len(time), ThermalFilter.sv_size))
+            X_flt_truth[:, ThermalFilter.sv_strength] = atm.strength
+            X_flt_truth[:, ThermalFilter.sv_radius] = atm.radius
+            for i in range(len(time)):
+                X_flt_truth[i, ThermalFilter.sv_x:ThermalFilter.sv_y+1] = (atm.center - X[i,_s.sv_slice_pos])[:2] # FIXME... time?
+        except AttributeError:
+            pass
         plt.figure()
         ax = plt.subplot(2,1,1)
         plt.plot(time, self.vs_reading, label='vario')
