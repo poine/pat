@@ -16,9 +16,9 @@ class RefTraj:
         return []
 
 class CircleRefTraj():
-    def __init__(self, c=(0, 0, 0), r=40.):
+    def __init__(self, c=(0, 0, 0), r=40., alpha0=0., dalpha=2*np.pi):
         self.c, self.r = np.asarray(c), r
-        self.alpha0, self.dalpha = 0, 2*np.pi
+        self.alpha0, self.dalpha = alpha0, dalpha
 
     def _zfun(self, alpha): return  np.zeros_like(alpha)
     #def _dz_ov_da_fun(self, alpha): return np.zeros_like(alpha)
@@ -58,7 +58,10 @@ class CircleRefTraj():
         p1, p2 = self._pt(alpha0), self._pt(alpha1)
         zd = self._dz_ov_da_fun(alpha0)*_v/self.r  #
         return p1, p2, zd
-        
+
+    #TODO
+    def dist_to_end(self, p):
+        return self.dist - np.dot(self.n, p-self.p1) 
 
 class BankedCircleRefTraj(CircleRefTraj):
     def __init__(self, c=(0, 0, 0), r=40., slope=np.deg2rad(15)):
@@ -85,7 +88,7 @@ class ZdStepCircleRefTraj(CircleRefTraj):
     def __init__(self, c=(0, 0, 0), r=40.):
         CircleRefTraj.__init__(self, c, r)
 
-    def _zfun(self, alpha, _a=10.):
+    def _zfun(self, alpha, _a=4.):
         def __zfun(alpha):
             alpha = p3_u.norm_0_2pi(alpha)
             if alpha < np.pi/2: _h = alpha*_a
@@ -119,7 +122,7 @@ class LineRefTraj():
         if np.dot(self.n, p1p) > self.dist: _p1 = self.p2 + self.n*lookahead_dist
         return _p0, _p1
 
-    def get_point_and_slope_ahead(self, p0, lookahead_dist, _v=17.):
+    def get_point_and_slope_ahead(self, p, lookahead_dist, _v=17.):
         _p0, _p1 = self.get_point_ahead(p, lookahead_dist)
         return _p0, _p1, 0 # FIXME
      
@@ -188,4 +191,5 @@ class OvalRefTraj(CompositeRefTraj):
         L2 = LineRefTraj(p3, p4)
         c2 = (0, -_l/2, 0)+_c
         C2 = CircleRefTraj(c2, _r)
-        CompositeRefTraj.__init__(self, [L1, C1, L2])# FIXME[L1, C1, L2, C2])       
+        CompositeRefTraj.__init__(self, [L1, C1, L2])# FIXME[L1, C1, L2, C2])
+        #CompositeRefTraj.__init__(self, [L1, L2])# FIXME[L1, C1, L2, C2])       

@@ -670,6 +670,8 @@ def plot_trajectory_ae(time, X, U=None, figure=None, window_title="Trajectory",
     s = p3_fr.SixDOFAeroEuler
     margins=(0.04, 0.05, 0.98, 0.96, 0.20, 0.34)
     figure = p3_pu.prepare_fig(figure, window_title, figsize=(20.48, 10.24), margins=margins)
+    nrow, ncol = 5 if U is not None else 4, 3
+    axes = figure.subplots(nrow, ncol, sharex=True)
 
     plots = [("x", "m", X[:,s.sv_x]), ("y", "m", X[:,s.sv_y]), ("z", "m", X[:,s.sv_z]),
              ("v",         "m/s", X[:,s.sv_va]),
@@ -682,33 +684,31 @@ def plot_trajectory_ae(time, X, U=None, figure=None, window_title="Trajectory",
              ("$q$",     "deg/s", np.rad2deg(X[:,s.sv_q])),
              ("$r$",     "deg/s", np.rad2deg(X[:,s.sv_r]))]
     
-    nrow = 5 if U is not None else 4
-    for i, (title, ylab, data) in enumerate(plots):
-        ax = plt.subplot(nrow, 3, i+1)
-        plt.plot(time, data, label=label)
+    for (title, ylab, data), ax in zip(plots, axes.flatten()):
+        ax.plot(time, data, label=label)
         p3_pu.decorate(ax, title=title, ylab=ylab)
             
     if legend!=None:
         plt.legend(legend, loc='best')
 
-    for i, min_yspan in enumerate([1., 1., 1.,  1., 1., 1.,  1., 1., 1.,  1., 1., 1.]):
-        p3_pu.ensure_yspan(plt.subplot(nrow,3,i+1), min_yspan)
+    for min_yspan, ax in zip([1., 1., 1.,  1., 1., 1.,  1., 1., 1.,  1., 1., 1.], axes.flatten()):
+        p3_pu.ensure_yspan(ax, min_yspan)
 
     iv_da, iv_de, iv_dr, iv_df = 1, 2, 3, 4 # FIXME... needs P?
     if U is not None:
-        ax = figure.add_subplot(5, 3, 13)
+        ax = axes[4,0]
         ax.plot(time, 100*U[:, 0])
         p3_pu.decorate(ax, title="$d_{th}$", ylab="%", min_yspan=1.)
-        ax = figure.add_subplot(5, 3, 14)
+        ax = axes[4,1]
         ax.plot(time, np.rad2deg(U[:, iv_da]), label="aileron")
         ax.plot(time, np.rad2deg(U[:, iv_dr]), label="rudder")
         p3_pu.decorate(ax, title="$d_a/d_r$", ylab="deg", min_yspan=1., legend=True)
-        ax = figure.add_subplot(5, 3, 15)
+        ax = axes[4,2]
         ax.plot(time, np.rad2deg(U[:, iv_de]), label="elevator")
         if U.shape[1] > iv_df: ax.plot(time, np.rad2deg(U[:, iv_df]), label="flap")
         p3_pu.decorate(ax, title="$d_e/d_f$", ylab="deg", min_yspan=1., legend=True)
         
-    return figure
+    return figure, axes
         
 # FIXME, move that elsewhere
 def plot_trajectory_ee(time, Xee, U=None, figure=None, window_title="Trajectory",

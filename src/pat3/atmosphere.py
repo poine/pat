@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 #
-# Copyright 2013-2020 Antoine Drouin (poinix@gmail.com)
+# Copyright 2013-2021 Antoine Drouin (poinix@gmail.com)
 #
 # This file is part of PAT.
 #
@@ -77,38 +77,6 @@ def isa(h):
     rho = p/R/T
     return p, rho, T
 
-def decorate(ax, title=None, xlab=None, ylab=None, legend=None):
-    ax.xaxis.grid(color='k', linestyle='-', linewidth=0.2)
-    ax.yaxis.grid(color='k', linestyle='-', linewidth=0.2)
-    if xlab: ax.xaxis.set_label_text(xlab)
-    if ylab: ax.yaxis.set_label_text(ylab)
-    if title: ax.set_title(title, {'color'    : 'k', 'fontsize'   : 20 })
-    if legend is not None: ax.legend(legend, loc='best')
-
-def plot(h0=1, h1=84000):
-    h = np.linspace(h0, h1, 1000)
-    v = np.array(map(isa, h))
-    v1 = np.array(map(get_rho, h))
-    print(v1)
-    #pdb.set_trace()
-    ax = plt.subplot(1, 3, 1)
-    plt.plot(v[:,2], h)
-    decorate(ax, 'Temperature', 'K', 'm')
-    ax = plt.subplot(1, 3, 2)
-    plt.plot(v[:,1], h)
-    plt.plot(v1, h, 'r')
-    decorate(ax, 'Density', 'Kg/m3', 'm')
-    ax = plt.subplot(1, 3, 3)
-    plt.plot(v[:,0], h)
-    decorate(ax, 'Pressure', 'Pa', 'm')
-    plt.show()
-
-if __name__ == "__main__":
-    h = 1
-    print("isa at {}m : {} Pa {} kg/m3 {} K".format(h, *isa(h)))
-    #plot(h0=1, h1=84000)
-    plot(h0=1, h1=11000)
-
 
 
 
@@ -144,8 +112,6 @@ class AtmosphereCstWind(Atmosphere):
     def __init__(self, v=[0, 0, 0]):
         self.v = np.asarray(v)
     def get_wind_ned(self, pos, t):
-        #p = 120.
-        #return self.v if math.fmod(t, p) > p/3 else [0, 0, 0]
         return self.v
 
 class AtmosphereSinetWind(AtmosphereCstWind):
@@ -162,8 +128,6 @@ class AtmosphereVgradient(Atmosphere):
         self.dw, self.dh = w1-w0, h1-h0
         
     def get_wind_ned(self, pos, t):
-        #wmin, wmax, hmin, hmax = 0., 5., 20., 60. #
-        #dh, wspan, hspan = -pos[2]-hmin, wmax-wmin, hmax-hmin
         dh = -pos[2]-self.h0
         wx = np.clip(self.w0+dh/self.dh*self.dw, self.w0, self.w1)
         return [-wx, 0, 0]
@@ -418,6 +382,8 @@ class AtmosphereAllen(Atmosphere):
 
     
 
+#from Scientific.Functions.Interpolation import InterpolatingFunction
+from scipy import interpolate
 
 # NetCDF4 grid
 class AtmosphereNC(Atmosphere):
@@ -425,24 +391,33 @@ class AtmosphereNC(Atmosphere):
         self.center = np.asarray(center) if center is not None else np.array([0, 0, 0])
         self.nc_f = netCDF4.Dataset(filename, 'r')
         self.UT, self.VT, self.WT = [self.nc_f.variables[what][:] for what in ['UT', 'VT', 'WT']]
-        #nc_attrs, nc_dims, nc_vars = analyse_nc(self.nc_f)
+        # nc_attrs, nc_dims, nc_vars = analyse_nc(self.nc_f)
         self.ni, self.nj, self.level = [self.nc_f.variables[what][:] for what in ['ni', 'nj', 'level']]
         self.x0, self.x1 = self.ni[0], self.ni[-1]; self.dx = self.x1-self.x0
         self.y0, self.y1 = self.nj[0], self.nj[-1]; self.dy = self.y1-self.y0
         _id, _z = np.arange(len(self.level)), self.level
-        self.level_of_z = scipy.interpolate.interp1d(_z, _id)
+        self.level_of_z = scipy.interpolate.interp1d(_z, _id) # really?
         self.z0, self.z1 = self.level[0], self.level[-1]; self.dz=self.z1-self.z0
-        if 0:
-            #pdb.set_trace()
-            z_new = np.arange(self.z0, self.z1, 100)
-            id_new = self.level_of_z(z_new)
-            plt.plot(_id, _z)
-            plt.plot(id_new, z_new)
+
+        self.interp_UT = scipy.interpolate.RegularGridInterpolator((self.level, self.nj, self.ni), self.UT.squeeze(), bounds_error=False, fill_value=0.)
+        self.interp_VT = scipy.interpolate.RegularGridInterpolator((self.level, self.nj, self.ni), self.VT.squeeze(), bounds_error=False, fill_value=0.)
+        self.interp_WT = scipy.interpolate.RegularGridInterpolator((self.level, self.nj, self.ni), self.WT.squeeze(), bounds_error=False, fill_value=0.)
+
+        self.interp_modes = self.imod_none, self.imod_full_vz, self.imod_full_full = np.arange(3)
+        self.interp_mode = self.imod_full_full
+ 
     
     def get_wind_ned(self, pos_ned, t):
+        if self.interp_mode == self.imod_none:
+            return self.get_wind_ned1(pos_ned, t)
+        return self.get_wind_ned3(pos_ned, t)
+
+    def get_wind_ned1(self, pos_ned, t):
         ni, nj, level = 0, 0, 0
         ni = int((pos_ned[0]-self.x0)/self.dx*len(self.ni))
         nj = int((pos_ned[1]-self.y0)/self.dy*len(self.nj))
+        #ni = int((pos_ned[0]-self.x0)/self.dx*len(self.ni)+0.5)
+        #nj = int((pos_ned[1]-self.y0)/self.dy*len(self.nj)+0.5)
         #pdb.set_trace()
         z = np.clip(-pos_ned[2], self.z0, self.z1)
         level = int(self.level_of_z(z))
@@ -451,5 +426,42 @@ class AtmosphereNC(Atmosphere):
         _t=0 # TODO: fixme
         return [0, 0, self.WT[_t, level, nj, ni]]
 
+    def get_wind_ned2(self, pos_ned, t):
+        ni, nj, level = 0, 0, 0
+        ni = (pos_ned[0]-self.x0)/self.dx*len(self.ni)
+        nj = (pos_ned[1]-self.y0)/self.dy*len(self.nj)
+        z = np.clip(-pos_ned[2], self.z0, self.z1)
+        level = self.level_of_z(z)
+        #print(z, level)
+        _t=0 # TODO: add time...
+        # no interpolation
+        if 0:
+            WT = self.WT[_t, int(level), int(nj), int(ni)]
+        # interpolate north only
+        if 0:
+            ni1 = int(ni); ni2=ni1+1
+            W1, W2 = self.WT[_t, int(level), int(nj), ni1], self.WT[_t, int(level), int(nj), ni2] 
+            f = interpolate.interp1d([ni1, ni2], [W1, W2], assume_sorted=True)
+            WT = float(f(ni))
+        # interpolate north and east
+        if 1:
+            _xs, _ys = [int(ni), int(ni)+1], [int(nj), int(nj)+1]
+            _zs = np.zeros((len(_xs), len(_ys)))
+            for _ix, _x in enumerate(_xs):
+                for _iy, _y in enumerate(_ys):
+                    _zs[_ix, _iy] = self.WT[_t, int(level), _y, _x]
+            _int = scipy.interpolate.RectBivariateSpline(_xs, _ys, _zs, kx=1, ky=1)
+            WT = float(_int(ni, nj))
+        #pdb.set_trace()
+        return [0, 0, WT]
 
+    def get_wind_ned3(self, pos_ned, t):
+        hen = [-pos_ned[2], pos_ned[1], pos_ned[0]]
+        if self.interp_mode == self.imod_full_full:
+            UT = float(self.interp_UT(hen))
+            VT = float(self.interp_VT(hen))
+        else:
+            UT, VT = 0, 0
+        WT = float(self.interp_WT(hen))
+        return [VT, UT, WT]
 

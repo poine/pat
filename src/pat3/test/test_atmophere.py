@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 #
 
@@ -64,7 +64,48 @@ def test_wharington():
     # p3_plu.plot_slice_wind_eu(atm, n0=0, e0=-50, e1=50, de=10., h0=0, h1=100, dh=10., zdir=-1.,
     #                           show_quiver=True, show_color_bar=True,
     #                           figure=None, ax=None)
-    
+
+
+# FIXME: this shows that grids need to be interpolated
+def test_grid():
+    nc_f = '/home/poine/work/glider_experiments/data/extr_IHODC.1.RK4DI.007.nc'
+    atm = p3_atm.AtmosphereNC(nc_f)
+    print(f'range n:{atm.x0}   {atm.x1} resolution: {atm.dx/(len(atm.ni)-1)}')
+    print(f'range e:{atm.y0}   {atm.y1} resolution: {atm.dy/(len(atm.nj)-1)}')
+    print(f'range d:{atm.z0}   {atm.z1} resolution: {atm.dz/(len(atm.level)-1)}')
+
+    # North oriented line
+    ns, e, h = np.arange(0, 200), 25, 100
+    wzs =  [atm.get_wind_ned1([n, e, -h], 0)[2] for n in ns]
+    wzs2 =  [atm.get_wind_ned3([n, e, -h], 0)[2] for n in ns]
+    plt.plot(ns, wzs, '.', label='1')
+    plt.plot(ns, wzs2, '.', label='interp')
+    p3_plu.decorate(plt.gca(), f'east: {e} height:{h}', 'north in m', 'vz in m/s', legend=True)
+    if 0:
+        p3_plu.plot_slice_wind_nu(atm, ns[0], ns[-1], dn=5., e0=e, h0=0, h1=100, dh=2., zdir=-1.,
+                                  show_quiver=True, show_color_bar=True,
+                                  figure=None, ax=None)
+    plt.figure()
+    # East oriented line
+    n, es, h = 25, np.arange(0, 200), 100
+    wzs =  [atm.get_wind_ned1([n, e, -h], 0)[2] for e in es]
+    wzs2 =  [atm.get_wind_ned3([n, e, -h], 0)[2] for e in es]
+    plt.plot(es, wzs, '.', label='1')
+    plt.plot(es, wzs2, '.', label='interp')
+    p3_plu.decorate(plt.gca(), f'north: {n} height:{h}', 'east in m', 'vz in m/s', legend=True)
+
+    plt.figure()
+    # up oriented line
+    n, e, hs = 25, 25, np.arange(0, 300)
+    wzs =  [atm.get_wind_ned1([n, e, -h], 0)[2] for h in hs]
+    wzs2 =  [atm.get_wind_ned3([n, e, -h], 0)[2] for h in hs]
+    plt.plot(hs, wzs, '.', label='1')
+    plt.plot(hs, wzs2, '.', label='interp')
+    p3_plu.decorate(plt.gca(), f'north: {n} east:{e}', 'h in m', 'vz in m/s', legend=True)
+
+
+
+        
 def main():
     #atm =  p3_atm.AtmosphereWharington()
     #atm =  p3_atm.AtmosphereWharingtonArray()
@@ -75,7 +116,8 @@ def main():
     #plot_hslice(atm)
     #display_all_models()
     #test_ridge()
-    test_wharington()
+    #test_wharington()
+    test_grid()
     plt.show()
 
 

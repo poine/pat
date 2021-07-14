@@ -15,6 +15,90 @@ import pat3.plot_utils as p3_pu
 
 import pat3.vehicles.fixed_wing.guidance as p3_guid
 import pat3.vehicles.fixed_wing.guidance_ardusoaring as p3_guidardu
+
+
+class GuidanceAroun(p3_guid.GuidanceAuto1):
+    def __init__(self, dm, traj, trim_args={'h':0, 'va':12, 'gamma':0}, dt=0.01):
+        Xe, Ue = dm.trim(trim_args, report=False)
+        p3_guid.GuidanceAuto1.__init__(self, Xe, Ue, dm, dt)
+        self.energies, self.d_energies, self.d2_energies = [], [], []
+        self.dt = dt
+
+    def get(self, t, X, Xee=None, Yc=None, debug=False, traj=None):
+        _s = p3_fr.SixDOFAeroEuler
+        alt, va = -X[_s.sv_z], X[_s.sv_va]
+        self.energies.append(alt + 0.5 * va**2 / 9.81)
+        d2 = 0.
+        if len(self.energies) >= 2:
+            self.d_energies.append((self.energies[-1]-self.energies[-2])/self.dt)
+            if len(self.d_energies) >= 2:
+                self.d2_energies.append((self.d_energies[-1]-self.d_energies[-2])/self.dt)
+                d2 = self.d2_energies[-1]
+        phi0, k = 16, 4#12
+        self.phi_sp = np.deg2rad(np.clip(phi0-k*d2, -40, 40))
+        self.set_setpoints(self.phi_sp, theta_sp=42.)
+        return p3_guid.GuidanceAuto1.get(self, t, X, Xee, Yc, debug)
+
+class ArounLogger():
+    def __init__(self):
+        self.phi_sps, self.energies, self.d_energies, self.d2_energies = [], [], [], []
+
+    def record(self, _ctl):
+        self.phi_sps.append(_ctl.phi_sp)
+        self.energies.append(_ctl.energies[-1])
+        try:
+            self.d_energies.append(_ctl.d_energies[-1])
+        except IndexError:
+            self.d_energies.append(0)
+        try:
+            self.d2_energies.append(_ctl.d2_energies[-1])
+        except IndexError:
+            self.d2_energies.append(0)
+
+    def save(self, time, X, U, filename):
+        np.savez(filename, time=time, X=X, U=U, phi_sp=self.phi_sps, energy=self.energies,
+                 d_energy=self.d_energies, d2_energy=self.d2_energies)
+        print('saved {}'.format(filename))
+
+    def load(self, filename):
+        _data =  np.load(filename)
+        labels = ['time', 'X', 'U', 'phi_sp', 'energy', 'd_energy', 'd2_energy']
+        time, X, U, self.phi_sps, self.energies, self.d_energies, self.d2_energies = [_data[k] for k in labels]
+        print('loaded {}'.format(filename))
+        return time, X, U
+
+    def plot_chronograms(self, time, X, _ctl, atm, title=None, window_title=None, fig=None, axes=None):
+        _s = p3_fr.SixDOFEuclidianEuler
+        fig = plt.figure(tight_layout=True, figsize=[6., 4.8]) if fig is None else fig
+        if window_title is not None: fig.canvas.set_window_title(window_title)
+        axes = fig.subplots(4, 1) if axes is None else axes
+        axes[0].plot(time,  self.energies, label='energy')
+        p3_pu.decorate(axes[0], title='energy', ylab='J/kg', legend=True)
+        axes[1].plot(time,  self.d_energies, label='d_energy')
+        p3_pu.decorate(axes[1], title='d_energy', ylab='J/kg/s', legend=True)
+        axes[2].plot(time,  self.d2_energies, label='d2_energy')
+        p3_pu.decorate(axes[2], title='d2_energy', ylab='J/kg/s/s', legend=True)
+        axes[3].plot(time,  np.rad2deg(self.phi_sps), label='sp')
+        axes[3].plot(time,  np.rad2deg(X[:,_s.sv_phi]), label='real')
+        p3_pu.decorate(axes[3], title='phi', ylab='deg', legend=True)
+        return fig, axes
+
+    def plot3D(self, time, X, _ctl, atm):
+        fig = plt.figure(tight_layout=True, figsize=[6., 4.8])
+        ax = fig.add_subplot(111, projection='3d')
+        p3_pu.plot_3D_traj(ref_traj=None, X=X, fig=fig, ax=ax)
+        p3_pu.set_3D_axes_equal()
+        ax.view_init(-166., -106.)
+        return fig, ax
+
+    def plot_slice_nu(self, time, X, U, _ctl, atm, n_spec, e0, h_spec,
+                      title="Soaring North Up slice", window_title=None, fig=None, ax=None):
+        (n0, n1, dn), (h0, h1, dh) = n_spec, h_spec
+        fig, ax = p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=e0, h0=h0, h1=h1, dh=dh, zdir=-1.,
+                                           show_quiver=True, show_color_bar=True, title=title,
+                                           figure=fig, ax=ax)
+        ax.plot(X[:,0],-X[:,2])
+        return fig, ax
     
 class GuidanceSoaring(p3_guid.GuidancePurePursuit):
 
@@ -104,7 +188,7 @@ class Logger:
         ax = fig.add_subplot(111, projection='3d')
         _val = np.asarray(self.meas_vz)
         p3_pu.plot_3D_traj(ref_traj=None, X=X, fig=fig, ax=ax)#, val=_val)
-        p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=-10, dh=-30., figure=fig, ax=ax) 
+        #p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=-10, dh=-30., figure=fig, ax=ax) 
         center = np.array(self.center)
         ax.plot(center[:,0], center[:,1], center[:,2], color='r', label='center')
         p3_pu.set_3D_axes_equal()
@@ -118,13 +202,17 @@ class Logger:
         if window_title is not None: fig.canvas.set_window_title(window_title)
         axes = fig.subplots(3, 1) if axes is None else axes
         center = np.array(self.center)
-        axes[0].plot(time,  center[:,0], label='cx')
-        axes[0].plot(time,  np.ones(len(time))*atm.center[0], label='truth')
-        p3_pu.decorate(axes[0], title='cx', ylab='m')
 
-        axes[1].plot(time,  center[:,1], label='cy')
-        axes[1].plot(time,  np.ones(len(time))*atm.center[1], label='truth')
-        p3_pu.decorate(axes[1], title='cy', ylab='m')
+        axes[0].plot(time,  center[:,0], label='est')
+        axes[1].plot(time,  center[:,1], label='est')
+
+        try:   # plot center of atmosphere for analytic model that have them
+            foo = atm.radius
+            axes[0].plot(time,  np.ones(len(time))*atm.center[0], label='truth')
+            axes[1].plot(time,  np.ones(len(time))*atm.center[1], label='truth')
+        except AttributeError: pass
+        p3_pu.decorate(axes[1], title='cy', ylab='m', legend=True)
+        p3_pu.decorate(axes[0], title='cx', ylab='m', legend=True)
 
         axes[2].plot(time, self.meas_netto, label='netto')
         axes[2].plot(time, self.meas_vz, label='vz')
@@ -132,7 +220,7 @@ class Logger:
         return fig, axes
 
     def plot_slice_nu(self, time, X, U, _ctl, atm, n_spec, e0, h_spec,
-                      title="North Up slice", window_title=None, fig=None, ax=None):
+                      title="Soaring North Up slice", window_title=None, fig=None, ax=None):
         (n0, n1, dn), (h0, h1, dh) = n_spec, h_spec
         fig, ax = p3_pu.plot_slice_wind_nu(atm, n0=n0, n1=n1, dn=dn, e0=e0, h0=h0, h1=h1, dh=dh, zdir=-1.,
                                            show_quiver=True, show_color_bar=True, title=title,
@@ -140,3 +228,4 @@ class Logger:
         ax.plot(X[:,0],-X[:,2])
         center_ned = np.array(self.center)
         ax.plot(center_ned[:,0],-center_ned[:,2], 'r')
+        return fig, ax

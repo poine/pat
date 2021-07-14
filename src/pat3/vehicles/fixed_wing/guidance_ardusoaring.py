@@ -140,8 +140,10 @@ class ThermalFilter:
 
     def center_ned(self, Xac, Xflt=None):
         Xflt = Xflt if Xflt is not None else self.X
-        return Xac[p3_fr.SixDOFEuclidianEuler.sv_slice_pos] + [Xflt[self.sv_x], Xflt[self.sv_y], 0.]
-        
+        return Xac[p3_fr.SixDOFAeroEuler.sv_slice_pos] + [Xflt[self.sv_x], Xflt[self.sv_y], 0.]
+
+    def ned2vcned(self, pac_ned, p_ned): # north east down to front left up (wrong, this is Vehicle carried enu)
+        return p_ned - pac_ned
         
 class GuidanceArduSoaring(p3_guid.GuidancePurePursuit):
 
@@ -154,16 +156,23 @@ class GuidanceArduSoaring(p3_guid.GuidancePurePursuit):
     def _store_state(self, X, t):
         self.prev_state = np.array(X)
         self.prev_t = t
+
+    def set_initial_state(self, p0_ned, cc_ned):     # since enter does not have extra arguments :(
+        self.Xe[0], self.Xe[1] ,self.Xe[2] = p0_ned  # aircraft start point
+        self.cc_ned = cc_ned
+        self.s0, self.r0 = -1.5, 40.
         
-    def enter(self, X, t):
-        self._store_state(X, t)
+    def enter(self, Xae, t):
+        self._store_state(Xae, t)
         _s = p3_fr.SixDOFAeroEuler
-        alt, va, phi, psi = -X[_s.sv_z], X[_s.sv_va], X[_s.sv_phi], X[_s.sv_psi]
+        alt, va, phi, psi = -Xae[_s.sv_z], Xae[_s.sv_va], Xae[_s.sv_phi], Xae[_s.sv_psi]
         self.vario.reset(t=t, alt=alt, va=va, phi=phi)
-        x0, y0 = None, None#-20., 5.
-        s0, r0 = -1.5, 40
-        self.ekf.reset(psi+np.pi, x0, y0, s0, r0)
-        print('ekf reset: center_ned {}'.format(self.ekf.center_ned(X)))
+        ac_ned = Xae[_s.sv_slice_pos]
+        x0, y0 = (self.cc_ned - ac_ned)[:2]# None, None#-20., 5.
+        #s0, r0 = -1.5, 40
+        print(f'ekf reset: ac_ned {ac_ned}')
+        self.ekf.reset(psi+np.pi, x0, y0, self.s0, self.r0)
+        print(f'ekf reset: cc_ned {self.ekf.center_ned(Xae)}')
 
     def get(self, t, X, Xee=None, Yc=None, debug=False, traj=None):
         _s = p3_fr.SixDOFAeroEuler
@@ -178,7 +187,7 @@ class GuidanceArduSoaring(p3_guid.GuidancePurePursuit):
         d_ne_corrected = d_ne - d_wind_ne
         self._store_state(X, t)
         # FIXME sign baro...
-        if t>3.:
+        if t>0.1:
             self.ekf.update(t, -self.vario.reading, d_ne_corrected[0], d_ne_corrected[1], disable_correction=False)#t<3.) # netto baro is bad at first
         #print('arduguidance update: c_ned {}'.format(self.ekf.center_ned(X)))
 
@@ -188,7 +197,7 @@ class GuidanceArduSoaring(p3_guid.GuidancePurePursuit):
             #dx = 10*np.sin(0.05*(t-t0)) if t > t0 else 0
             #dx = 0
             #self.traj.set_center([self.ekf.X[ThermalFilter.sv_x]+dx, self.ekf.X[ThermalFilter.sv_y], -alt])
-            self.traj.set_center(self.ekf.center_ned(Xee))
+            self.traj.set_center(self.ekf.center_ned(X))
         return p3_guid.GuidancePurePursuit.get(self, t, X, Xee, Yc, debug)
 
 
@@ -260,26 +269,26 @@ class Logger:
         #p3_pu.plot_3D_wind(atm,  xspan=100, h0=0, hspan=10, dh=10., figure=fig, ax=ax)
         ax.view_init(-166., -106.)
 
-    def plot2D(self, time, X, _ctl, atm, n_spec=(-100, 100, 10), e0=0, h_spec=(180., 320., 10.)):
-        # 2D
+    def plot2D(self, time, X, _ctl, atm, n_spec=(-100, 100, 10), e0=0, h_spec=(180., 320., 10.), title=None):
+        # 2D North Up slice
         (n0, n1, dn), (h0, h1, dh) = n_spec, h_spec
-        fig, ax = p3_pu.plot_slice_wind_nu(atm, n0, n1, dn, e0, h0, h1, dh)
-        #, n0=-80, n1=60, dn=10., h0=180., h1=320., dh=10.
+        fig, ax = p3_pu.plot_slice_wind_nu(atm, n0, n1, dn, e0, h0, h1, dh, title=title)
         ac_ned = X[:,p3_fr.SixDOFEuclidianEuler.sv_slice_pos]
         ac_enu = p3_fr.ned_to_enu(ac_ned).reshape(-1, 1, 3)
-        #plt.plot(ac_ned[:,0], -ac_ned[:,2])
-        segments_enu = np.concatenate([ac_enu[:-1], ac_enu[1:]], axis=1)
+        if 1:
+            plt.plot(ac_ned[:,0], -ac_ned[:,2])
+        else:
+            segments_enu = np.concatenate([ac_enu[:-1], ac_enu[1:]], axis=1)
+            _val = np.asarray(self.vs_flt[:-1])
+            #norm = plt.Normalize(_val.min(), _val.max())
+            norm = plt.Normalize(0., 1.6)
 
-        _val = np.asarray(self.vs_flt[:-1])
-        #norm = plt.Normalize(_val.min(), _val.max())
-        norm = plt.Normalize(0., 1.6)
-
-        lc = matplotlib.collections.LineCollection(segments_enu[:,:,1:], cmap='viridis', norm=norm) # north and up
-        lc.set_array(_val)
-        lc.set_linewidth(2)
-        line = ax.add_collection(lc)
-        cbar = fig.colorbar(line, ax=ax)
-        cbar.ax.set_ylabel('m/s (up)', rotation=270); cbar.ax.set_xlabel('netto vario')
+            lc = matplotlib.collections.LineCollection(segments_enu[:,:,1:], cmap='viridis', norm=norm) # north and up
+            lc.set_array(_val)
+            lc.set_linewidth(2)
+            line = ax.add_collection(lc)
+            cbar = fig.colorbar(line, ax=ax)
+            cbar.ax.set_ylabel('m/s (up)', rotation=270); cbar.ax.set_xlabel('netto vario')
 
         c_ned = np.array([_ctl.ekf.center_ned(Xac, Xflt) for Xac, Xflt in zip(X, self.Xs)])
         plt.plot(c_ned[:,0], -c_ned[:,2], 'r') # north up
@@ -288,15 +297,7 @@ class Logger:
         
     def plot_chronograms(self, time, X, _ctl, atm):
         _s = p3_fr.SixDOFEuclidianEuler
-        # compute truth
-        try:
-            X_flt_truth = np.zeros((len(time), ThermalFilter.sv_size))
-            X_flt_truth[:, ThermalFilter.sv_strength] = atm.strength
-            X_flt_truth[:, ThermalFilter.sv_radius] = atm.radius
-            for i in range(len(time)):
-                X_flt_truth[i, ThermalFilter.sv_x:ThermalFilter.sv_y+1] = (atm.center - X[i,_s.sv_slice_pos])[:2] # FIXME... time?
-        except AttributeError:
-            pass
+        
         plt.figure()
         ax = plt.subplot(2,1,1)
         plt.plot(time, self.vs_reading, label='vario')
@@ -320,10 +321,17 @@ class Logger:
             ax = plt.subplot(4,2,i+1)
             plt.plot(time, data)
             p3_pu.decorate(ax, title=title, ylab=ylab)#, legend=True)
-        ax = plt.subplot(4,2,1); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_strength])
-        ax = plt.subplot(4,2,3); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_radius])
-        ax = plt.subplot(4,2,5); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_x])
-        ax = plt.subplot(4,2,7); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_y])
-        
+        try: # compute truth
+            X_flt_truth = np.zeros((len(time), ThermalFilter.sv_size))
+            X_flt_truth[:, ThermalFilter.sv_strength] = atm.strength
+            X_flt_truth[:, ThermalFilter.sv_radius] = atm.radius
+            for i in range(len(time)):
+                X_flt_truth[i, ThermalFilter.sv_x:ThermalFilter.sv_y+1] = (atm.center - X[i,_s.sv_slice_pos])[:2] # FIXME... time?
+            ax = plt.subplot(4,2,1); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_strength])
+            ax = plt.subplot(4,2,3); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_radius])
+            ax = plt.subplot(4,2,5); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_x])
+            ax = plt.subplot(4,2,7); plt.plot(time,  X_flt_truth[:,ThermalFilter.sv_y])
+        except AttributeError:
+            pass
 
     

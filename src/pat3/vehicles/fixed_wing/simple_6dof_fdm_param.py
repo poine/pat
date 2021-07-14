@@ -46,7 +46,7 @@ class Param:
         """
           Quick and dirty xml parsing
         """
-        LOG.info("loading parameters from {:s}".format(filename))
+        LOG.info("\n  Loading parameters from {:s}".format(filename))
         tree = ET.parse(filename)
         root = tree.getroot()
 

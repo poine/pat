@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 import os, sys, math, numpy as np, matplotlib.pyplot as plt
 import logging
 import pdb
