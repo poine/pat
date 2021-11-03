@@ -121,7 +121,7 @@ class SixDOFEuclidianEuler():
     def get_default_state(cls): return np.zeros(cls.sv_size)
     
     @classmethod
-    def to_six_dof_euclidian_quat(cls, Xee, atm=None, t=0):
+    def to_six_dof_euclidian_quat(cls, Xee):
         Xeq = np.zeros(SixDOFEuclidianQuat.sv_size)
         Xeq[SixDOFEuclidianQuat.sv_slice_pos] = Xee[cls.sv_slice_pos]
         Xeq[SixDOFEuclidianQuat.sv_slice_vel] = Xee[cls.sv_slice_vel]
@@ -130,7 +130,7 @@ class SixDOFEuclidianEuler():
         return Xeq
 
     @classmethod
-    def to_six_dof_body_euler(cls, Xee, atm=None, t=0):
+    def to_six_dof_body_euler(cls, Xee):
         Xbe = np.zeros(SixDOFBodyEuler.sv_size)
         Xbe[SixDOFBodyEuler.sv_slice_pos] = Xee[cls.sv_slice_pos]
         Xbe[SixDOFBodyEuler.sv_slice_vel] = vel_world_to_body_eul(Xee[cls.sv_slice_vel], Xee[cls.sv_slice_eul])
@@ -139,7 +139,7 @@ class SixDOFEuclidianEuler():
         return Xbe
 
     @classmethod
-    def to_six_dof_body_quat(cls, Xee, atm=None, t=0):
+    def to_six_dof_body_quat(cls, Xee):
         Xbq = np.zeros(SixDOFBodyQuat.sv_size)
         Xbq[SixDOFBodyQuat.sv_slice_pos] = Xee[cls.sv_slice_pos]
         Xbq[SixDOFBodyQuat.sv_slice_vel] = vel_world_to_body_eul(Xee[cls.sv_slice_vel], Xee[cls.sv_slice_eul])
@@ -148,17 +148,16 @@ class SixDOFEuclidianEuler():
         return Xbq
 
     @classmethod
-    def to_six_dof_aero_euler(cls, Xee, atm=None, t=0):
+    def to_six_dof_aero_euler(cls, Xee, wind_ned=[0, 0, 0]):
         Xae = np.zeros(SixDOFAeroEuler.sv_size)
         Xae[SixDOFAeroEuler.sv_slice_pos]   = Xee[cls.sv_slice_pos]
-        wind_ned = (atm.get_wind_ned(Xee[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xae[SixDOFAeroEuler.sv_slice_vaero] = vel_world_to_aero_eul(Xee[cls.sv_slice_vel], Xee[cls.sv_slice_eul], wind_ned)
         Xae[SixDOFAeroEuler.sv_slice_eul]   = Xee[cls.sv_slice_eul]
         Xae[SixDOFAeroEuler.sv_slice_rvel]  = Xee[cls.sv_slice_rvel]
         return Xae
 
     @classmethod
-    def from_six_dof_aero_euler(cls, Xae, atm=None, t=0):
+    def from_six_dof_aero_euler(cls, Xae):
         return SixDOFAeroEuler.to_six_dof_euclidian_euler(Xae)
 
     @classmethod
@@ -218,7 +217,7 @@ class SixDOFEuclidianEuler():
     def plot_trajectory_as_be(cls, time, Xee, U,
                               figure=None, window_title="Trajectory",
                               legend=None, label='', filename=None, atm=None):
-        Xbe = np.array([cls.to_six_dof_body_euler(_X, atm, _t) for _X, _t in zip(Xee, time)])
+        Xbe = np.array([cls.to_six_dof_body_euler(_X) for _X in Xee])
         return SixDOFBodyEuler.plot_trajectory(time, Xbe, U, figure, window_title, legend, label, filename, atm)
     
 #
@@ -240,20 +239,18 @@ class SixDOFAeroEuler():
     def get_default_state(cls): return np.array([0.,0.,0.,  10.,0.,0.,  0.,0.,0.,  0.,0.,0.])
 
     @classmethod
-    def to_six_dof_euclidian_euler(cls, X, atm=None, t=0):
+    def to_six_dof_euclidian_euler(cls, X, wind_ned=[0, 0, 0]):
         Xee = np.zeros(SixDOFEuclidianEuler.sv_size)
         Xee[SixDOFEuclidianEuler.sv_slice_pos] = X[cls.sv_slice_pos]
         Xee[SixDOFEuclidianEuler.sv_slice_eul] = X[cls.sv_slice_eul]
         Xee[SixDOFEuclidianEuler.sv_slice_rvel] = X[cls.sv_slice_rvel]
-        wind_ned = (atm.get_wind_ned(X[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xee[SixDOFEuclidianEuler.sv_slice_vel] = vel_aero_to_world_euler(X[cls.sv_slice_vaero], X[cls.sv_slice_eul], wind_ned)
         return Xee
 
     @classmethod
-    def to_six_dof_euclidian_quat(cls, Xae, atm=None, t=0):
+    def to_six_dof_euclidian_quat(cls, Xae, wind_ned=[0, 0, 0]):
         Xeq = np.zeros(SixDOFEuclidianQuat.sv_size)
         Xeq[SixDOFEuclidianQuat.sv_slice_pos] = Xae[cls.sv_slice_pos]
-        wind_ned = (atm.get_wind_ned(Xae[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xeq[SixDOFEuclidianEuler.sv_slice_vel] = vel_aero_to_world_euler(Xae[cls.sv_slice_vaero], Xae[cls.sv_slice_eul], wind_ned)
         Xeq[SixDOFEuclidianQuat.sv_slice_quat] = p3_alg.quat_of_euler(Xae[cls.sv_slice_eul])
         Xeq[SixDOFEuclidianEuler.sv_slice_rvel] = Xae[cls.sv_slice_rvel]
@@ -262,8 +259,8 @@ class SixDOFAeroEuler():
     @classmethod
     def from_six_dof_aero_euler(cls, X): return X
     @classmethod
-    def state_from_ee(cls, Xee, atm=None, t=0.):
-        return SixDOFEuclidianEuler.to_six_dof_aero_euler(Xee, atm, t)
+    def state_from_ee(cls, Xee, wind_ned=[0, 0, 0]):
+        return SixDOFEuclidianEuler.to_six_dof_aero_euler(Xee, wind_ned)
 
     @classmethod
     def state_str(cls, X):
@@ -275,7 +272,7 @@ class SixDOFAeroEuler():
                    np.rad2deg(X[cls.sv_phi]), np.rad2deg(X[cls.sv_theta]), np.rad2deg(X[cls.sv_psi]))
 
     @classmethod
-    def cont_dyn(cls, X, t, U, P, atm=None, add_weight=False):
+    def cont_dyn(cls, X, t, U, P, wind_ned=[0, 0, 0], add_weight=False):
         Fb, Mb = U[:3], U[3:]
         X_pos = X[cls.sv_slice_pos]                      # ned pos
         X_avel = va, alpha, beta = X[cls.sv_slice_vaero] # airvel, alpha, beta
@@ -284,7 +281,6 @@ class SixDOFAeroEuler():
 
         earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
         p_w, v_aero, e_w2b, om_b = X[cls.sv_slice_pos], X[cls.sv_slice_vaero], X[cls.sv_slice_eul], X[cls.sv_slice_rvel]
-        wind_ned = atm.get_wind_ned(X_pos, t) if atm is not None else [0, 0, 0]
         waccel_body = [0, 0, 0]  # np.dot(earth_to_body, waccel_earth)
         ivel_world = vel_aero_to_world_euler(X_avel, X_euler, wind_ned)
         ivel_body = np.dot(earth_to_body_R, ivel_world)
@@ -340,6 +336,8 @@ class SixDOFAeroEuler():
     def plot_trajectory_as_ee(cls, time, Xeq, U,
                               figure=None, window_title="Trajectory",
                               legend=None, label='', filename=None, atm=None):
+        # FIXME!!! broken since moving atm out of to_six_dof_euclidian_euler
+        wind_ned = atm.get_wind_ned(_p, _t) if atm is not None else [0,0,0]
         Xee = np.array([cls.to_six_dof_euclidian_euler(_X, atm, _t) for _X, _t in zip(Xeq, time)])
         return SixDOFEuclidianEuler.plot_trajectory(time, Xee, U, figure, window_title, legend, label, filename, atm)
 
@@ -361,7 +359,7 @@ class SixDOFBodyEuler():
     @classmethod
     def get_default_state(cls): return np.array([0.,0.,0.,  0.,0.,0.,  0.,0.,0.,  0.,0.,0.])
     @classmethod
-    def to_six_dof_euclidian_euler(cls, Xbe, atm=None, t=0):
+    def to_six_dof_euclidian_euler(cls, Xbe):
         Xee = np.zeros(SixDOFEuclidianEuler.sv_size)
         Xee[SixDOFEuclidianEuler.sv_slice_pos]  = Xbe[cls.sv_slice_pos]
         Xee[SixDOFEuclidianEuler.sv_slice_vel]  = vel_body_to_world_euler(Xbe[cls.sv_slice_vel], Xbe[cls.sv_slice_eul])
@@ -369,8 +367,8 @@ class SixDOFBodyEuler():
         Xee[SixDOFEuclidianEuler.sv_slice_rvel] = Xbe[cls.sv_slice_rvel]
         return Xee
     @classmethod
-    def state_from_ee(cls, Xee, atm=None, t=0.):
-        return SixDOFEuclidianEuler.to_six_dof_body_euler(Xee, atm, t)
+    def state_from_ee(cls, Xee):
+        return SixDOFEuclidianEuler.to_six_dof_body_euler(Xee)
 
     
     @classmethod
@@ -449,14 +447,14 @@ class SixDOFEuclidianQuat():
     def get_default_state(cls): return np.array([0.,0.,0.,  0.,0.,0.,  1.,0.,0.,0.,  0.,0.,0.])
     
     @classmethod
-    def from_six_dof_aero_euler(cls, Xae, atm=None, t=0):
-        return SixDOFAeroEuler.to_six_dof_euclidian_quat(Xae, atm, t)
+    def from_six_dof_aero_euler(cls, Xae, wind_ned=[0, 0, 0]):
+        return SixDOFAeroEuler.to_six_dof_euclidian_quat(Xae, wind_ned)
     @classmethod
-    def state_from_ee(cls, Xee, atm=None, t=0.):
-        return SixDOFEuclidianEuler.to_six_dof_euclidian_quat(Xee, atm, t)
+    def state_from_ee(cls, Xee):
+        return SixDOFEuclidianEuler.to_six_dof_euclidian_quat(Xee)
 
     @classmethod
-    def to_six_dof_euclidian_euler(cls, Xeq, atm=None, t=0):
+    def to_six_dof_euclidian_euler(cls, Xeq):
         Xee = np.zeros(SixDOFEuclidianEuler.sv_size)
         Xee[SixDOFEuclidianEuler.sv_slice_pos] = Xeq[cls.sv_slice_pos]
         Xee[SixDOFEuclidianEuler.sv_slice_vel] = Xeq[cls.sv_slice_vel]
@@ -465,10 +463,9 @@ class SixDOFEuclidianQuat():
         return Xee
     
     @classmethod
-    def to_six_dof_aero_euler(cls, Xeq, atm=None, t=0):
+    def to_six_dof_aero_euler(cls, Xeq, wind_ned=[0, 0, 0]):
         Xae = np.zeros(SixDOFAeroEuler.sv_size)
         Xae[SixDOFAeroEuler.sv_slice_pos]   = Xeq[cls.sv_slice_pos]
-        wind_ned = (atm.get_wind_ned(Xeq[cls.sv_slice_pos], t) if atm is not None else [0, 0, 0])
         Xae[SixDOFAeroEuler.sv_slice_vaero] = vel_world_to_aero(Xeq[cls.sv_slice_vel],  Xae[SixDOFAeroEuler.sv_slice_eul], wind_ned)
         Xae[SixDOFAeroEuler.sv_slice_eul]   = p3_alg.euler_of_quat(Xeq[cls.sv_slice_quat])
         Xae[SixDOFAeroEuler.sv_slice_rvel]  = Xeq[cls.sv_slice_rvel]
@@ -525,7 +522,7 @@ class SixDOFBodyQuat():
     
     
     @classmethod
-    def to_six_dof_euclidian_euler(cls, Xbq, atm=None, t=0):
+    def to_six_dof_euclidian_euler(cls, Xbq):
         Xee = np.zeros(SixDOFEuclidianEuler.sv_size)
         Xee[SixDOFEuclidianEuler.sv_slice_pos]  = Xbq[cls.sv_slice_pos]
         Xee[SixDOFEuclidianEuler.sv_slice_vel]  = vel_body_to_world_quat(Xbq[cls.sv_slice_vel], Xbq[cls.sv_slice_quat])
@@ -533,7 +530,7 @@ class SixDOFBodyQuat():
         Xee[SixDOFEuclidianEuler.sv_slice_rvel] = Xbq[cls.sv_slice_rvel]
         return Xee
     @classmethod
-    def to_six_dof_body_euler(cls, Xbq, atm=None, t=0):
+    def to_six_dof_body_euler(cls, Xbq):
         Xbe = np.zeros(SixDOFBodyEuler.sv_size)
         Xbe[SixDOFEuclidianEuler.sv_slice_pos]  = Xbq[cls.sv_slice_pos]
         Xbe[SixDOFEuclidianEuler.sv_slice_vel]  = Xbq[cls.sv_slice_vel]
@@ -541,8 +538,8 @@ class SixDOFBodyQuat():
         Xbe[SixDOFEuclidianEuler.sv_slice_rvel] = Xbq[cls.sv_slice_rvel]
         return Xbe
     @classmethod
-    def state_from_ee(cls, Xee, atm=None, t=0.):
-        return SixDOFEuclidianEuler.to_six_dof_body_quat(Xee, atm, t)
+    def state_from_ee(cls, Xee):
+        return SixDOFEuclidianEuler.to_six_dof_body_quat(Xee)
 
     @classmethod
     def cont_dyn(cls, X, t, U, P, add_weight=False):
@@ -572,7 +569,7 @@ class SixDOFBodyQuat():
     def plot_trajectory_as_be(cls, time, Xbq, U,
                               figure=None, window_title="Trajectory",
                               legend=None, label='', filename=None, atm=None):
-        Xbe = np.array([cls.to_six_dof_body_euler(_X, atm, _t) for _X, _t in zip(Xbq, time)])
+        Xbe = np.array([cls.to_six_dof_body_euler(_X) for _X in Xbq])
         return SixDOFBodyEuler.plot_trajectory(time, Xbe, U, figure, window_title, legend, label, filename, atm)
     @classmethod
     def plot_trajectory_as_ee(cls, time, Xbq, U,

@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 #
-# Copyright 2013-2014 Antoine Drouin (poinix@gmail.com)
+# Copyright 2013-2021 Antoine Drouin (poinix@gmail.com)
 #
 # This file is part of PAT.
 #
@@ -115,14 +115,14 @@ class FWDynamicModel:
         self._update_byproducts()
         return self.X
 
-    def run(self, dt, tf, U, atm, act_dyn=False):
+    def run(self, dt, tf, U, wind_ned, act_dyn=False):
         if act_dyn: # actuator dynamics
             act_lambda = -1./np.array([0.1, 0.02, 0.02, 0.02, 0.2])
             self.X_act += dt*((self.X_act-self._clip_input(U))*act_lambda)
         else:
             self.X_act = self._clip_input(U)
        
-        foo, self.X = scipy.integrate.odeint(self.dyn, self.X, [self.t, self.t+dt], args=(self.X_act, atm))#, hmax=0.001)
+        foo, self.X = scipy.integrate.odeint(self.dyn, self.X, [self.t, self.t+dt], args=(self.X_act, wind_ned))#, hmax=0.001)
         self.t += dt
         self._update_byproducts()
         return self.X
@@ -352,7 +352,7 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
         print("Info: Dynamic fixed wing legacy")
         FWDynamicModel.__init__(self, params)
 
-    def dyn(self, X, t, U, atm=None):
+    def dyn(self, X, t, U, wind_ned=[0, 0, 0]):
         Ueng = U[self.P.u_slice_eng()]                    # engines part of input vector
         Usfc = U[self.P.u_slice_sfc()]                    # control surfaces part of input vector
         X_pos = X[self.sv_slice_pos]                      # ned pos
@@ -374,7 +374,7 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
         m_eng_body = p3_fw_aero.get_m_eng_body(f_eng_body, self.P)
         m_body = m_aero_body + m_eng_body
         
-        return p3_fr.SixDOFAeroEuler.cont_dyn(X, t, np.concatenate((forces_body, m_body)), self.P, atm)
+        return p3_fr.SixDOFAeroEuler.cont_dyn(X, t, np.concatenate((forces_body, m_body)), self.P, wind_ned)
             
 
     def _update_byproducts(self):
@@ -401,14 +401,14 @@ class DynamicModel(p3_fr.SixDOFAeroEuler, FWDynamicModel):
             print("  va     {:.2f} m/s".format(va))
             print("  gamma  {:.2f} deg".format(np.rad2deg(gamma)))
             print("  flaps  {:.2f} deg".format(np.rad2deg(flaps)))
-
+        wind_ned = [0, 0, 0] if atm is None else atm.get_wind_ned([0,0,0], 0) # FIXME....
         def err_func(args):
             throttle, elevator, alpha = args
             X=[0., 0., -h, va, alpha, 0., 0.,  gamma+alpha, 0., 0., 0., 0.]
             U = np.zeros(self.input_nb())
             U[self.iv_dth()] = throttle; U[self.iv_de()] = elevator
             if self.P.sfc_nb >= 4: U[self.iv_df()] = flaps
-            Xdot = self.dyn(X, 0., U, atm)
+            Xdot = self.dyn(X, 0., U, wind_ned)
             Xdot_ref = [va*math.cos(gamma), 0., -va*math.sin(gamma), 0., 0., 0., 0., 0., 0., 0., 0., 0.]
             return np.linalg.norm(Xdot - Xdot_ref)
 
@@ -477,7 +477,7 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
         FWDynamicModel.__init__(self, params_filesname)
       
 
-    def dyn(self, X, t, U, atm):
+    def dyn(self, X, t, U, wind_ned=[0, 0, 0]):
 
         Ueng = U[self.P.u_slice_eng()]                    # engines part of input vector
         Usfc = U[self.P.u_slice_sfc()]                    # control surfaces part of input vector
@@ -487,7 +487,6 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
         X_rvel_body = X[self.sv_slice_rvel]               # body rotational velocities
 
         earth_to_body_R = p3_alg.rmat_of_euler(X_euler)
-        wind_ned = atm.get_wind_ned(X_pos, t) if atm is not None else [0, 0, 0]
         va, alpha, beta = p3_fr.vel_world_to_aero_eul(X_vel, X_euler, wind_ned)
         h = -X[self.sv_z]
         rho = p3_atm.get_rho(h)
@@ -532,7 +531,7 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
             print("  va     {:.2f} m/s".format(va))
             print("  gamma  {:.2f} deg".format(np.rad2deg(gamma)))
 
-        wvel_world = (atm.get_wind_ned([0, 0, -h], t=0) if atm is not None else [0, 0, 0])
+        wind_ned = (atm.get_wind_ned([0, 0, -h], t=0) if atm is not None else [0, 0, 0])
         def err_func(args):
             throttle, elevator, alpha = args
             xd, yd, zd = va*math.cos(gamma), 0., -va*math.sin(gamma)
@@ -540,7 +539,7 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
             X=[0., 0., -h, xd, yd, zd, phi, theta, psi, 0., 0., 0.]
             U = np.zeros(self.P.input_nb)
             U[self.P.u_slice_eng()], U[self.P.u_elevator()] = throttle, elevator
-            Xdot = self.dyn(X, 0., U, atm)
+            Xdot = self.dyn(X, 0., U, wind_ned)
             Xdot_ref = [va*math.cos(gamma), 0., -va*math.sin(gamma), 0., 0., 0., 0., 0., 0., 0., 0., 0.]
             return np.linalg.norm(Xdot - Xdot_ref)
 
@@ -569,7 +568,7 @@ class DynamicModel_ee(p3_fr.SixDOFEuclidianEuler, FWDynamicModel):
             X=[0., 0., -h, xd, yd, zd, phi, theta, psi, 0., 0., 0.]
             U = np.zeros(self.P.input_nb)
             U[self.P.u_slice_eng()], U[self.P.u_elevator()] = throttle, elevator
-            Xdot = self.dyn(X, 0., U, atm)
+            Xdot = self.dyn(X, 0., U, wvel_world)
             Xdot_ref = [va*math.cos(gamma), 0., -va*math.sin(gamma), 0., 0., 0., 0., 0., 0., 0., 0., 0.]
             return np.linalg.norm(Xdot - Xdot_ref)
 

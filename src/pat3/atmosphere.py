@@ -260,7 +260,7 @@ class AtmosphereWharington(Atmosphere):
         self.strength = strength
         self.cst = cst
         self.r2 = self.radius**2
-        self.x0, self.x1, self.y0, self.y1, self.z0, self.z1 = -100, 100, -100, 100, 0, 100
+        #self.x0, self.x1, self.y0, self.y1, self.z0, self.z1 = -100, 100, -100, 100, 0, 100
         
     def set_params(self, *args): pass
 
@@ -280,6 +280,18 @@ class AtmosphereWharingtonArray(Atmosphere):
 
     def set_params(self, *args): pass
 
+
+class AtmosphereArray(Atmosphere):
+    def __init__(self, atms):
+        self.atms = atms
+    
+    def get_wind_ned(self, pos_ned, t): 
+        winds = [_t.get_wind_ned(pos_ned, t) for _t in self.atms]
+        return np.sum(winds, axis=0)
+
+    def set_params(self, *args): pass
+    
+        
 # class AtmosphereThermalMulti(AtmosphereWharingtonArray):
 #     def __init__(self):
 #         Cs, Rs, Ss = [[75, -20, 0], [-75, 20, 0]], [75, 50], [-0.5, -1.2]
@@ -327,7 +339,7 @@ class AtmosphereRidge(Atmosphere):
 
     def get_wind_ned(self, pos_ned, t): 
         dpos = pos_ned - self.c
-        dpos[1]=0  # cylinder axis is y
+        dpos[1]=0  # cylinder axis is y (east)
         r = np.linalg.norm(dpos)
         if r < self.R: return [0.,0.,0.]
         eta = -np.arctan2(dpos[2], dpos[0])

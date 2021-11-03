@@ -181,51 +181,66 @@ def plot_slice_wind(atm, xmax=50, dx=5., h0=-10, h1=150, dh=2.):
 #
 # vertical wind slice
 #
-def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., zdir=-1.,
-                       show_quiver=True, show_color_bar=True,
+def plot_slice_wind_nu(atm, n0=-50, n1=50, dn=5., e0=0., h0=-10, h1=150, dh=2., t0=0., zdir=-1.,
+                       show_quiver=True, contour_wz=False, show_color_bar=True,
                        title=None,
-                       figure=None, ax=None, use_wx=False):
+                       figure=None, ax=None):
     fig = figure if figure is not None else plt.figure()
     ax = ax if ax is not None else fig.add_subplot(111)
-    xlist, zlist = np.arange(n0, n1, dn), np.arange(h0, h1, dh)
-    x, z = np.meshgrid(xlist, zlist)
-    wx, wz = np.meshgrid(xlist, zlist)
-    for ix in range(wx.shape[0]):
-        for iz in range(wx.shape[1]):
-            pos_ned = [x[ix, iz], e0, zdir*z[ix, iz]]  # we plot with z axis up
-            wx[ix, iz], _, wz[ix, iz] = atm.get_wind_ned(pos_ned, t=0)
-    cp = ax.contourf(x, z, zdir*wz, alpha=0.4)
-    if use_wx: cp = ax.contourf(x, z, zdir*wx, alpha=0.4) # FIX ME : this can be made more generic for x-y-z
-    if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
+    _nlist, _ulist = np.arange(n0, n1, dn), np.arange(h0, h1, dh)
+    _n, _u = np.meshgrid(_nlist, _ulist, indexing='ij')
+    #wx, wz = np.meshgrid(_nlist, _ulist)
+    _wind = np.zeros((len(_nlist), len(_ulist), 3))
+    for _in in range(len(_nlist)):
+        for _iu in range(len(_ulist)):
+            pos_ned = [_n[_in, _iu], e0, zdir*_u[_in, _iu]]  # we plot with z axis up
+            #wx[_in, _iu], _, wz[_in, _iu] = atm.get_wind_ned(pos_ned, t=0)
+            _wind[_in, _iu] = atm.get_wind_ned(pos_ned, t=0)
+
+    if show_quiver:
+        #pdb.set_trace()
+        q = ax.quiver(_nlist, _ulist, _wind[:,:,0].T, -_wind[:,:,2].T, angles='uv', units='width')
+    #if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
+
+    # wind is 'ned', we plot 'en' but contourf wants xy meshgrid indexing (as opposed to ij)
+    _d = -_wind[:,:,2].T if contour_wz else np.linalg.norm(_wind, axis=2).T
+    cp = ax.contourf(_nlist, _ulist, _d, alpha=0.4)
+    
+    #cp = ax.contourf(x, z, zdir*wz, alpha=0.4)
+    #if use_wx: cp = ax.contourf(x, z, zdir*wx, alpha=0.4) # FIX ME : this can be made more generic for x-y-z
     if show_color_bar:
         cbar = fig.colorbar(cp)
-        cbar.ax.set_ylabel('wz in m/s (>0 up)', rotation=270); cbar.ax.set_xlabel('thermal')
-    title = 'Atmosphere vert slice' if title is None else title 
+        lab = 'wz in m/s (up)' if contour_wz else 'wind in m/s'
+        cbar.ax.set_ylabel(lab, rotation=270)#; cbar.ax.set_xlabel('thermal')
+    title = f'NorthUp slice at e:{e0}m t:{t0}s' if title is None else title
     decorate(ax, title=title, xlab='North [$m$]', ylab='Altitude [m] (positive up)', legend=None, xlim=None, ylim=None, min_yspan=None)
     ax.axis('equal')
     return fig, ax
 
 
-def plot_slice_wind_eu(atm, n0=0, e0=0, e1=100, de=5., h0=-10, h1=150, dh=2., zdir=-1.,
-                       show_quiver=True, show_color_bar=True,
+def plot_slice_wind_eu(atm, n0=0, e0=0, e1=100, de=5., h0=-10, h1=150, dh=2., t0=0., zdir=-1.,
+                       show_quiver=True, contour_wz=False, show_color_bar=True,
                        title=None,
-                       figure=None, ax=None, use_wx=False):
+                       figure=None, ax=None):
     fig = figure if figure is not None else plt.figure()
     ax = ax if ax is not None else fig.add_subplot(111)
-    xlist, zlist = np.arange(e0, e1, de), np.arange(h0, h1, dh)
-    x, z = np.meshgrid(xlist, zlist)
-    wx, wz = np.meshgrid(xlist, zlist)
-    for ix in range(wx.shape[0]):
-        for iz in range(wx.shape[1]):
-            pos_ned = [n0, x[ix, iz], zdir*z[ix, iz]]  # we plot with z axis up
-            _, wx[ix, iz], wz[ix, iz] = atm.get_wind_ned(pos_ned, t=0)
-    cp = ax.contourf(x, z, zdir*wz, alpha=0.4)
-    if use_wx: cp = ax.contourf(x, z, zdir*wx, alpha=0.4) # FIX ME : this can be made more generic for x-y-z
-    if show_quiver: q = ax.quiver(xlist, zlist, wx, zdir*wz, units='width')
+    _elist, _ulist = np.arange(e0, e1, de), np.arange(h0, h1, dh)
+    _e, _u = np.meshgrid(_elist, _ulist, indexing='ij')
+    _wind = np.zeros((len(_elist), len(_ulist), 3))
+    for ie in range(len(_elist)):
+        for iu in range(len(_ulist)):
+            pos_ned = [n0, _e[ie, iu], zdir*_u[ie, iu]]  # we plot with z axis up
+            _wind[ie, iu] = atm.get_wind_ned(pos_ned, t=0)
+    if show_quiver:
+        q = ax.quiver(_elist, _ulist, _wind[:,:,1].T, -_wind[:,:,2].T, angles='uv', units='width')
+    # wind is 'ned', we plot 'en' but contourf wants xy meshgrid indexing (as opposed to ij)
+    _d = -_wind[:,:,2].T if contour_wz else np.linalg.norm(_wind, axis=2).T
+    cp = ax.contourf(_elist, _ulist, _d, alpha=0.4)
     if show_color_bar:
         cbar = fig.colorbar(cp)
-        cbar.ax.set_ylabel('wz in m/s (>0 up)', rotation=270); cbar.ax.set_xlabel('thermal')
-    title = 'Atmosphere vert slice' if title is None else title 
+        lab = 'wz in m/s (up)' if contour_wz else 'wind in m/s'
+        cbar.ax.set_ylabel(lab, rotation=270)#; cbar.ax.set_xlabel('thermal')
+    title = f'EastUp slice at n:{n0}m t:{t0}s' if title is None else title
     decorate(ax, title=title, xlab='east in m', ylab='h in m (positive up)', legend=None, xlim=None, ylim=None, min_yspan=None)
     ax.axis('equal')
     return fig, ax
@@ -235,24 +250,31 @@ def plot_slice_wind_eu(atm, n0=0, e0=0, e1=100, de=5., h0=-10, h1=150, dh=2., zd
 # horizontal wind slice
 #
 def plot_slice_wind_ne(atm, n0=-100, n1=100, dn=5., e0=-100., e1=100, de=5, h0=0., t0=0.,
-                       show_color_bar=False,
+                       show_quiver=False, contour_wz=False, show_color_bar=False,
                        title=None,
                        figure=None, ax=None):
     fig = figure if figure is not None else plt.figure()
     ax = ax if ax is not None else fig.add_subplot(111)
     _nlist, _elist = np.arange(n0, n1, dn), np.arange(e0, e1, de)
-    _n, _e = np.meshgrid(_nlist, _elist)
-    _wd = np.zeros_like(_n)
-    for _in in range(_wd.shape[0]):
-        for _ie in range(_wd.shape[1]):
+    _n, _e = np.meshgrid(_nlist, _elist, indexing='ij')
+    _wind = np.zeros((len(_nlist), len(_elist), 3))
+    for _in in range(_wind.shape[0]):
+        for _ie in range(_wind.shape[1]):
             pos_ned = [_n[_in, _ie], _e[_in, _ie], -h0]
-            _wd[_in, _ie] = atm.get_wind_ned(pos_ned, t=0)[2]
-            
-    cp = ax.contourf(_n, _e, -_wd, alpha=0.4)
+            _wind[_in, _ie] = atm.get_wind_ned(pos_ned, t=0)
+    
+    if show_quiver:
+        q = ax.quiver(_elist, _nlist, _wind[:,:,1], _wind[:,:,0], angles='uv', units='width')
+
+    # wind is 'ned', we plot 'en' but contourf wants xy meshgrid indexing (as opposed to ij)
+    _d = -_wind[:,:,2] if contour_wz else np.linalg.norm(_wind, axis=2)
+    cp = ax.contourf(_elist, _nlist, _d, alpha=0.4) 
+
     if show_color_bar:
         cbar = fig.colorbar(cp)
-        cbar.ax.set_ylabel('wz in m/s (up)', rotation=270); cbar.ax.set_xlabel('thermal')
-    title = 'Atmosphere horiz slice' if title is None else title
+        lab = 'wz in m/s (up)' if contour_wz else 'wind in m/s'
+        cbar.ax.set_ylabel(lab, rotation=270)#; cbar.ax.set_xlabel('wind speed')
+    title = f'EastNorth slice at {h0}m {t0}s' if title is None else title
     decorate(ax, title=title, xlab='east in m', ylab='north in m', legend=None, xlim=None, ylim=None, min_yspan=None)
     ax.axis('equal')
     return figure, ax
