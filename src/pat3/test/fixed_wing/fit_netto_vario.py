@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 import os, math, numpy as np, matplotlib.pyplot as plt
 import logging
 import pdb
@@ -11,28 +11,27 @@ import pat3.plot_utils as p3_pu
 import pat3.vehicles.fixed_wing.legacy_6dof as p1_fw_dyn
 
 
-def test_phi0(atm, dm, h=0):
-    vas = np.arange(6, 20, 1.)
-    vzs = []
-    for va in vas:
+def fit_va(atm, dm, h=0):
+    vas, vzs  = np.arange(6, 20, 1.), []
+    # compute simulator trims
+    for va in vas: 
         Xae_e, Uae_e = dm.trim({'h':h, 'va':va, 'throttle':0}, report=False, debug=False)
         vzs.append(-Xae_e[p3_fr.SixDOFEuclidianEuler.sv_zd])
-
+    # fit polynomial
     rho = p3_atm.get_rho(h)
     K = 2.*dm.P.m*dm.P.g/rho/dm.P.Sref
     H = np.array([[va**3/K, K/va] for va in vas])
     CD0, B = np.dot(np.linalg.pinv(H), vzs)
-    print('K {} CD0 {} B {}'.format(K, CD0, B))
-
+    print(f'K {K} CD0 {CD0} B {B}')
+    # display simulator points and polynomial model
     vas2 = np.arange(6, 20, 0.1)
     vzs2 = [va**3/K*CD0+K/va*B for va in vas2]
-    
     plt.plot(vas, vzs, '*')
     plt.plot(vas2, vzs2)
     p3_pu.decorate(plt.gca(), xlab='va (m/s)', ylab='vz (m/s)')
     plt.show()
 
-def test_phi(atm, dm):
+def fit_phi(atm, dm):
     phis = np.deg2rad(np.arange(-30, 31, 1.))
     h, va = 0, 14
 
@@ -42,16 +41,6 @@ def test_phi(atm, dm):
         Xes.append(Xe); Ues.append(Ue)
 
     Xes, Ues = np.array(Xes), np.array(Ues)
-    #pdb.set_trace()
-    # trims = np.array([dm.trim_aero_banked_cst_throttle(h=h, va=va, throttle=0., flaps=0., phi=phi, debug=True)
-    #          for phi in phis])
-    # trims_Xe = []
-    # for (gamma, elevator, aileron, rudder, alpha), phi in zip(trims, phis):
-    #     theta = gamma+alpha
-    #     psid = dm.P.g*np.tan(phi)/va
-    #     p, q, r = 0., np.sin(phi)*np.cos(theta)*psid, np.cos(phi)*np.cos(theta)*psid
-    #     trims_Xe.append(dm.from_six_dof_aero_euler([0., 0., -h, va, alpha, 0., phi, theta, 0., p, q, r]))
-    # trims_Xe = np.array(trims_Xe)
         
     plt.figure()
     plt.subplot(4,1,1)
@@ -73,8 +62,8 @@ def test_phi(atm, dm):
     p3_pu.decorate(plt.gca(), title='zd', xlab='phi (deg)', ylab='m/s')
     plt.show()
 
-def test_phi2(atm, dm, compute=False): 
-    savefile_name = '/tmp/pat_glider_trims.npz'
+def fit_va_and_phi(atm, dm, compute=False): 
+    savefile_name = '/home/poine/tmp/pat_glider_trims.npz'
     h = 0.
     if compute:
         phis = np.deg2rad(np.arange(-45, 46, 1.)) 
@@ -137,9 +126,9 @@ def test_phi2(atm, dm, compute=False):
 def main(h=0):
     atm = p3_atm.AtmosphereCstWind([0., 0., 0.])
     dm = p1_fw_dyn.DynamicModel_ee()
-    #test_phi0(atm, dm)
-    #test_phi(atm, dm)
-    test_phi2(atm, dm, compute=False)
+    #fit_va(atm, dm)
+    #fit_phi(atm, dm)
+    fit_va_and_phi(atm, dm, compute=True)
     
     
     
