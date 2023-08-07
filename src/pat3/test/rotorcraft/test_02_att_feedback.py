@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 import math, numpy as np, matplotlib.pyplot as plt
 import pdb
 
@@ -53,15 +53,16 @@ def main(tf=10., dt=0.01):
     #Yc = step_euler2(time, pal.e_psi, np.deg2rad(1.))
     #Yc = step_z(time)
 
-    Xe, Ue = _fdm.trim()    
+    Xe, Ue = _fdm.trim()
+    
     X0 = np.array(Xe)
     #X0[fdm.sv_zd] += 0.1
     #X0[fdm.sv_slice_quat] = pal.quat_of_euler([np.deg2rad(1.), 0., 0.])
     X, U = np.zeros((len(time), fdm.sv_size)), Ue*np.ones((len(time), fdm.iv_size))
-    X[0] = _fdm.reset(X0, time[0])
+    X[0] = _fdm.reset(X0, time[0], Ue)
     for i in range(1, len(time)):
         U[i-1] = _ctl.get(time[i-1], X[i-1], Yc[i-1])
-        #X[i] = _fdm.run(time[i], U[i-1])
+        #X[i] = _fdm.run(time[i], U[i-1]) 
         X[i] = _fdm.disc_dyn(X[i-1], time[i-1], U[i-1], time[i]-time[i-1])
         
     fdm.plot(time, X, U)

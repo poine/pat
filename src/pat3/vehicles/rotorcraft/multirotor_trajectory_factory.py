@@ -69,7 +69,7 @@ register(Traj8)
 
 class Traj9(pmt.SmoothLine):
     name, desc = 'smooth_line', 'SmoothLine'
-    
+register(Traj9)
     
 class Traj10(pmt.SmoothBackAndForth):
     name, desc = 'smooth_back_and_forth', 'smooth back and forth'
@@ -220,5 +220,5 @@ def get(traj_name):
     return trajectories[traj_name][1](), trajectories[traj_name][0]
 
 def list():
-    names = ['{}: {}'.format(k,v[0]) for k,v in sorted(trajectories.iteritems())]
+    names = ['{}: {}'.format(k,v[0]) for k,v in sorted(trajectories.items())]
     return names

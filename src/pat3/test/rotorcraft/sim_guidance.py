@@ -1,9 +1,9 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import sys, argparse, math, numpy as np, matplotlib.pyplot as plt
 import pdb
 
-import pat3.algebra as pal, pat3.utils as pmu
+import pat3.algebra as pal, pat3.utils as pmu, pat3.atmosphere as patm
 import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
 import pat3.vehicles.rotorcraft.multirotor_control as ctl
 import pat3.vehicles.rotorcraft.multirotor_trajectory as pmt
@@ -33,7 +33,8 @@ def main(dt=0.005):
     #_fdm = fdm.SolidFDM()
     _ctl_input = ctl.TrajRef(_traj, _fdm)
     _ctl = ctl.PosController(_fdm, _ctl_input)
-    sim = pmu.Sim(_fdm, _ctl)
+    _atm = np.array([0,0,0])#patm.AtmosphereCstWind()#FIXME
+    sim = pmu.Sim(_fdm, _ctl, _atm)
 
     time = np.arange(0, _traj.duration, dt)
     X, U = np.zeros((len(time), fdm.sv_size)), np.zeros((len(time), _fdm.iv_size))

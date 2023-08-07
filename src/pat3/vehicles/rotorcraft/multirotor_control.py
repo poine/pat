@@ -71,7 +71,7 @@ class ZAttController:
                            [0.25,  1,  1,  1]])
         self.invH = np.linalg.inv(self.H)
         
-    def get(self, t, X, Yc):
+    def get(self, t, X, Xee, Yc):
         zc, qc = Yc[0], Yc[1:]
         Uz = self.z_ctl.run(X, zc)
         Upqr = self.att_ctl.run(X, qc)
