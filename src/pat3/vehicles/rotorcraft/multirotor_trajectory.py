@@ -288,7 +288,7 @@ class CircleWithIntro(CompositeTraj):
         CompositeTraj.__init__(self, steps)
         
 
-def plot(time, Yc, figure=None, window_title="Flat Output Trajectory"):
+def plot(time, Yc, figure=None, axes=None, window_title="Flat Output Trajectory"):
     figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))
     #pdb.set_trace()
     plots = [("$x$",       "m",     0.5, Yc[:,_x, 0]),
@@ -312,7 +312,7 @@ def plot(time, Yc, figure=None, window_title="Flat Output Trajectory"):
              ("$z^{(4)}$", "m/s4",  0.5, Yc[:,_z, 4]),
              ("$\psi^{(4)}$", "deg/s4",   0.5, np.rad2deg(Yc[:,_psi, 4])),
     ]
-    figure = ppu.plot_in_grid(time, plots, 4, figure, window_title)
+    figure = ppu.plot_in_grid(time, plots, 4, figure, axes, window_title)
     return figure
 
 # /home/poine/work/two_d_guidance/two_d_guidance/path_factory.py
