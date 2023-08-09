@@ -36,7 +36,8 @@ sv_slice_rvel = slice(sv_p,sv_r+1)
 
 
 '''
-input vector components
+input vector components 
+FIXME - obsolete - use actuator allocation
 '''
 iv_fr   = 0
 iv_br   = 1
@@ -67,7 +68,7 @@ class Param():
 
 
 class FDM:
-    ''' An object encapsulating the dynamic model of the multirotor '''
+    ''' Base class encapsulating the dynamic model of the multirotor '''
     def __init__(self, dt=0.005):
         self.dt = dt
         self.solve_ode_first_order = False
@@ -79,7 +80,8 @@ class FDM:
     
     #def trim(self): # must be implemented by child classes
     #    return trim(self.P)
-    
+    #def cont_dyn(self, X, t, U): # must be implemented by child classes
+        
     def reset(self, X0, t0, U0):
         self.X, self.t = X0, t0
         self.update_byproducts()
@@ -116,14 +118,16 @@ class FDM:
         self.T_w2b[:3,:3] = pal.rmat_of_quat(self.X[sv_slice_quat]).T # that is freaking weird....
         self.T_w2b[:3,3] = self.X[sv_slice_pos]
         
-    def plot(self, time, X, U=None, figure=None, window_title="Trajectory"):
-        return plot(time, X, U, figure, window_title)
+    def plot(self, time, X, U=None, figure=None, axes=None, window_title="Trajectory"):
+        return plot(time, X, U, figure, axes, window_title)
 
 
     # def state_as_six_dof_euclidian_euler(X, atm=None, t=0.):
     #     return p3_fr.SixDOFEuclidianQuat.to_six_dof_euclidian_euler(X, atm, t)
 
+
 class SolidFDM(FDM):
+    ''' Solid dynamic. Input are forces and moments in body frame '''
     def __init__(self):
         print('Solid FDM')
         self.input_type = 'solid'
@@ -183,12 +187,7 @@ class MR_FDM(SolidFDM):
         Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
         Ue = np.ones(self.iv_size)*self.P.m*self.P.g / self.iv_size
         return Xe, Ue
-        #return mr_trim(self.P)
-
-    # def cont_dyn(self, X, t, U):
-    #     return mr_cont_dyn(X, t, U, self.P)
- 
-    
+   
     def cont_dyn(self, X, t, U):
         # rotors Thrust in body frame
         Fb = [0, 0, -np.sum(U)]
@@ -204,66 +203,6 @@ class MR_FDM(SolidFDM):
         
     def state_as_six_dof_euclidian_euler(self, X, atm=None, t=0.):
         return p3_fr.SixDOFEuclidianQuat.to_six_dof_euclidian_euler(X)
-
-
-# copied in object
-#def mr_trim(P):
-#    Xe = np.zeros(sv_size); Xe[sv_qi] = 1.
-#    Ue = np.ones(iv_size)*P.m*P.g / iv_size
-#    return Xe, Ue
-#
-#
-# def solid_cont_dyn(X, F_b, M_b, P):
-#     #pdb.set_trace()
-#     Xd = np.zeros(sv_size)
-#     p_w, v_w, q_w2b, om_b = X[sv_slice_pos], X[sv_slice_vel], X[sv_slice_quat], X[sv_slice_rvel]
-#     # Translational kinematics
-#     Xd[sv_slice_pos] = v_w
-#     # Newton for forces
-#     R_w2b =  pal.rmat_of_quat(q_w2b)
-#     #pdb.set_trace()
-#     Xd[sv_slice_vel] = 1./P.m*(np.dot(R_w2b.T, F_b) + [0, 0, P.m*P.g])
-#     # Rotational kinematics
-#     Xd[sv_slice_quat] = pal.quat_derivative(q_w2b, om_b)
-#     # Newton for moments
-#     Xd[sv_slice_rvel] = np.dot(P.invJ, M_b - np.cross(om_b, np.dot(P.J, om_b)))
-#     return Xd
-    
-# copied in object
-# def get_forces_and_moments_body(X, U, P):
-#     # rotors Thrust in body frame
-#     Fb = [0, 0, -np.sum(U)]
-#     # Drag
-#     Dw = -P.Cd*X[sv_slice_vel]
-#     R_w2b =  pal.rmat_of_quat(X[sv_slice_quat])
-#     Db = np.dot(R_w2b, Dw)
-    
-#     # Moments of external forces
-#     Mb = np.sum([np.cross(_p, [0, 0, -_f]) for _p, _f in zip(P.rotor_pos, U)], axis=0)
-#     # Torques
-#     Mb[2] += np.sum(P.k*(P.rotor_dir*U))
-#     return Fb+Db, Mb
-    
-    
-# def mr_cont_dyn(X, t, U, P):
-#     '''
-#     Continuous-time State Space Representation: Xdot = f_param(t, X, U)
-#     '''
-#     Fb, Mb = get_forces_and_moments_body(X, U, P)
-#     Xd = solid_cont_dyn(X, Fb, Mb, P)
-#     return Xd
-
-
-# def mr_disc_dyn(Xk, tk, Uk, dt, P):
-#     '''
-#     Discrete-time State Space Representation: Xk+1 = f_param(Xk, Uk)
-#     '''
-#     #_unused, Xkp1 = scipy.integrate.odeint(cont_dyn, Xk, [tk, tk+dt], args=(Uk, P))
-#     Xkp1 = Xk + cont_dyn(Xk, tk, Uk, P)*dt # first order
-#     # normalize quaternion ?
-#     nq = np.linalg.norm(Xkp1[sv_slice_quat])
-#     Xkp1[sv_slice_quat] /= nq
-#     return Xkp1
 
 
 
@@ -292,8 +231,8 @@ def num_jacobian(X, U, P):
 
 
 
-def plot(time, X, U=None, figure=None, window_title="Trajectory"):
-  figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))
+def plot(time, X, U=None, figure=None, axes=None, window_title="Trajectory"):
+  #figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))
  
   eulers = np.array([pal.euler_of_quat(_q) for _q in X[:,sv_slice_quat]])
   phi, theta, psi = eulers[:,0], eulers[:,1], eulers[:,2]
@@ -310,15 +249,14 @@ def plot(time, X, U=None, figure=None, window_title="Trajectory"):
            ("$q$",       "deg/s", 0.5, np.rad2deg(X[:,sv_q])),
            ("$r$",       "deg/s", 0.5, np.rad2deg(X[:,sv_r])),
   ]
-  if U is not None:
-    foo = np.empty((len(time))); foo.fill(np.nan)
-    plots += [("$U$", "N", 0.1, foo)]
-  figure = ppu.plot_in_grid(time, plots, 3, figure, window_title)
-  if U is not None:
-    ax = plt.subplot(5, 3, 13)
-    for i,txt in enumerate(('fr', 'br', 'bl', 'fl')):
-      plt.plot(time, U[:,i], label=txt)
-    plt.legend()
-  return figure
-  
-  pass
+  # if U is not None:
+  #   foo = np.empty((len(time))); foo.fill(np.nan)
+  #   plots += [("$U$", "N", 0.1, foo)]
+  figure, axes = ppu.plot_in_grid(time, plots, 3, figure, axes, window_title)
+  # if U is not None:
+  #   ax = plt.subplot(5, 3, 13)
+  #   for i,txt in enumerate(('fr', 'br', 'bl', 'fl')):
+  #     plt.plot(time, U[:,i], label=txt)
+  #   plt.legend()
+  return figure, axes
+

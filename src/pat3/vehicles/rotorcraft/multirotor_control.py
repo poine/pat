@@ -79,17 +79,16 @@ class ZAttController:
         #pdb.set_trace()
         return U
 
-    def plot(self, time, Yc, U=None, figure=None, window_title="Trajectory"):
-        if figure is None: figure = plt.gcf()
-        plt.subplot(5, 3, 3)
-        plt.plot(time, Yc[:,0], lw=2., label='setpoint')
+    def plot(self, time, Yc, U=None, figure=None, axes=None, window_title="Trajectory"):
+        # FIXME, broken
+        #if figure is None: figure = plt.gcf()
+        ax = axes[0,2]
+        ax.plot(time, Yc[:,0], lw=2., label='setpoint')
         euler_c = np.array([pal.euler_of_quat(_sp[1:]) for _sp in Yc])
-        plt.subplot(5, 3, 7)
-        plt.plot(time, np.rad2deg(euler_c[:,0]), label='setpoint')
-        plt.subplot(5, 3, 8)
-        plt.plot(time, np.rad2deg(euler_c[:,1]), label='setpoint')
-        plt.subplot(5, 3, 9)
-        plt.plot(time, np.rad2deg(euler_c[:,2]), label='setpoint')
+        axes[2,0].plot(time, np.rad2deg(euler_c[:,0]), label='setpoint')
+        axes[2,1].plot(time, np.rad2deg(euler_c[:,1]), label='setpoint')
+        axes[2,2].plot(time, np.rad2deg(euler_c[:,2]), label='setpoint')
+        return figure, axes
         Uzpqr = np.array([np.dot(self.invH, Uk) for Uk in U])
         ax = plt.subplot(5, 3, 14)
         plt.plot(time, Uzpqr[:,0], label='Uz')
@@ -99,7 +98,7 @@ class ZAttController:
         plt.plot(time, Uzpqr[:,2], label='Uq')
         plt.plot(time, Uzpqr[:,3], label='Ur')
         ppu.decorate(ax, title='$U_{pqr}$', xlab='s', ylab='N', legend=True)
-        return figure
+        return figure, axes
         
         
     
@@ -284,33 +283,21 @@ class PosController:
         return U  
 
 
-    def plot(self, time, U, Xref, figure=None):
-        if figure is None: figure = plt.gcf()
-        ax = plt.subplot(5,3,1)
-        plt.plot(time, Xref[:, r_x], label='ref')
-        ax = plt.subplot(5,3,2)
-        plt.plot(time, Xref[:, r_y], label='ref')
-        ax = plt.subplot(5,3,3)
-        plt.plot(time, Xref[:, r_z], label='ref')
-        ax = plt.subplot(5,3,4)
-        plt.plot(time, Xref[:, r_xd], label='ref')
-        ax = plt.subplot(5,3,5)
-        plt.plot(time, Xref[:, r_yd], label='ref')
-        ax = plt.subplot(5,3,6)
-        plt.plot(time, Xref[:, r_zd], label='ref')
-        ax = plt.subplot(5,3,7)
-        plt.plot(time, np.rad2deg(Xref[:, r_phi]), label='ref')
-        ax = plt.subplot(5,3,8)
-        plt.plot(time, np.rad2deg(Xref[:, r_theta]), label='ref')
-        ax = plt.subplot(5,3,9)
-        plt.plot(time, np.rad2deg(Xref[:, r_psi]), label='ref')
-        ax = plt.subplot(5,3,10)
-        plt.plot(time, np.rad2deg(Xref[:, r_p]), label='ref')
-        ax = plt.subplot(5,3,11)
-        plt.plot(time, np.rad2deg(Xref[:, r_q]), label='ref')
-        ax = plt.subplot(5,3,12)
-        plt.plot(time, np.rad2deg(Xref[:, r_r]), label='ref')
-        return figure
+    def plot(self, time, U, Xref, figure=None, axes=None):
+        #if figure is None: figure = plt.gcf()
+        axes[0,0].plot(time, Xref[:, r_x], label='ref')
+        axes[0,1].plot(time, Xref[:, r_y], label='ref')
+        axes[0,2].plot(time, Xref[:, r_z], label='ref')
+        axes[1,0].plot(time, Xref[:, r_xd], label='ref')
+        axes[1,1].plot(time, Xref[:, r_yd], label='ref')
+        axes[1,2].plot(time, Xref[:, r_zd], label='ref')
+        axes[2,0].plot(time, np.rad2deg(Xref[:, r_phi]), label='ref')
+        axes[2,1].plot(time, np.rad2deg(Xref[:, r_theta]), label='ref')
+        axes[2,2].plot(time, np.rad2deg(Xref[:, r_psi]), label='ref')
+        axes[3,0].plot(time, np.rad2deg(Xref[:, r_p]), label='ref')
+        axes[3,1].plot(time, np.rad2deg(Xref[:, r_q]), label='ref')
+        axes[3,2].plot(time, np.rad2deg(Xref[:, r_r]), label='ref')
+        return figure, axes
 
     
 

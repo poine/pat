@@ -45,8 +45,8 @@ def main(dt=0.005):
         Xref[i-1] = _ctl.Xref
     U[-1], Xref[-1] = U[-2], Xref[-2]
         
-    figure = _fdm.plot(time, X, U)
-    _ctl.plot(time, U, Xref)
+    figure, axes = _fdm.plot(time, X, U)
+    _ctl.plot(time, U, Xref, figure, axes)
     plt.show()
     
 if __name__ == "__main__":

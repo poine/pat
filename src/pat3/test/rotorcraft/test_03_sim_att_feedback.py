@@ -15,11 +15,11 @@ def main(tf=10., dt=0.005):
     X, U = np.zeros((len(time), fdm.sv_size)), np.zeros((len(time), fdm.iv_size))
     Yc = np.zeros((len(time), ctl.iv_size))
     #_in = ctl.CstInput(0, [np.deg2rad(0.1), 0, 0])
-    _in = ctl.SinZInput()
+    #_in = ctl.SinZInput()
     #_in = ctl.RandomInput()
     #_in = ctl.StepEulerInput(pal.e_phi, _a=np.deg2rad(1.), p=4, dt=1)
     #_in = ctl.StepEulerInput(pal.e_theta)
-    #_in = ctl.StepEulerInput(pal.e_psi)
+    _in = ctl.StepEulerInput(pal.e_psi)
     
     X[0] = sim.reset(time[0])
     for i in range(1, len(time)):
@@ -28,8 +28,8 @@ def main(tf=10., dt=0.005):
         U[i-1], X[i] = sim.run(time[i])
     Yc[-1] = _in.get(time[-1])
     U[-1], unused = sim.run(time[-1])
-    sim.fdm.plot(time, X, U)
-    sim.ctl.plot(time, Yc, U)
+    figure, axes = sim.fdm.plot(time, X, U)
+    sim.ctl.plot(time, Yc, U, figure, axes)
     plt.show()
     
 if __name__ == "__main__":

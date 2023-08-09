@@ -42,19 +42,20 @@ def prepare_fig(fig=None, window_title=None, figsize=(20.48, 10.24), margins=Non
     return fig
 
 
-def plot_in_grid(time, plots, ncol, figure=None, window_title="None", legend=None, filename=None,
+def plot_in_grid(time, plots, ncol, figure=None, axes=None, window_title="None", legend=None, filename=None,
                  margins=None, lw=2., extra_rows=0):
     nrow = math.ceil(len(plots)/float(ncol)) + extra_rows
     figsize = (10.24*ncol, 2.56*nrow)
     figure = prepare_fig(figure, window_title, figsize=figsize, margins=margins)
+    axes = figure.subplots(nrow, ncol, sharex=True) if axes is None else axes
     for i, (title, ylab, min_yspan, data) in enumerate(plots):
-        ax = figure.add_subplot(nrow, ncol, i+1)
+        ax = axes.flatten()[i]
         ax.plot(time, data, linewidth=lw)
         decorate(ax, title=title, ylab=ylab, min_yspan=min_yspan)
     if legend is not None:
         ax.legend(legend, loc='best')
     #save_if(filename)
-    return figure
+    return figure, axes
 
 
 
