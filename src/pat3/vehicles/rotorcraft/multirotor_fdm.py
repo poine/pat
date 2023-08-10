@@ -78,8 +78,7 @@ class FDM:
         self.T_w2b = np.eye(4)  # world (ned) to body (frd) homogeneous transform
 
     
-    #def trim(self): # must be implemented by child classes
-    #    return trim(self.P)
+    #def trim(self):              # must be implemented by child classes
     #def cont_dyn(self, X, t, U): # must be implemented by child classes
         
     def reset(self, X0, t0, U0):
@@ -96,7 +95,6 @@ class FDM:
             self.t += dt
             remaining_to_tf = tf - self.t
         self.update_byproducts()
-
         return self.X
 
     def disc_dyn(self, Xk, tk, Uk, dt):
@@ -156,6 +154,7 @@ class SolidFDM(FDM):
         return Xe, Ue
         
 class UFOFDM(SolidFDM):
+    ''' UFO dynamic. Input are vert thrust and moments in body frame '''
     def __init__(self):
         print('UFO FDM')
         self.input_type = 'zpqr'
@@ -174,9 +173,8 @@ class UFOFDM(SolidFDM):
         return Xe, Ue
 
 
-
-
 class MR_FDM(SolidFDM):
+    ''' Multirotor dynamic. Input are rotor thrust '''
     def __init__(self):
         print('MultiRotor FDM')
         self.input_type = 'multirotor'
