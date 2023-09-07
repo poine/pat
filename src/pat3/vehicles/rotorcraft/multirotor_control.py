@@ -310,7 +310,7 @@ class DiffFlatness:
     def state_and_cmd_of_flat_output(self, Y, P):
         #pdb.set_trace()
         wind = np.zeros(3)
-        cd_ov_m = P.Cd/P.m #param[prm_Cd]/param[prm_mass]
+        cd_ov_m = P.Cd/P.m
         a0 = np.array([
             Y[_x, 2] + cd_ov_m*(Y[_x, 1] - wind[_x]),
             Y[_y, 2] + cd_ov_m*(Y[_y, 1] - wind[_y]),

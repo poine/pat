@@ -209,6 +209,16 @@ register(Traj19)
 
 
 
+##
+#
+#
+class Traj41(pmt.RefModTraj):
+    name, desc = 'refmod1', 'reference model test 1'
+    def __init__(self):
+        pmt.RefModTraj.__init__(self, [0, 0, -0.25], [1, 1, -0.25], v=0.1)
+register(Traj41)
+    
+
 #trajectories = {T.name: (T.desc, T) for T in [Traj1, Traj2, Traj3, Traj4, Traj5, Traj6, Traj7, Traj8, Traj9, Traj10, Traj11, Traj12, Traj13, Traj14, Traj15, Traj16, Traj17, Traj18]}
 
 def print_available():

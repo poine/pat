@@ -5,8 +5,10 @@ import pdb
 
 
 '''
-  Trajectories
+  (Output) Trajectories for a quadrotor
   Y = [x, y, z, psi] plus their 4 time derivatives
+  Y constitutes a flat output and can hence be used to compute the state and input
+  of the quadrotor (see vehicle/rotorcraft/multirotor_control.py)
 '''
 import pat3.plot_utils as ppu, pat3.algebra as pal
 
@@ -15,7 +17,7 @@ _x, _y, _z, _psi, _ylen = range(5)
 _nder = 5
 
 #
-# Scalar trajectories
+# Scalar trajectories (aka 1D)
 # 
 class CstOne:
     def __init__(self, c=-1.):
@@ -24,14 +26,15 @@ class CstOne:
         return np.array([self.c, 0, 0, 0, 0])
 
 class AffineOne:
-    def __init__(self, c1=-1., c2=0):
-        self.c1, self.c2 = c1, c2
+    def __init__(self, c1=-1., c2=0, duration=1.):
+        self.c1, self.c2, self.duration = c1, c2, duration
+        
     def get(self, t):
-        #print('in AffineOne {}'.format(t))
         return np.array([self.c1*t+self.c2, self.c1, 0, 0, 0])
     
 class SinOne:
-    def __init__(self, c=0., a=1., om=1.):
+    def __init__(self, c=0., a=1., om=1., duration=2*np.pi):
+        self.duration = duration
         self.c, self.a, self.om = c, a, om
         self.t0 = 0.
         
@@ -56,8 +59,7 @@ class PolynomialOne:
     def __init__(self, Y0, Y1, duration):
         _der = len(Y0)    # number of time derivatives
         _order = 2*_der   # we need twice as many coefficients
-        self._der = _der
-        self._order = _order
+        self._der, self._order = _der, _order
         # compute polynomial coefficients for time derivative zeros
         self.coefs = np.zeros((_der, _order))
         M1 = np.zeros((_der, _der))
@@ -93,7 +95,7 @@ class PolynomialOne:
 
 
 #
-# Solid Trajectories
+# Solid Trajectories (aka 3D)
 # 
 
     
@@ -266,7 +268,7 @@ class FigureOfEight(CompositeTraj):
           
 class SmoothBackAndForth(CompositeTraj):
     def __init__(self, x0=[0, 0, 0.5, 0], x1=[1, 0, -0.5, 0], dt_move=2., dt_stay=1.):
-        x0, x1 =[0, 0, 0, 0], [1, 1, -1, np.deg2rad(180)]
+        #x0, x1 =[0, 0, 0, 0], [1, 1, -1, np.deg2rad(180)]
         steps = [SmoothLine(x0, x1, duration=dt_move),
                  Cst(x1, dt_stay),
                  SmoothLine(x1, x0, duration=dt_move),
@@ -288,6 +290,44 @@ class CircleWithIntro(CompositeTraj):
         CompositeTraj.__init__(self, steps)
         
 
+
+
+class RefModTraj:
+    def __init__(self, p1, p2, v=2., psi=None):
+        self.p1, self.p2, self.v = np.asarray(p1), np.asarray(p2), v # ends and velocity 
+        dep = self.p2-self.p1
+        self.length = np.linalg.norm(dep)   # length
+        self.un = dep/self.length           # unit vector
+        self.psi = psi if psi is not None else np.arctan2(self.un[1], self.un[0])
+        self.duration = self.length/self.v  # duration
+        self.t0 = 0.
+
+    def reset(self, t0): self.t0 = t0
+        
+    def get(self, t):
+        Yc = np.zeros((5,4))
+        Yc[0,:3] = self.p1 + self.un*self.v*(t-self.t0)
+        Yc[1,:3] =           self.un*self.v
+        Yc[0,3] = self.psi
+        return Yc.T
+
+
+# check trajectory consistency
+def check_consistency(time, Y):
+    Ycheck = np.zeros_like(Y)
+    # compute numerical differentiation of provided trajectory
+    Ycheck[:,:,1] = np.gradient(Y[:,:,0], time[1]-time[0], axis=0)
+    # compute further numerical differentiations
+    for j in range(2, _nder):
+        Ycheck[:,:,j] = np.gradient(Ycheck[:,:,j-1], time[1]-time[0], axis=0)
+    
+    figure, axes = plot(time, Y)
+    _s = 4
+    for i in range(_ylen): # x, y, z, psi
+        for j in range(1, _nder): # the four time derivatives
+            axes[j,i].plot(time[j:-j], np.rad2deg(Ycheck[j:-j,i,j]) if i == _psi else Ycheck[j:-j,i,j], label="check")
+
+    
 def plot(time, Yc, figure=None, axes=None, window_title="Flat Output Trajectory"):
     figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))
     #pdb.set_trace()
@@ -312,11 +352,11 @@ def plot(time, Yc, figure=None, axes=None, window_title="Flat Output Trajectory"
              ("$z^{(4)}$", "m/s4",  0.5, Yc[:,_z, 4]),
              ("$\psi^{(4)}$", "deg/s4",   0.5, np.rad2deg(Yc[:,_psi, 4])),
     ]
-    figure = ppu.plot_in_grid(time, plots, 4, figure, axes, window_title)
-    return figure
+    figure, axes = ppu.plot_in_grid(time, plots, 4, figure, axes, window_title)
+    return figure, axes
 
 # /home/poine/work/two_d_guidance/two_d_guidance/path_factory.py
-def plot3d(time, Yc, figure=None, window_title="Flat Output Trajectory"):
+def plot2d(time, Yc, figure=None, window_title="Flat Output Trajectory"):
     figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))
     ax = plt.gca()
     points = Yc[:, _x:_z, 0].reshape(-1, 1, 2)
