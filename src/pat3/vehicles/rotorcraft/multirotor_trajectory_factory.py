@@ -217,7 +217,37 @@ class Traj41(pmt.RefModTraj):
     def __init__(self):
         pmt.RefModTraj.__init__(self, [0, 0, -0.25], [1, 1, -0.25], v=0.1)
 register(Traj41)
-    
+
+
+##
+#
+#
+import pat3.vehicles.rotorcraft.multirotor_trajectory_dev as trj_dev
+class Traj42(trj_dev.FooTraj):
+    name, desc = 'space_index1', 'space index1'
+register(Traj42)
+
+
+##
+#
+#
+class Traj43(trj_dev.SpaceIndexedTraj):
+    name, desc = 'si2', 'space indexed waypoints'
+    def __init__(self, duration=10.):
+        # straj = trj_dev.SpaceWaypoints([[0, 0, 0],
+        #                                 [2, 1, 0.5],
+        #                                 [0, 2, 0],
+        #                                 [2, 3, 0.5],
+        #                                 [0, 4, 0]])
+        straj = trj_dev.SpaceWaypoints([[0, 0,  0.],
+                                        [2, 0, -0.5],
+                                        [2, 2, -0.5],
+                                        [0, 2, -0.5],
+                                        [0, 0, -0.5],])
+        dtraj = pmt.AffineOne(1./duration,0., duration)
+        trj_dev.SpaceIndexedTraj.__init__(self,straj, dtraj)
+register(Traj43)
+
 
 #trajectories = {T.name: (T.desc, T) for T in [Traj1, Traj2, Traj3, Traj4, Traj5, Traj6, Traj7, Traj8, Traj9, Traj10, Traj11, Traj12, Traj13, Traj14, Traj15, Traj16, Traj17, Traj18]}
 

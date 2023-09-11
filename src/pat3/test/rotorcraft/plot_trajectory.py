@@ -51,7 +51,7 @@ def main():
         plot_dflat_state_and_input(time, Yc)
 
     pmt.plot(time, Yc)
-    pmt.plot3d(time, Yc)
+    pmt.plot2d(time, Yc)
     plt.show()
    
 

@@ -57,6 +57,7 @@ def arr(k,n):
 
 class PolynomialOne:
     def __init__(self, Y0, Y1, duration):
+        self.duration = duration
         _der = len(Y0)    # number of time derivatives
         _order = 2*_der   # we need twice as many coefficients
         self._der, self._order = _der, _order
