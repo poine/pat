@@ -234,17 +234,21 @@ register(Traj42)
 class Traj43(trj_dev.SpaceIndexedTraj):
     name, desc = 'si2', 'space indexed waypoints'
     def __init__(self, duration=10.):
-        # straj = trj_dev.SpaceWaypoints([[0, 0, 0],
-        #                                 [2, 1, 0.5],
-        #                                 [0, 2, 0],
-        #                                 [2, 3, 0.5],
-        #                                 [0, 4, 0]])
-        straj = trj_dev.SpaceWaypoints([[0, 0,  0.],
-                                        [2, 0, -0.5],
-                                        [2, 2, -0.5],
-                                        [0, 2, -0.5],
-                                        [0, 0, -0.5],])
-        dtraj = pmt.AffineOne(1./duration,0., duration)
+        if 1:
+            straj = trj_dev.SpaceWaypoints([[0, 0, -0.1],
+                                            [2, 1, -0.8],
+                                            [0, 2, -0.4],
+                                            [2, 3, -0.8],
+                                            [0, 4, -0.1]])
+        else:
+            straj = trj_dev.SpaceWaypoints([[0, 0, -0.1],
+                                            [2, 0, -0.6],
+                                            [2, 2, -0.9],
+                                            [0, 2, -0.6],
+                                            [0, 0, -0.1],])
+        #dtraj = pmt.AffineOne(1./duration,0., duration)
+        dtraj = pmt.PolynomialOne([0,0,0,0,0], [1,0,0,0,0], duration)
+        
         trj_dev.SpaceIndexedTraj.__init__(self,straj, dtraj)
 register(Traj43)
 

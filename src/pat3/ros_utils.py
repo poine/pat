@@ -1,3 +1,9 @@
+#
+# This is some outdated support for ROS
+# This is kept for reference and will be removed shortly
+# Support for ROS2 is now in ros2_pat directory
+#
+
 import numpy as np
 import matplotlib.pyplot as plt
 import rospy, tf2_ros, tf

@@ -47,6 +47,19 @@ class SinOne:
                           -self.om**3*aca,
                            self.om**4*asa   ])
 
+
+class SigmoidOne:
+    def __init__(self, duration=5, l=2):
+        self.duration = duration
+        self.l = l
+        
+    def get(self, t):
+        a = np.tan(-np.pi/2+t*np.pi/self.duration)
+        b = 1./(1+np.exp(-self.l*a))
+        return [b, 0, 0, 0, 0]
+        
+
+    
 def arr(k,n):
     '''arangements a(k,n) = n!/k!'''
     a,i = 1,n

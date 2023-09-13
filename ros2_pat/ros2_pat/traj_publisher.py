@@ -24,7 +24,7 @@ class TrajPublisher(Node):
     def __init__(self):
         super().__init__('minimal_publisher')
 
-        self.tf_pub = ros2_pat.utils.PatTransformPublisher(self)
+        self.tf_pub = ros2_pat.utils.TransformPublisher(self)
         self.tf_pub.send_w_enu_to_ned_transform(rclpy.clock.Clock().now())
 
 
@@ -41,8 +41,8 @@ class TrajPublisher(Node):
         self.marker.color.b = 0.0
         self.marker.color.a = 1.0
         self.marker.type = 10 #visualization_msgs::Marker::MESH_RESOURCE;
-        self.marker.mesh_resource = "package://ros2_pat/meshes/quadcopter.dae"
-        #self.marker.mesh_resource = "package://ros2_pat/meshes/quad.dae"
+        #self.marker.mesh_resource = "package://ros2_pat/meshes/quadcopter.dae"
+        self.marker.mesh_resource = "package://ros2_pat/meshes/quad.dae"
         #self.marker.mesh_resource = "package://ros2_pat/meshes/mavic.dae"
 
         timer_period = 1./20.  # seconds
@@ -53,7 +53,7 @@ class TrajPublisher(Node):
         #self.traj = trj.SmoothBackAndForth(x0=[0, 0, 0, np.pi/2], x1=[1, 0, 0, np.pi/2])
         #self.traj = trj.SmoothBackAndForth(x0=[0, 0, 0, 0], x1=[1, 0, 0, 0])
         #self.traj = trjf.Traj14()
-        self.traj = trjf.Traj43()
+        self.traj = trjf.Traj43(duration=7.)
         self.df = ctl.DiffFlatness()
         self.fdm = fdm.FDM()
         self.t0 = Clock().now().nanoseconds*1e-9
