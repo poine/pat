@@ -47,7 +47,7 @@ class SinOne:
                           -self.om**3*aca,
                            self.om**4*asa   ])
 
-
+# TODO - finish derivatives
 class SigmoidOne:
     def __init__(self, duration=5, l=2):
         self.duration = duration

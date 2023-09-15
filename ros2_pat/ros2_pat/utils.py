@@ -48,6 +48,12 @@ def _position_and_orientation_from_T(p, q, T):
     p.x, p.y, p.z = T[:3, 3]
     q.x, q.y, q.z, q.w = tf_transformations.quaternion_from_matrix(T)    
 
+def T_of_t_q(t, q):
+    T = tf_transformations.quaternion_matrix(q)
+    T[:3,3] = t
+    return T
+
+
 class MarkerArrayPublisher:
     def __init__(self, parent_node, topic, mtype=2,
                  meshes=['package://ros2_pat/meshes/quadcopter.dae'],
@@ -75,6 +81,26 @@ class MarkerArrayPublisher:
         #pdb.set_trace()
         self.marker_pub.publish(self.msg)
 
+
+class MarkerPublisher:
+    def __init__(self, parent_node, topic, mtype=2,
+                 mesh='package://ros2_pat/meshes/quadcopter.dae',
+                 color=[0.2, 1., 0.2, 0.5], scale=(1., 1., 1.), frame_id="w_ned"):
+         self.marker_pub = parent_node.create_publisher(visualization_msgs.msg.Marker, topic, 2)
+         self.msg = visualization_msgs.msg.Marker()
+         self.msg.header.frame_id = frame_id
+         self.msg.type = mtype #marker.MESH_RESOURCE
+         self.msg.action = self.msg.ADD
+         self.msg.scale.x, self.msg.scale.y, self.msg.scale.z = scale
+         self.msg.color.r, self.msg.color.g, self.msg.color.b, self.msg.color.a  = color
+         self.msg.mesh_resource = mesh
+         #self.msg.mesh_use_embedded_materials = True
+         
+    def publish(self, stamp, T_ned2b, delete=False):
+        self.msg.header.stamp = stamp.to_msg()
+        _position_and_orientation_from_T(self.msg.pose.position, self.msg.pose.orientation, T_ned2b)
+        self.marker_pub.publish(self.msg)
+        
 
 class TrajPublisher:
     def __init__(self, traj, parent_node, topic, frame_id="w_ned", color=[0.2, 1., 0.2, 0.5]):

@@ -223,8 +223,16 @@ register(Traj41)
 #
 #
 import pat3.vehicles.rotorcraft.multirotor_trajectory_dev as trj_dev
-class Traj42(trj_dev.FooTraj):
-    name, desc = 'space_index1', 'space index1'
+class Traj42(trj_dev.SpaceIndexedTraj):
+    name, desc = 'si1', 'space index circle'
+    def __init__(self, duration=10.):
+        r, v = 1.5, 2.; om = v/r; alpha0 = 0
+        psit = pmt.CstOne(0.)
+        #psit = pmt.AffineOne(om, alpha0+np.pi/2)
+        #psit = pmt.PolynomialOne([-np.pi/2,0,0,0,0], [3*np.pi/2, 0, 0, 0, 0], duration=1.)
+        straj = trj_dev.SpaceCircle(r=r, c=[2.,2.], alpha0=0, dalpha=2*np.pi, psitraj=psit)
+        dtraj = pmt.PolynomialOne([0,0,0,0,0], [1, 0, 0, 0, 0], duration=duration)
+        trj_dev.SpaceIndexedTraj.__init__(self,straj, dtraj)
 register(Traj42)
 
 
@@ -233,7 +241,7 @@ register(Traj42)
 #
 class Traj43(trj_dev.SpaceIndexedTraj):
     name, desc = 'si2', 'space indexed waypoints'
-    def __init__(self, duration=10.):
+    def __init__(self, duration=7., dtraj=None):
         if 1:
             straj = trj_dev.SpaceWaypoints([[0, 0, -0.1],
                                             [2, 1, -0.8],
@@ -247,7 +255,7 @@ class Traj43(trj_dev.SpaceIndexedTraj):
                                             [0, 2, -0.6],
                                             [0, 0, -0.1],])
         #dtraj = pmt.AffineOne(1./duration,0., duration)
-        dtraj = pmt.PolynomialOne([0,0,0,0,0], [1,0,0,0,0], duration)
+        dtraj = dtraj or pmt.PolynomialOne([0,0,0,0,0], [1,0,0,0,0], duration)
         
         trj_dev.SpaceIndexedTraj.__init__(self,straj, dtraj)
 register(Traj43)

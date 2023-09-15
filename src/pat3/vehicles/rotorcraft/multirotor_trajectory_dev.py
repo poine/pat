@@ -33,14 +33,13 @@ class SpaceWaypoints:
         self.waypoints = np.array(waypoints)
         l = np.linspace(0, 1, len(self.waypoints))
         self.splines = [interpolate.InterpolatedUnivariateSpline(l, self.waypoints[:,i], k=4) for i in range(3)]
-        print(l)
         
     def get(self, l):
         Yl = np.zeros((self._ylen, self._nder))
         Yl[0:3] = [self.splines[i].derivatives(l) for i in range(3)]
         return Yl
  
-
+import pdb
 class SpaceIndexedTraj:
     def __init__(self, space_traj, dynamic):
         self.duration = dynamic.duration
@@ -51,7 +50,11 @@ class SpaceIndexedTraj:
     def get(self, t):
         Yt = np.zeros((self._g._ylen, self._g._nder))
         _lambda = self._lamdba.get(t) # lambda(t), lambdadot(t)...
+        _lambda[0] = np.clip(_lambda[0], 0., 1.)   # proctect ourselvf against unruly dynamics 
+        #try:
         _g = self._g.get(_lambda[0])  # g(lambda), dg/dlambda(lambda)...
+        #except:
+        #pdb.set_trace()
         Yt[:,0] = _g[:,0]
         Yt[:,1] = _lambda[1]*_g[:,1]
         Yt[:,2] = _lambda[2]*_g[:,1] + _lambda[1]**2*_g[:,2]
@@ -62,13 +65,3 @@ class SpaceIndexedTraj:
 
 
 
-class FooTraj(SpaceIndexedTraj):
-    def __init__(self, duration=6):
-        r, v = 1.5, 2.; om = v/r; alpha0 = 0
-        psit = trj.AffineOne(om, alpha0)
-        straj = SpaceCircle(r=r, c=[0,1.], alpha0=0, dalpha=4*np.pi, psitraj=psit)
-        #dtraj = trj.SinOne(om=np.pi/2/duration, duration=duration)
-        dtraj = trj.PolynomialOne([0,0,0,0,0], [1, 0, 0, 0, 0], duration=10.)
-        #dtraj = trj.AffineOne(1./duration,0., duration)
-        
-        SpaceIndexedTraj.__init__(self, straj, dtraj)
