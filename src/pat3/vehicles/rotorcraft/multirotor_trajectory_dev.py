@@ -4,6 +4,8 @@ import pat3.vehicles.rotorcraft.multirotor_trajectory as trj
 #import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
 #import pat3.vehicles.rotorcraft.multirotor_control as ctl
 
+#import pdb
+
 class SpaceCircle:
     def __init__(self, r=1., c = [0,0], alpha0=0, dalpha=2*np.pi, ztraj=None, psitraj=None):
         self._ylen, self._nder = 4, 5
@@ -39,22 +41,19 @@ class SpaceWaypoints:
         Yl[0:3] = [self.splines[i].derivatives(l) for i in range(3)]
         return Yl
  
-import pdb
 class SpaceIndexedTraj:
-    def __init__(self, space_traj, dynamic):
+    def __init__(self, geometry, dynamic):
         self.duration = dynamic.duration
         self._ylen, self._nder = 4, 5
-        self._g = space_traj   # geometry
-        self._lamdba = dynamic # dynamic
+        self._geom, self._dyn = geometry, dynamic
+
+    def set_dyn(self, dyn): self._dyn = dyn
 
     def get(self, t):
-        Yt = np.zeros((self._g._ylen, self._g._nder))
-        _lambda = self._lamdba.get(t) # lambda(t), lambdadot(t)...
-        _lambda[0] = np.clip(_lambda[0], 0., 1.)   # proctect ourselvf against unruly dynamics 
-        #try:
-        _g = self._g.get(_lambda[0])  # g(lambda), dg/dlambda(lambda)...
-        #except:
-        #pdb.set_trace()
+        Yt = np.zeros((self._geom._ylen, self._geom._nder))
+        _lambda = self._dyn.get(t) # lambda(t), lambdadot(t)...
+        _lambda[0] = np.clip(_lambda[0], 0., 1.)   # protect ourselvf against unruly dynamics 
+        _g = self._geom.get(_lambda[0])  # g(lambda), dg/dlambda(lambda)...
         Yt[:,0] = _g[:,0]
         Yt[:,1] = _lambda[1]*_g[:,1]
         Yt[:,2] = _lambda[2]*_g[:,1] + _lambda[1]**2*_g[:,2]

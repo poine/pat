@@ -199,8 +199,11 @@ class ActuatorAllocator:
         self.rotor_thrust_to_zpqr[1,:] = -np.array(P.rotor_pos)[:,1]
         self.rotor_thrust_to_zpqr[2,:] =  np.array(P.rotor_pos)[:,0]
         self.rotor_thrust_to_zpqr[3,:] = P.k*np.array(P.rotor_dir)
-        self.zpqr_to_rotor_thrust = np.linalg.inv(self.rotor_thrust_to_zpqr)
-
+        nf, nr = self.rotor_thrust_to_zpqr.shape
+        if nr==nf:
+            self.zpqr_to_rotor_thrust = np.linalg.inv(self.rotor_thrust_to_zpqr)
+        else:
+            self.zpqr_to_rotor_thrust = np.linalg.pinv(self.rotor_thrust_to_zpqr)
 
     def get(self, Uzpqr):
         Urt = np.dot(self.zpqr_to_rotor_thrust, Uzpqr)
