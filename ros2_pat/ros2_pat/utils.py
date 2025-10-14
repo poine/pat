@@ -8,8 +8,6 @@ import visualization_msgs.msg, geometry_msgs.msg
 
 import numpy as np
 
-import pdb
-
 class TransformPublisher:
     def __init__(self, parent_node):
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(parent_node)
@@ -113,12 +111,18 @@ class TrajPublisher:
         self.msg.pose.orientation.w = 1.
         self.msg.scale.x, self.msg.scale.y, self.msg.scale.z = 0.01, 0.01, 0.01
         self.msg.color.r, self.msg.color.g, self.msg.color.b, self.msg.color.a = color
-        for l in np.linspace(0,1, 100):
-        #for _p in [[0.,0.,0.], [0.,1.,0.], [2.,1.,0.]]:
-            #pdb.set_trace()
-            p = geometry_msgs.msg.Point()
-            p.x, p.y, p.z = traj._g.get(l)[:3,0]
-            self.msg.points.append(p)
+        if 0:
+            for l in np.linspace(0,1, 100):
+                #for _p in [[0.,0.,0.], [0.,1.,0.], [2.,1.,0.]]:
+                #pdb.set_trace()
+                p = geometry_msgs.msg.Point()
+                p.x, p.y, p.z = traj._g.get(l)[:3,0]
+                self.msg.points.append(p)
+        else:
+            for t in np.linspace(traj.t0, traj.t0+traj.duration, 600):
+                p = geometry_msgs.msg.Point()
+                p.x, p.y, p.z = traj.get(t)[:3,0]
+                self.msg.points.append(p)
         
     def publish(self):
         #print(self.msg, '\n')
