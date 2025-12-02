@@ -38,7 +38,7 @@ def prepare_fig(fig=None, window_title=None, figsize=(20.48, 10.24), margins=Non
                             hspace=hspace, wspace=wspace)
     #pdb.set_trace()
     if window_title is not None:
-         fig.canvas.set_window_title(window_title)
+         fig.canvas.manager.set_window_title(window_title)
     return fig
 
 
