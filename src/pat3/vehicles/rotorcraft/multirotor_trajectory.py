@@ -319,24 +319,23 @@ class CircleWithIntro(CompositeTraj):
         
 
 class RefModelTraj:
-    def __init__(self, traj_setpoint, dt=0.01):
+    def __init__(self, traj_setpoint, dt=0.01, Y0=None):
         dyns = [[8., 0.7, 4., 0.9], [8., 0.7, 4., 0.9], [8., 0.7, 4., 0.9], [5., 0.7, 2., 0.9]]
         self.refs = [p3_u.FourthOrdLinRef(om1, xi1, om2, xi2) for om1, xi1, om2, xi2 in dyns]
         self.duration = traj_setpoint.duration
         self.time = np.arange(0, self.duration, dt)
         self.Ysp = np.array([traj_setpoint.get(_t) for _t in self.time])
         for i in range(4):
-            self.refs[i].reset(self.Ysp[0,i])
+            self.refs[i].reset(self.Ysp[0,i] if Y0 is None else Y0[i])
+
         self.Ys = np.zeros_like(self.Ysp)
         for i in range(1, len(self.time)):
             for ycmp in range(4):
-                if ycmp==3:
+                if ycmp==3:  # wrap pesky heading angle
                     err = self.Ys[i-1, ycmp, 0] - self.Ysp[i, ycmp, 0]
                     if err > np.pi: self.Ysp[i, ycmp, 0] += 2*np.pi
                     elif err < -np.pi: self.Ysp[i, ycmp, 0] -= 2*np.pi
-                    #print(f'sp {self.Ysp[i, ycmp, 0]:.1f} ref {self.Ys[i-1, ycmp, 0]:.1f}  {err:.1f}')
                 self.Ys[i, ycmp] = self.refs[ycmp].run(dt, self.Ysp[i, ycmp, 0])
-                #self.Ys[i, ycmp, :3] = self.refs[ycmp].run(dt, self.Ysp[i, ycmp, 0])
 
         
     def reset(self, t0): pass

@@ -4,7 +4,6 @@ import threading
 
 
 import pat3.frames as p3_fr
-import pdb
 
 def set_rot(T, R): T[:3,:3]=R
 def set_trans(T, t): T[:3,3]=t
@@ -13,8 +12,6 @@ def get_trans(T): return T[:3,3]
 
 def norm_mpi_pi(v): return ( v + np.pi) % (2 * np.pi ) - np.pi
 def norm_0_2pi(v): return ( v + np.pi) % (2 * np.pi )
-
-
     
 
 # we assume this file is pat_dir/src/pat3/utils.py
@@ -126,8 +123,17 @@ class SecOrdLinRef(LinRef):
     def __init__(self, omega, xi, sats=None):
         LinRef.__init__(self, [-omega**2, -2*xi*omega], sats)
 
+class FourthOrdLinRef(LinRef):
+    def __init__(self, om1, xi1, om2, xi2, sats=None):
+        p1, p2 = omxi_to_lambda(om1, xi1), omxi_to_lambda(om2, xi2)
+        _p = np.poly(p1+p2)
+        K = -_p[::-1][:-1]
+        LinRef.__init__(self, K, sats)
+        
 def lamdba_to_omxi(l1, l2): return 
-def omxi_to_lambda(om, xi): re, im = -xi*om, np.sqrt(1-xi**2)*om; return np.complex(re,im), np.complex(re, -im)
+def omxi_to_lambda(om, xi):
+    re, im = -xi*om, np.sqrt(1-xi**2)*om;
+    return complex(re,im), complex(re, -im)
         
 """
 Naive numerical differentiation
