@@ -254,6 +254,11 @@ class PosController:
         out = np.dot(inv_G, -dyn*P.m - F)
         return out  # delta_ut delta_phi delta_theta
 
+
+    def get_fb(self, t, X, Xref, Uref):
+        # en vrac
+        Ufb = [0, 0, 0, 0]
+        return Uref + Ufb
         
     def get(self, t, X, Xee, Yc):
         Xref, Uref, Xrefq, Xrefdq = self.setpoint.get(t)

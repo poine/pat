@@ -11,6 +11,7 @@ import pdb
   of the quadrotor (see vehicle/rotorcraft/multirotor_control.py)
 '''
 import pat3.plot_utils as ppu, pat3.algebra as pal
+import pat3.utils as p3_u
 
 _x, _y, _z, _psi, _ylen = range(5)
 # we consider 4 time derivatives, this should be a parameter...
@@ -47,7 +48,7 @@ class SinOne:
                           -self.om**3*aca,
                            self.om**4*asa   ])
 
-# TODO - finish derivatives
+# TODO - compute derivatives
 class SigmoidOne:
     def __init__(self, duration=5, l=2):
         self.duration = duration
@@ -70,6 +71,7 @@ def arr(k,n):
 
 class PolynomialOne:
     def __init__(self, Y0, Y1, duration):
+        self.Y0, self.Y1 = Y0, Y1
         self.duration = duration
         _der = len(Y0)    # number of time derivatives
         _order = 2*_der   # we need twice as many coefficients
@@ -107,6 +109,21 @@ class PolynomialOne:
         return Y
         
 
+import scipy.interpolate as interpolate
+class SplinesOne:
+    def __init__(self, points_t, points_l):
+        self.duration = points_t[-1]
+        self._nder = 5
+        self.p_t, self.p_l = points_t, points_l
+        self.spline = interpolate.InterpolatedUnivariateSpline(points_t, points_l, k=4)
+        
+    def get(self, t):
+        return self.spline.derivatives(t)
+
+
+
+
+    
 
 #
 # Solid Trajectories (aka 3D)
@@ -177,7 +194,7 @@ class Line:
     def reset(self, t0): self.t0 = t0
         
     def get(self, t):
-        Yc = np.zeros((5,4))
+        Yc = np.zeros((_nder, _ylen))
         Yc[0,:3] = self.p1 + self.un*self.v*(t-self.t0)
         Yc[1,:3] =           self.un*self.v
         Yc[0,3] = self.psi
@@ -228,7 +245,6 @@ class CompositeTraj:
         self.t0 = 0.   
 
     def reset(self, t0):
-        #print('reset at {}'.format(t0))
         self.t0 = t0
         
     def get(self, t):
@@ -236,7 +252,6 @@ class CompositeTraj:
         Yc = np.zeros((5,4))
         dt_lapse = math.fmod(dt, self.duration)
         cur_step = np.argmax(self.steps_end > dt_lapse)
-        #print('get t {} dt {} cur_step {}'.format(t, dt, cur_step))
         Yc = self.steps[cur_step].get(dt_lapse)
         return Yc
     
@@ -282,7 +297,6 @@ class FigureOfEight(CompositeTraj):
           
 class SmoothBackAndForth(CompositeTraj):
     def __init__(self, x0=[0, 0, 0.5, 0], x1=[1, 0, -0.5, 0], dt_move=2., dt_stay=1.):
-        #x0, x1 =[0, 0, 0, 0], [1, 1, -1, np.deg2rad(180)]
         steps = [SmoothLine(x0, x1, duration=dt_move),
                  Cst(x1, dt_stay),
                  SmoothLine(x1, x0, duration=dt_move),
@@ -291,10 +305,10 @@ class SmoothBackAndForth(CompositeTraj):
 
 class CircleWithIntro(CompositeTraj):
     
-    def __init__(self, c=[0, 0, -0.5], r=1., v=3., dt_intro=1.8, dt_stay=0.):
+    def __init__(self, Y0=[0, 0, -1.5, 0], c=[0, 0, -1.5], r=1., v=3., dt_intro=1.8, dt_stay=0., psit=None):
         eps = np.deg2rad(2)
-        circle = Circle(c,  r,  v, np.pi/2-eps, 2*np.pi+2*eps)
-        Y0 = [0, 0, 0, 0]
+        circle = Circle(c,  r,  v, np.pi/2-eps, 2*np.pi+2*eps, psit=psit)
+        #Y0 = [0, 0, -1.5, 0]
         Y1 = circle.get(0.)
         Y2 = circle.get(circle.duration)
         steps = [SmoothLine(Y0, Y1, duration=dt_intro),
@@ -304,26 +318,34 @@ class CircleWithIntro(CompositeTraj):
         CompositeTraj.__init__(self, steps)
         
 
+class RefModelTraj:
+    def __init__(self, traj_setpoint, dt=0.01):
+        dyns = [[8., 0.7, 4., 0.9], [8., 0.7, 4., 0.9], [8., 0.7, 4., 0.9], [5., 0.7, 2., 0.9]]
+        self.refs = [p3_u.FourthOrdLinRef(om1, xi1, om2, xi2) for om1, xi1, om2, xi2 in dyns]
+        self.duration = traj_setpoint.duration
+        self.time = np.arange(0, self.duration, dt)
+        self.Ysp = np.array([traj_setpoint.get(_t) for _t in self.time])
+        for i in range(4):
+            self.refs[i].reset(self.Ysp[0,i])
+        self.Ys = np.zeros_like(self.Ysp)
+        for i in range(1, len(self.time)):
+            for ycmp in range(4):
+                if ycmp==3:
+                    err = self.Ys[i-1, ycmp, 0] - self.Ysp[i, ycmp, 0]
+                    if err > np.pi: self.Ysp[i, ycmp, 0] += 2*np.pi
+                    elif err < -np.pi: self.Ysp[i, ycmp, 0] -= 2*np.pi
+                    #print(f'sp {self.Ysp[i, ycmp, 0]:.1f} ref {self.Ys[i-1, ycmp, 0]:.1f}  {err:.1f}')
+                self.Ys[i, ycmp] = self.refs[ycmp].run(dt, self.Ysp[i, ycmp, 0])
+                #self.Ys[i, ycmp, :3] = self.refs[ycmp].run(dt, self.Ysp[i, ycmp, 0])
 
-
-class RefModTraj:
-    def __init__(self, p1, p2, v=2., psi=None):
-        self.p1, self.p2, self.v = np.asarray(p1), np.asarray(p2), v # ends and velocity 
-        dep = self.p2-self.p1
-        self.length = np.linalg.norm(dep)   # length
-        self.un = dep/self.length           # unit vector
-        self.psi = psi if psi is not None else np.arctan2(self.un[1], self.un[0])
-        self.duration = self.length/self.v  # duration
-        self.t0 = 0.
-
-    def reset(self, t0): self.t0 = t0
+        
+    def reset(self, t0): pass
         
     def get(self, t):
-        Yc = np.zeros((5,4))
-        Yc[0,:3] = self.p1 + self.un*self.v*(t-self.t0)
-        Yc[1,:3] =           self.un*self.v
-        Yc[0,3] = self.psi
-        return Yc.T
+        idx = np.argmax(self.time > t)
+        Yc = self.Ys[idx]
+        return Yc
+
 
 
 # check trajectory consistency
@@ -344,27 +366,26 @@ def check_consistency(time, Y):
     
 def plot(time, Yc, figure=None, axes=None, window_title="Flat Output Trajectory"):
     figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))
-    #pdb.set_trace()
     plots = [("$x$",       "m",     0.5, Yc[:,_x, 0]),
              ("$y$",       "m",     0.5, Yc[:,_y, 0]),
              ("$z$",       "m",     0.5, Yc[:,_z, 0]),
-             ("$\psi$",    "deg",   0.5, np.rad2deg(Yc[:,_psi, 0])),
+             ("$\\psi$",    "deg",   0.5, np.rad2deg(Yc[:,_psi, 0])),
              ("$x^{(1)}$", "m/s",   0.5, Yc[:,_x, 1]),
              ("$y^{(1)}$", "m/s",   0.5, Yc[:,_y, 1]),
              ("$z^{(1)}$", "m/s",   0.5, Yc[:,_z, 1]),
-             ("$\psi^{(1)}$", "deg/s",   0.5, np.rad2deg(Yc[:,_psi, 1])),
+             ("$\\psi^{(1)}$", "deg/s",   0.5, np.rad2deg(Yc[:,_psi, 1])),
              ("$x^{(2)}$", "m/s2",  0.5, Yc[:,_x, 2]),
              ("$y^{(2)}$", "m/s2",  0.5, Yc[:,_y, 2]),
              ("$z^{(2)}$", "m/s2",  0.5, Yc[:,_z, 2]),
-             ("$\psi^{(2)}$", "deg/s2",   0.5, np.rad2deg(Yc[:,_psi, 2])),
+             ("$\\psi^{(2)}$", "deg/s2",   0.5, np.rad2deg(Yc[:,_psi, 2])),
              ("$x^{(3)}$", "m/s3",  0.5, Yc[:,_x, 3]),
              ("$y^{(3)}$", "m/s3",  0.5, Yc[:,_y, 3]),
              ("$z^{(3)}$", "m/s3",  0.5, Yc[:,_z, 3]),
-             ("$\psi^{(3)}$", "deg/s3",   0.5, np.rad2deg(Yc[:,_psi, 3])),
+             ("$\\psi^{(3)}$", "deg/s3",   0.5, np.rad2deg(Yc[:,_psi, 3])),
              ("$x^{(4)}$", "m/s4",  0.5, Yc[:,_x, 4]),
              ("$y^{(4)}$", "m/s4",  0.5, Yc[:,_y, 4]),
              ("$z^{(4)}$", "m/s4",  0.5, Yc[:,_z, 4]),
-             ("$\psi^{(4)}$", "deg/s4",   0.5, np.rad2deg(Yc[:,_psi, 4])),
+             ("$\\psi^{(4)}$", "deg/s4",   0.5, np.rad2deg(Yc[:,_psi, 4])),
     ]
     figure, axes = ppu.plot_in_grid(time, plots, 4, figure, axes, window_title)
     return figure, axes
@@ -374,7 +395,6 @@ def plot2d(time, Yc, figure=None, window_title="Flat Output Trajectory"):
     figure = ppu.prepare_fig(figure, window_title, (20.48, 10.24))
     ax = plt.gca()
     points = Yc[:, _x:_z, 0].reshape(-1, 1, 2)
-    #pdb.set_trace()
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     norm = plt.Normalize(0, len(points))
     lc = matplotlib.collections.LineCollection(segments, cmap='jet', norm=norm)

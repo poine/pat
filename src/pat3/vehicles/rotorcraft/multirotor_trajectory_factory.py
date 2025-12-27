@@ -31,7 +31,7 @@ register(Traj2)
 class Traj3(pmt.Circle):
     name, desc = 'c2', 'circle r=1 v=4, looking at center'
     def __init__(self):
-        r, v = 1., 4.; om = v/r; alpha0 = 0
+        r, v = 1., 2.; om = v/r; alpha0 = 0
         psit = pmt.AffineOne(om, alpha0)
         pmt.Circle.__init__(self, [0, 0, -0.25], r, v, zt=None, psit=psit)
 register(Traj3)
@@ -124,9 +124,11 @@ register(Traj17)
 class Traj11(pmt.CircleWithIntro):
     name, desc = 'circle_with_intro', 'circle with intro'
 
-class Traj12(pmt.CircleWithIntro):
-    name, desc = 'circle_with_intro_slow', 'circle with intro slow'
-    def __init__(self): pmt.CircleWithIntro.__init__(self, c=[0, 0, -0.5], r=1., v=1., dt_intro=5., dt_stay=0.5)
+
+    
+
+
+
 
 ##
 #  oval_with_intro
@@ -212,25 +214,26 @@ register(Traj19)
 ##
 #
 #
-class Traj41(pmt.RefModTraj):
-    name, desc = 'refmod1', 'reference model test 1'
-    def __init__(self):
-        pmt.RefModTraj.__init__(self, [0, 0, -0.25], [1, 1, -0.25], v=0.1)
-register(Traj41)
+# class Traj41(pmt.RefModTraj):
+#     name, desc = 'refmod1', 'reference model test 1'
+#     def __init__(self):
+#         pmt.RefModTraj.__init__(self, [0, 0, -0.25], [1, 1, -0.25], v=0.1)
+# register(Traj41)
 
 
 ##
-#
+# space indexed circle 1
 #
 import pat3.vehicles.rotorcraft.multirotor_trajectory_dev as trj_dev
 class Traj42(trj_dev.SpaceIndexedTraj):
-    name, desc = 'si1', 'space index circle'
+    name, desc = 'sic1', 'space index circle'
     def __init__(self, duration=10.):
         r, v = 1.5, 2.; om = v/r; alpha0 = 0
         psit = pmt.CstOne(0.)
         #psit = pmt.AffineOne(om, alpha0+np.pi/2)
         #psit = pmt.PolynomialOne([-np.pi/2,0,0,0,0], [3*np.pi/2, 0, 0, 0, 0], duration=1.)
-        straj = trj_dev.SpaceCircle(r=r, c=[2.,2.], alpha0=0, dalpha=2*np.pi, psitraj=psit)
+        zt = pmt.CstOne(-1.5)
+        straj = trj_dev.SpaceCircle(r=r, c=[-1.5,0], alpha0=0, dalpha=2*np.pi, ztraj=zt, psitraj=psit)
         dtraj = pmt.PolynomialOne([0,0,0,0,0], [1, 0, 0, 0, 0], duration=duration)
         trj_dev.SpaceIndexedTraj.__init__(self,straj, dtraj)
 register(Traj42)
@@ -240,14 +243,14 @@ register(Traj42)
 #
 #
 class Traj43(trj_dev.SpaceIndexedTraj):
-    name, desc = 'si2', 'space indexed waypoints'
+    name, desc = 'siwp1', 'space indexed waypoints'
     def __init__(self, duration=7., dtraj=None):
         if 1:
-            straj = trj_dev.SpaceWaypoints([[0, 0, -0.1],
-                                            [2, 1, -0.8],
-                                            [0, 2, -0.4],
-                                            [2, 3, -0.8],
-                                            [0, 4, -0.1]])
+            straj = trj_dev.SpaceWaypoints([[0, 0, -1.5],
+                                            [2, 1, -2.5],
+                                            [0, 2, -1.2],
+                                            [2, 3, -2.5],
+                                            [0, 4, -1.5]]) # , [-2, 2, -2.]
         else:
             straj = trj_dev.SpaceWaypoints([[0, 0, -0.1],
                                             [2, 0, -0.6],
@@ -261,7 +264,125 @@ class Traj43(trj_dev.SpaceIndexedTraj):
 register(Traj43)
 
 
-#trajectories = {T.name: (T.desc, T) for T in [Traj1, Traj2, Traj3, Traj4, Traj5, Traj6, Traj7, Traj8, Traj9, Traj10, Traj11, Traj12, Traj13, Traj14, Traj15, Traj16, Traj17, Traj18]}
+##
+#  quad4d rebooted
+#
+class Traj12_1(pmt.SmoothBackAndForth):
+    name, desc = 'sbf', 'smooth back and forth'
+    def __init__(self): pmt.SmoothBackAndForth.__init__(self, x0=[0, 0, -1.5, 0], x1=[1, 0, -2, np.pi/2])
+register(Traj12_1)
+
+class Traj12_2(pmt.CircleWithIntro):
+    name, desc = 'cis', 'circle with intro slow'
+    def __init__(self): pmt.CircleWithIntro.__init__(self, c=[0, 0, -2.5], r=1.5, v=1., dt_intro=5., dt_stay=0.5)
+register(Traj12_2)
+
+class Traj12_3(pmt.CircleWithIntro):
+    name, desc = 'cis1', 'circle with intro slow'
+    def __init__(self): pmt.CircleWithIntro.__init__(self, Y0=[0, 1, -1.5, 0], c=[0, 1, -2.5],
+                                                     r=1.5, v=1., dt_intro=5., dt_stay=0.5, psit=pmt.CstOne(0.))
+register(Traj12_3)
+
+class Traj12_4(pmt.CircleWithIntro):
+    name, desc = 'cis2', 'circle with intro slow'
+    def __init__(self): pmt.CircleWithIntro.__init__(self, Y0=[0, -1, -1.5, 0], c=[0, -1, -2.5],
+                                                     r=-1.5, v=1., dt_intro=5., dt_stay=0.5, psit=pmt.CstOne(0.))
+register(Traj12_4)
+
+
+#
+# La sphere de gautier
+#
+
+class Sphere0:
+    name, desc = 'sph0', 'sphere0'
+    def __init__(self, c=[0, 0, -2.], r=1.5, v=2., psi=None):
+        self.c, self.r, self.v = np.asarray(c), r, v # center, radius, velocity
+        self.omega1, self.omega2 = 1, 0.1 #self.v/self.r
+        self.t0, self.duration = 0, 80
+
+        
+    def reset(self, t0):
+        self.t0 = t0
+
+    def get(self, t):
+        dt = t-self.t0
+        alpha = self.omega1*(dt)# + self.alpha0
+        beta = self.omega2*(dt)# + self.alpha0
+        rca, rsa = np.abs(self.r)*np.cos(alpha), np.abs(self.r)*np.sin(alpha) 
+        cb, sb = np.cos(beta), np.sin(beta)
+        Yc = np.zeros((5,4))
+        #Yc[0,:pmt._psi] = self.c[:pmt._psi] + [rca*cb, rsa, rca*sb]
+        A = np.array([[cb, 0, -sb],[0, 1, 0],[sb, 0, cb]])
+        B = np.array([rca, rsa, 0])
+        Yc[0,:pmt._z+1] = self.c + A@B
+        alpha_d, beta_d = self.omega1, self.omega2
+        Ad = -beta_d*np.array([[sb, 0, cb],[0, 0, 0],[-cb, 0, sb]])
+        Bd =  alpha_d * np.array([-rsa, rca, 0])
+        Yc[1,:pmt._z+1] = Ad@B+A@Bd
+        alpha_dd, beta_dd = 0, 0
+        Add = -beta_dd*np.array([[sb, 0, cb],[0, 0, 0],[-cb, 0, sb]])-beta_d**2*np.array([[cb, 0, -sb],[0, 0, 0],[sb, 0, cb]])
+        Bdd = alpha_dd*np.array([-rsa, rca, 0])-alpha_d**2*np.array([rca, rsa, 0])
+        Yc[2,:pmt._z+1] = Add@B + 2*Ad@Bd + A@Bdd
+        
+        # pointing center
+        #Yc[0,pmt._psi] = np.arctan2(Yc[0,pmt._y], Yc[0,pmt._x])
+        om3 = 0.25
+        #Yc[0,pmt._psi] = om3*dt
+        #Yc[1,pmt._psi] = om3
+        Yc[0,pmt._psi] =         np.sin(om3*dt)
+        Yc[1,pmt._psi] =  om3   *np.cos(om3*dt)
+        Yc[2,pmt._psi] = -om3**2*np.sin(om3*dt)
+        Yc[3,pmt._psi] = -om3**3*np.cos(om3*dt)
+        Yc[4,pmt._psi] =  om3**4*np.sin(om3*dt)
+        
+        return Yc.T
+register(Sphere0)
+
+class Donut0:
+    name, desc = 'q4d_dnt1', 'quad4d rebooted: donut'
+    def __init__(self, c=[0, 0, -2.], r=1., r2=1., v=4., psi=None, duration=80.):
+        self.c, self.r, self.r2, self.v = np.asarray(c), r, r2, v # center, radius, velocity
+        self.omega1, self.omega2 = 1, 0.1 #self.v/self.r
+        self.t0, self.duration = 0, duration
+
+    def reset(self, t0):
+        self.t0 = t0
+
+    def get(self, t):
+        dt = t-self.t0
+        alpha, beta = self.omega1*dt, self.omega2*dt
+        rca, rsa = np.abs(self.r)*np.cos(alpha), np.abs(self.r)*np.sin(alpha)
+        cb, sb = np.cos(beta), np.sin(beta)
+        c1 = self.c + [-self.r2*sb, self.r2*cb, 0]
+        A = np.array([[cb, -sb, 0],[sb, cb, 0],[0, 0, 1]])
+        B = np.array([0, rsa, rca])
+        Yc = np.zeros((5,4))
+        Yc[0,:pmt._z+1] = c1 + A@B
+        #cbd, sbd = self.omega2
+        c1d = [-self.omega2*self.r2*cb, -self.omega2*self.r2*sb, 0]
+        Ad = self.omega2 * np.array([[-sb, -cb, 0],[cb, -sb, 0],[0, 0, 1]])
+        Bd = self.omega1 * np.array([0, rca, -rsa])
+        Yc[1,:pmt._z+1] = c1d + Ad@B + A@Bd
+        return Yc.T
+register(Donut0)
+
+class Donut1(pmt.CompositeTraj):
+    name, desc = 'q4d_dnt2', 'quad4d rebooted: donut with intro'
+    def __init__(self):
+        Y0 = [0., 0, -1.5, 0.]
+        d1 = Donut0(r=0.7, r2=1., duration=61.)
+        Y1 = d1.get(0)#[:,0]
+        Y2 = d1.get(d1.duration)
+        steps = [pmt.SmoothLine(Y0, Y1, duration=2.),
+                 d1,
+                 pmt.SmoothLine(Y2, Y0, duration=2.),
+                 pmt.Cst(Y0, duration=1.)]
+        pmt.CompositeTraj.__init__(self, steps)
+
+
+register(Donut1)
+
 
 def print_available():
     print('available trajectories:')

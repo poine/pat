@@ -4,7 +4,11 @@ import pat3.vehicles.rotorcraft.multirotor_trajectory as trj
 #import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
 #import pat3.vehicles.rotorcraft.multirotor_control as ctl
 
-#import pdb
+
+class SpaceIndexedLine(trj.Line):
+    def __init__(self, p1, p2, psi):
+        self._ylen, self._nder = 4, 5
+        trj.Line.__init__(self, p1, p2, 1/np.linalg.norm(p2-p1), psi)
 
 class SpaceCircle:
     def __init__(self, r=1., c = [0,0], alpha0=0, dalpha=2*np.pi, ztraj=None, psitraj=None):
@@ -46,6 +50,7 @@ class SpaceIndexedTraj:
         self.duration = dynamic.duration
         self._ylen, self._nder = 4, 5
         self._geom, self._dyn = geometry, dynamic
+        self.t0 = 0.
 
     def set_dyn(self, dyn): self._dyn = dyn
 
