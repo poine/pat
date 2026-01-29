@@ -1,8 +1,6 @@
 #-*- coding: utf-8 -*-
 
 import math, numpy as np, matplotlib.pyplot as plt, matplotlib
-import pdb
-
 
 '''
   (Output) Trajectories for a quadrotor
@@ -12,138 +10,147 @@ import pdb
 '''
 import pat3.plot_utils as ppu, pat3.algebra as pal
 import pat3.utils as p3_u
+import pat3.trajectory_1D as p3_t1D
 
 _x, _y, _z, _psi, _ylen = range(5)
 # we consider 4 time derivatives, this should be a parameter...
 _nder = 5
 
+
+# ALL 1D trajectories moved to pat3.trajectory_1D 
 #
 # Scalar trajectories (aka 1D)
 # 
-class CstOne:
-    def __init__(self, c=-1.):
-        self.c = c
-    def get(self, t):
-        return np.array([self.c, 0, 0, 0, 0])
+# class CstOne:
+#     def __init__(self, c=-1.):
+#         self.c = c
+#     def get(self, t):
+#         return np.array([self.c, 0, 0, 0, 0])
 
-class AffineOne:
-    def __init__(self, c1=-1., c2=0, duration=1.):
-        self.c1, self.c2, self.duration = c1, c2, duration
+# class AffineOne:
+#     def __init__(self, c1=-1., c2=0, duration=1.):
+#         self.c1, self.c2, self.duration = c1, c2, duration
         
-    def get(self, t):
-        return np.array([self.c1*t+self.c2, self.c1, 0, 0, 0])
+#     def get(self, t):
+#         return np.array([self.c1*t+self.c2, self.c1, 0, 0, 0])
     
-class SinOne:
-    def __init__(self, c=0., a=1., om=1., duration=2*np.pi):
-        self.duration = duration
-        self.c, self.a, self.om = c, a, om
-        self.t0 = 0.
+# class SinOne:
+#     def __init__(self, c=0., a=1., om=1., duration=2*np.pi):
+#         self.duration = duration
+#         self.c, self.a, self.om = c, a, om
+#         self.t0 = 0.
         
-    def get(self, t):
-        alpha = self.om*(t-self.t0)
-        asa, aca = self.a*np.sin(alpha), self.a*np.cos(alpha)
-        return np.array([  self.c + asa,
-                           self.om*aca,
-                          -self.om**2*asa,
-                          -self.om**3*aca,
-                           self.om**4*asa   ])
+#     def get(self, t):
+#         alpha = self.om*(t-self.t0)
+#         asa, aca = self.a*np.sin(alpha), self.a*np.cos(alpha)
+#         return np.array([  self.c + asa,
+#                            self.om*aca,
+#                           -self.om**2*asa,
+#                           -self.om**3*aca,
+#                            self.om**4*asa   ])
 
-# TODO - compute derivatives
-class SigmoidOne:
-    def __init__(self, duration=5, l=2):
-        self.duration = duration
-        self.l = l
+# # TODO - compute derivatives
+# class SigmoidOne:
+#     def __init__(self, duration=5, l=2):
+#         self.duration = duration
+#         self.l = l
         
-    def get(self, t):
-        a = np.tan(-np.pi/2+t*np.pi/self.duration)
-        b = 1./(1+np.exp(-self.l*a))
-        return [b, 0, 0, 0, 0]
+#     def get(self, t):
+#         a = np.tan(-np.pi/2+t*np.pi/self.duration)
+#         b = 1./(1+np.exp(-self.l*a))
+#         return [b, 0, 0, 0, 0]
         
 
     
-def arr(k,n):
-    '''arangements a(k,n) = n!/k!'''
-    a,i = 1,n
-    while i>n-k:
-        a *= i
-        i -= 1
-    return a
+# def arr(k,n):
+#     '''arangements a(k,n) = n!/k!'''
+#     a,i = 1,n
+#     while i>n-k:
+#         a *= i
+#         i -= 1
+#     return a
 
-class PolynomialOne:
-    def __init__(self, Y0, Y1, duration):
-        self.Y0, self.Y1 = Y0, Y1
-        self.duration = duration
-        _der = len(Y0)    # number of time derivatives
-        _order = 2*_der   # we need twice as many coefficients
-        self._der, self._order = _der, _order
-        # compute polynomial coefficients for time derivative zeros
-        self.coefs = np.zeros((_der, _order))
-        M1 = np.zeros((_der, _der))
-        for i in range(_der):
-            M1[i,i] = arr(i,i)
-        self.coefs[0, 0:_der] = np.dot(np.linalg.inv(M1), Y0)
-        M3 = np.zeros((_der, _der))
-        for i in range(_der):
-            for j in range(i, _der):
-                M3[i,j] = arr(i,j) * duration**(j-i)
-        M4 = np.zeros((_der, _der))
-        for i in range(_der):
-            for j in range(_der):
-                M4[i,j] = arr(i, j+_der) * duration**(j-i+_der)
-        M3a0k = np.dot(M3, self.coefs[0, 0:_der])
-        self.coefs[0, _der:_order] = np.dot(np.linalg.inv(M4), Y1 - M3a0k)
-        # fill in coefficients for the subsequent time derivatives  
-        for d in range(1,_der):
-            for pow in range(0,2*_der-d):
-                self.coefs[d, pow] = arr(d, pow+d)*self.coefs[0, pow+d]
+# class PolynomialOne:
+#     def __init__(self, Y0, Y1, duration):
+#         self.Y0, self.Y1 = Y0, Y1
+#         self.duration = duration
+#         _der = len(Y0)    # number of time derivatives
+#         _order = 2*_der   # we need twice as many coefficients
+#         self._der, self._order = _der, _order
+#         # compute polynomial coefficients for time derivative zeros
+#         self.coefs = np.zeros((_der, _order))
+#         M1 = np.zeros((_der, _der))
+#         for i in range(_der):
+#             M1[i,i] = arr(i,i)
+#         self.coefs[0, 0:_der] = np.dot(np.linalg.inv(M1), Y0)
+#         M3 = np.zeros((_der, _der))
+#         for i in range(_der):
+#             for j in range(i, _der):
+#                 M3[i,j] = arr(i,j) * duration**(j-i)
+#         M4 = np.zeros((_der, _der))
+#         for i in range(_der):
+#             for j in range(_der):
+#                 M4[i,j] = arr(i, j+_der) * duration**(j-i+_der)
+#         M3a0k = np.dot(M3, self.coefs[0, 0:_der])
+#         self.coefs[0, _der:_order] = np.dot(np.linalg.inv(M4), Y1 - M3a0k)
+#         # fill in coefficients for the subsequent time derivatives  
+#         for d in range(1,_der):
+#             for pow in range(0,2*_der-d):
+#                 self.coefs[d, pow] = arr(d, pow+d)*self.coefs[0, pow+d]
                 
-    def get(self, t):
-        # Horner method for computing polynomial value
-        Y = np.zeros(self._der)
-        for d in range(0, self._der):
-            v = self.coefs[d,-1] 
-            for j in range(self._order-2, -1, -1):
-                v *= t
-                v += self.coefs[d,j]
-                Y[d] = v
-        return Y
+#     def get(self, t):
+#         # Horner method for computing polynomial value
+#         Y = np.zeros(self._der)
+#         for d in range(0, self._der):
+#             v = self.coefs[d,-1] 
+#             for j in range(self._order-2, -1, -1):
+#                 v *= t
+#                 v += self.coefs[d,j]
+#                 Y[d] = v
+#         return Y
         
 
-import scipy.interpolate as interpolate
-class SplinesOne:
-    def __init__(self, points_t, points_l):
-        self.duration = points_t[-1]
-        self._nder = 5
-        self.p_t, self.p_l = points_t, points_l
-        self.spline = interpolate.InterpolatedUnivariateSpline(points_t, points_l, k=4)
+# import scipy.interpolate as interpolate
+# class SplinesOne:
+#     def __init__(self, points_t, points_l):
+#         self.duration = points_t[-1]
+#         self._nder = 5
+#         self.p_t, self.p_l = points_t, points_l
+#         self.spline = interpolate.InterpolatedUnivariateSpline(points_t, points_l, k=4)
         
-    def get(self, t):
-        return self.spline.derivatives(t)
+#     def get(self, t):
+#         return self.spline.derivatives(t)
 
 
 
 
     
-
+from abc import ABC, abstractmethod
 #
 # Solid Trajectories (aka 3D)
 # 
 
+class Trajectory(ABC):
+    def is_space_indexed(self): return False  # space indexed trajectories return True
+    def has_dyn_ctl_pts(self): return False   # space_indexed trajectories might have them  
+    def has_waypoints(self): return False     # 
+    @abstractmethod
+    def get(self, t): pass
     
-class Cst:
+class Cst(Trajectory):
     def __init__(self, Y00, duration=1.):
         self.duration = duration
         self.Yc = np.zeros((_ylen, _nder))
         self.Yc[:,0] = Y00
         
     def reset(self, t0): pass
-        
+
     def get(self, t):
         return self.Yc
         
 
 
-class Circle:
+class Circle(Trajectory):
 
     def __init__(self, c=[0, 0, 0], r=1., v=2., alpha0=0, dalpha=2*np.pi, zt=None, psit=None):
         self.c, self.r, self.v = np.asarray(c), r, v # center, radius, velocity
@@ -151,8 +158,8 @@ class Circle:
         self.omega = self.v/self.r
         self.length = dalpha*np.abs(r)
         self.duration = self.length/v
-        self.zt = zt if zt is not None else CstOne(c[_z])
-        self.psit = psit if psit is not None else AffineOne(self.omega, self.alpha0+np.sign(self.r)*np.pi/2)
+        self.zt = zt if zt is not None else p3_t1D.CstOne(c[_z])
+        self.psit = psit if psit is not None else p3_t1D.AffineOne(self.omega, self.alpha0+np.sign(self.r)*np.pi/2)
         #self.psit = psit if psit is not None else AffineOne(self.omega, self.alpha0)
         self.t0 = 0.
         
@@ -222,7 +229,7 @@ class SmoothLine:
         if Y1[_psi,0]-Y0[_psi,0] > np.pi: Y1[_psi,0]-=2*np.pi
         if Y1[_psi,0]-Y0[_psi,0] < -np.pi: Y1[_psi,0]+=2*np.pi
         
-        self._polys = [PolynomialOne(Y0[i], Y1[i], self.duration) for i in range(_ylen)]
+        self._polys = [p3_t1D.PolynomialOne(Y0[i], Y1[i], self.duration) for i in range(_ylen)]
         self.t0 = 0
         
     def reset(self, t0):
@@ -234,7 +241,7 @@ class SmoothLine:
         
     
     
-class CompositeTraj:
+class CompositeTraj(Trajectory):
     def __init__(self, steps):
         self.steps = steps
         self.steps_dur = [s.duration for s in self.steps]
@@ -296,11 +303,11 @@ class FigureOfEight(CompositeTraj):
         CompositeTraj.__init__(self, steps)
           
 class SmoothBackAndForth(CompositeTraj):
-    def __init__(self, x0=[0, 0, 0.5, 0], x1=[1, 0, -0.5, 0], dt_move=2., dt_stay=1.):
-        steps = [SmoothLine(x0, x1, duration=dt_move),
-                 Cst(x1, dt_stay),
-                 SmoothLine(x1, x0, duration=dt_move),
-                 Cst(x0, dt_stay)]
+    def __init__(self, Y0=[0, 0, 0.5, 0], Y1=[1, 0, -0.5, 0], dt_move=2., dt_stay=1.):
+        steps = [SmoothLine(Y0, Y1, duration=dt_move),
+                 Cst(Y1, dt_stay),
+                 SmoothLine(Y1, Y0, duration=dt_move),
+                 Cst(Y0, dt_stay)]
         CompositeTraj.__init__(self, steps)     
 
 class CircleWithIntro(CompositeTraj):

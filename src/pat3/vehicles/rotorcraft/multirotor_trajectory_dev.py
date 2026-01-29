@@ -1,21 +1,23 @@
 import numpy as np
 
+import pat3.trajectory_1D as p3_t1D
 import pat3.vehicles.rotorcraft.multirotor_trajectory as trj
-#import pat3.vehicles.rotorcraft.multirotor_fdm as fdm
-#import pat3.vehicles.rotorcraft.multirotor_control as ctl
 
+#
+# In progress implementation of space indexed trajectories
+#
 
 class SpaceIndexedLine(trj.Line):
     def __init__(self, p1, p2, psi):
         self._ylen, self._nder = 4, 5
-        trj.Line.__init__(self, p1, p2, 1/np.linalg.norm(p2-p1), psi)
+        trj.Line.__init__(self, p1, p2, np.linalg.norm(p2-p1), psi)
 
 class SpaceCircle:
     def __init__(self, r=1., c = [0,0], alpha0=0, dalpha=2*np.pi, ztraj=None, psitraj=None):
         self._ylen, self._nder = 4, 5
         self.r, self.c, self.alpha0, self.dalpha = r, c, alpha0, dalpha
-        self.ztraj = ztraj if ztraj is not None else trj.CstOne()
-        self.psitraj = psitraj if psitraj is not None else trj.CstOne()
+        self.ztraj = ztraj if ztraj is not None else p3_t1D.CstOne()
+        self.psitraj = psitraj if psitraj is not None else p3_t1D.CstOne()
 
     def get(self, l):
         Yl = np.zeros((self._ylen, self._nder))
@@ -45,7 +47,7 @@ class SpaceWaypoints:
         Yl[0:3] = [self.splines[i].derivatives(l) for i in range(3)]
         return Yl
  
-class SpaceIndexedTraj:
+class SpaceIndexedTraj(trj.Trajectory):
     def __init__(self, geometry, dynamic):
         self.duration = dynamic.duration
         self._ylen, self._nder = 4, 5

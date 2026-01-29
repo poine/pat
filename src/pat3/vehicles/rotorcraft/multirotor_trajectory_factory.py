@@ -1,5 +1,10 @@
 import numpy as np
 
+#
+# A collection of multirotor trajectories
+#
+
+import pat3.trajectory_1D as p3_t1D
 import pat3.vehicles.rotorcraft.multirotor_trajectory as pmt
 
 trajectories = {}
@@ -32,20 +37,20 @@ class Traj3(pmt.Circle):
     name, desc = 'c2', 'circle r=1 v=4, looking at center'
     def __init__(self):
         r, v = 1., 2.; om = v/r; alpha0 = 0
-        psit = pmt.AffineOne(om, alpha0)
+        psit = p3_t1D.AffineOne(om, alpha0)
         pmt.Circle.__init__(self, [0, 0, -0.25], r, v, zt=None, psit=psit)
 register(Traj3)
 
 
 class Traj4(pmt.Circle):
     name, desc = 'circle3', 'circle r=2 v=4'
-    def __init__(self): pmt.Circle.__init__(self, [0, 0, -0.5], r=1., v=4., psit=pmt.AffineOne(1, 0))
+    def __init__(self): pmt.Circle.__init__(self, [0, 0, -0.5], r=1., v=4., psit=p3_t1D.AffineOne(1, 0))
 
 class Traj5(pmt.Circle):
     name, desc = 'circle4', 'circle r=2 v=4'
     def __init__(self):
         r, v = 1., 4.; om = v/r
-        pmt.Circle.__init__(self, c=[0, 0, -0.5], r=1., v=4., alpha0=0., dalpha=2*np.pi, psit=pmt.SinOne(om=om))
+        pmt.Circle.__init__(self, c=[0, 0, -0.5], r=1., v=4., alpha0=0., dalpha=2*np.pi, psit=p3_t1D.SinOne(om=om))
 
 ##
 #  Oval
@@ -229,12 +234,12 @@ class Traj42(trj_dev.SpaceIndexedTraj):
     name, desc = 'sic1', 'space index circle'
     def __init__(self, duration=10.):
         r, v = 1.5, 2.; om = v/r; alpha0 = 0
-        psit = pmt.CstOne(0.)
+        psit = p3_t1D.CstOne(0.)
         #psit = pmt.AffineOne(om, alpha0+np.pi/2)
         #psit = pmt.PolynomialOne([-np.pi/2,0,0,0,0], [3*np.pi/2, 0, 0, 0, 0], duration=1.)
-        zt = pmt.CstOne(-1.5)
+        zt = p3_t1D.CstOne(-1.5)
         straj = trj_dev.SpaceCircle(r=r, c=[-1.5,0], alpha0=0, dalpha=2*np.pi, ztraj=zt, psitraj=psit)
-        dtraj = pmt.PolynomialOne([0,0,0,0,0], [1, 0, 0, 0, 0], duration=duration)
+        dtraj = p3_t1D.PolynomialOne([0,0,0,0,0], [1, 0, 0, 0, 0], duration=duration)
         trj_dev.SpaceIndexedTraj.__init__(self,straj, dtraj)
 register(Traj42)
 
@@ -258,7 +263,7 @@ class Traj43(trj_dev.SpaceIndexedTraj):
                                             [0, 2, -0.6],
                                             [0, 0, -0.1],])
         #dtraj = pmt.AffineOne(1./duration,0., duration)
-        dtraj = dtraj or pmt.PolynomialOne([0,0,0,0,0], [1,0,0,0,0], duration)
+        dtraj = dtraj or p3_t1D.PolynomialOne([0,0,0,0,0], [1,0,0,0,0], duration)
         
         trj_dev.SpaceIndexedTraj.__init__(self,straj, dtraj)
 register(Traj43)
@@ -280,13 +285,13 @@ register(Traj12_2)
 class Traj12_3(pmt.CircleWithIntro):
     name, desc = 'cis1', 'circle with intro slow'
     def __init__(self): pmt.CircleWithIntro.__init__(self, Y0=[0, 1, -1.5, 0], c=[0, 1, -2.5],
-                                                     r=1.5, v=1., dt_intro=5., dt_stay=0.5, psit=pmt.CstOne(0.))
+                                                     r=1.5, v=1., dt_intro=5., dt_stay=0.5, psit=p3_t1D.CstOne(0.))
 register(Traj12_3)
 
 class Traj12_4(pmt.CircleWithIntro):
     name, desc = 'cis2', 'circle with intro slow'
     def __init__(self): pmt.CircleWithIntro.__init__(self, Y0=[0, -1, -1.5, 0], c=[0, -1, -2.5],
-                                                     r=-1.5, v=1., dt_intro=5., dt_stay=0.5, psit=pmt.CstOne(0.))
+                                                     r=-1.5, v=1., dt_intro=5., dt_stay=0.5, psit=p3_t1D.CstOne(0.))
 register(Traj12_4)
 
 

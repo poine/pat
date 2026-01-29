@@ -176,7 +176,7 @@ class UFOFDM(SolidFDM):
 class MR_FDM(SolidFDM):
     ''' Multirotor dynamic. Input are rotor thrust '''
     def __init__(self):
-        print('MultiRotor FDM')
+        #print('MultiRotor FDM')
         self.input_type = 'multirotor'
         FDM.__init__(self)
         self.iv_size = len(self.P.rotor_pos)
@@ -237,12 +237,12 @@ def plot(time, X, U=None, figure=None, axes=None, window_title="Trajectory"):
   plots = [("$x$",       "m",     0.5, X[:,sv_x]),
            ("$y$",       "m",     0.5, X[:,sv_y]),
            ("$z$",       "m",     0.5, X[:,sv_z]),
-           ("$\dot{x}$", "m/s",   0.5, X[:,sv_xd]),
-           ("$\dot{y}$", "m/s",   0.5, X[:,sv_yd]),
-           ("$\dot{z}$", "m/s",   0.5, X[:,sv_zd]),
-           ("$\phi$",    "deg",   0.5, np.rad2deg(phi)),
+           ("$\\dot{x}$", "m/s",   0.5, X[:,sv_xd]),
+           ("$\\dot{y}$", "m/s",   0.5, X[:,sv_yd]),
+           ("$\\dot{z}$", "m/s",   0.5, X[:,sv_zd]),
+           ("$\\phi$",    "deg",   0.5, np.rad2deg(phi)),
            ("$\\theta$", "deg",   0.5, np.rad2deg(theta)),
-           ("$\psi$",    "deg",   0.5, np.rad2deg(psi)),
+           ("$\\psi$",    "deg",   0.5, np.rad2deg(psi)),
            ("$p$",       "deg/s", 0.5, np.rad2deg(X[:,sv_p])),
            ("$q$",       "deg/s", 0.5, np.rad2deg(X[:,sv_q])),
            ("$r$",       "deg/s", 0.5, np.rad2deg(X[:,sv_r])),
