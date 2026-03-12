@@ -314,10 +314,9 @@ class PosController:
 #
 _x, _y, _z, _psi = range(4)
 class DiffFlatness:
-
-    def state_and_cmd_of_flat_output(self, Y, P):
-        #pdb.set_trace()
-        wind = np.zeros(3)
+    @staticmethod
+    def state_and_cmd_of_flat_output(Y, P, wind = np.zeros(3)):
+        
         cd_ov_m = P.Cd/P.m
         a0 = np.array([
             Y[_x, 2] + cd_ov_m*(Y[_x, 1] - wind[_x]),

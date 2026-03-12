@@ -4,7 +4,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-# we consider 4 time derivatives, this should be a parameter...
+# we consider 4 time derivatives, maybe this should be a parameter...
 _nder = 5
 
 class Trajectory(ABC):
@@ -30,15 +30,13 @@ class AffOne(Trajectory):
         y = self.P0[1] + (t-self.P0[0])*self.c
         return [y, self.c, 0, 0, 0]
 
-class AffineOne:   # very sad... merge with above
+class AffineOne(Trajectory):   # very sad... merge with above
     def __init__(self, c1=-1., c2=0, duration=1.):
         self.c1, self.c2, self.duration = c1, c2, duration
         
     def get(self, t):
         return np.array([self.c1*t+self.c2, self.c1, 0, 0, 0])
  
-
-    
 # Sine
 class SinOne(Trajectory):
     def __init__(self, c=0., a=1., om=1., duration=2*np.pi):
@@ -54,6 +52,29 @@ class SinOne(Trajectory):
                           -self.om**2*asa,
                           -self.om**3*aca,
                            self.om**4*asa   ])
+
+# # TODO - compute derivatives
+# class SigmoidOne:
+#     def __init__(self, duration=5, l=2):
+#         self.duration = duration
+#         self.l = l
+        
+#     def get(self, t):
+#         a = np.tan(-np.pi/2+t*np.pi/self.duration)
+#         b = 1./(1+np.exp(-self.l*a))
+#         return [b, 0, 0, 0, 0]
+
+# import scipy.interpolate as interpolate
+# class SplinesOne:
+#     def __init__(self, points_t, points_l):
+#         self.duration = points_t[-1]
+#         self._nder = 5
+#         self.p_t, self.p_l = points_t, points_l
+#         self.spline = interpolate.InterpolatedUnivariateSpline(points_t, points_l, k=4)
+        
+#     def get(self, t):
+#         return self.spline.derivatives(t)
+
 
 
 # MinSnap polynomials
@@ -123,7 +144,7 @@ class CompositeOne(Trajectory):
 #
 class SmoothedCompositeOne(CompositeOne):
     def __init__(self, trajs, eps=0.15):
-        CompositeOne.__init__(self, trajs)
+        super().__init__(trajs)
         self.eps = eps
         self.corners = []
         for i in range(len(self.trajs)-1):
@@ -149,8 +170,31 @@ class SmoothStopStopCstVel(Trajectory):
         self.c = (1.-2*dl_acc)/dt_cruise # cruise slope
         self.intro = PolynomialOne([0, 0, 0, 0, 0], [dl_acc, self.c, 0, 0, 0], dt_acc)
         self.outro = PolynomialOne([1-dl_acc, self.c, 0, 0, 0], [1, 0, 0, 0, 0], dt_acc)
-       
+
+    def has_ctl_pts(self): return True
+    def get_ctl_pts(self): return [self.dt_acc, self.dt_acc+self.dt_cruise], [self.dl_acc, 1-self.dl_acc]
+  
     def get(self, t):
         if t < self.dt_acc: return self.intro.get(t)
         elif t < self.dt_acc+self.dt_cruise: return [self.dl_acc+(t-self.dt_acc)*self.c, self.c, 0, 0, 0]
         else: return self.outro.get(t-self.dt_acc-self.dt_cruise)
+
+
+# spline spatial index (again testing dynamics optimization)
+import scipy.interpolate
+class SplineOne(Trajectory):
+    def __init__(self, pts_t, pts_l):
+        self.pts_t = pts_t#[0, 1., 2., 3., 4., 5., 6.]
+        self.pts_l = pts_l#[0, 0.2, 0.3, 0.5, 0.8, 0.9, 1]
+        bc_type = None
+        bc_type = bc_type=([(1, 0.), (2, 0.), (3, 0.)], [(1, 0.), (2, 0.)])
+        self.spline = scipy.interpolate.make_interp_spline(self.pts_t, self.pts_l, k=6, t=None, bc_type=bc_type, axis=0, check_finite=True)
+        self.derivatives = [self.spline.derivative(d) for d in range(self.nder)]
+        self.duration = self.pts_t[-1]
+
+    def has_ctl_pts(self): return True
+    def get_ctl_pts(self): return self.pts_t, self.pts_l
+        
+    def get(self, t):
+        return np.array([self.derivatives[d](t) for d in range(self.nder)])
+    

@@ -1,4 +1,5 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
 import pat3.trajectory_1D as p3_t1D
 import pat3.vehicles.rotorcraft.multirotor_trajectory as trj
@@ -46,7 +47,23 @@ class SpaceWaypoints:
         Yl = np.zeros((self._ylen, self._nder))
         Yl[0:3] = [self.splines[i].derivatives(l) for i in range(3)]
         return Yl
- 
+
+class SpaceWaypoints2:
+    def __init__(self, waypoints, bc=None):
+        self._ylen, self._nder = 4, 5
+        self.waypoints = np.array(waypoints)
+        l = np.linspace(0, 1, len(self.waypoints))
+        self.splines = [interpolate.make_interp_spline(l, self.waypoints[:,c], k=5, t=None, bc_type=bc, axis=0, check_finite=True) for c in range(3)]
+        self.derivatives = [[self.splines[c].derivative(d) for d in range(self._nder)] for c in range(3)]
+        
+    def get(self, l):
+        Yl = np.zeros((self._ylen, self._nder))
+        for c in range(3):
+            Yl[c] = [self.derivatives[c][d](l) for d in range(self._nder)]
+        return Yl
+
+
+    
 class SpaceIndexedTraj(trj.Trajectory):
     def __init__(self, geometry, dynamic):
         self.duration = dynamic.duration
@@ -54,6 +71,8 @@ class SpaceIndexedTraj(trj.Trajectory):
         self._geom, self._dyn = geometry, dynamic
         self.t0 = 0.
 
+    def is_space_indexed(self): return True
+        
     def set_dyn(self, dyn): self._dyn = dyn
 
     def get(self, t):
@@ -69,5 +88,12 @@ class SpaceIndexedTraj(trj.Trajectory):
         return Yt
 
 
-
+#
+# In progress implementation of "generic parametrizable" trajectories
+#
+class ParametrizedTrajectory(trj.Trajectory):
+    @abstractmethod
+    def get_params(self): return None
+    @abstractmethod
+    def set_params(self, params): pass
 
